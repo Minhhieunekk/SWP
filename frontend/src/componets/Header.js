@@ -40,7 +40,7 @@ const AppHeader = ({ username, password, consumerid }) => {
   };
 
   const userMenu = (
-    <Menu>
+    <Menu >
       {consumerid && <Menu.Item key="1" icon={<UserOutlined />} onClick={()=>navigate("/detailuser")}>
         Thông tin người dùng 
       </Menu.Item>}
@@ -74,7 +74,7 @@ const AppHeader = ({ username, password, consumerid }) => {
   // );
 
   return (
-    <Layout>
+    <Layout style={{position: "fixed", width: "100%", zIndex: "2"}}>
       {/* Phần trên của header */}
       <Header
         style={{
@@ -97,11 +97,11 @@ const AppHeader = ({ username, password, consumerid }) => {
           <Col>
             <Row gutter={16} align="middle">
               <Col>
-                <Dropdown overlay={userMenu} trigger={['click']}>
-                  <a className="ant-dropdown" onClick={e => e.preventDefault()} style={{ textDecoration: "none", color: "black" }}>
+                <Dropdown overlay={userMenu} trigger={['click']} >
+                  <div className="ant-dropdown" onClick={e => e.preventDefault()} style={{cursor:"pointer" }}>
                     <UserOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
                     {username}
-                  </a>
+                  </div>
                 </Dropdown>
               </Col>
               <Col>
@@ -143,6 +143,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                   selectedKey.startsWith("1") ? "menu-item-selected" : ""
                 }
                 onTitleClick={() => navigate("/gioi-thieu")}
+                theme="dark"
               >
 
                 {/* vòng cổ */}
@@ -150,9 +151,9 @@ const AppHeader = ({ username, password, consumerid }) => {
                   em
                   key="1.1"
                   className={selectedKey === "1.1" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/2")}
+                  onClick={() => navigate("/gioi-thieu/1")}
                 >
-                  Vòng Cổ
+                  Dây chuyền
                 </Menu.Item>
 
 
@@ -160,7 +161,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 <Menu.Item
                   key="1.2"
                   className={selectedKey === "1.2" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/3")}
+                  onClick={() => navigate("/gioi-thieu/2")}
                 >
                   Vòng Tay
                 </Menu.Item>
@@ -170,9 +171,16 @@ const AppHeader = ({ username, password, consumerid }) => {
                 <Menu.Item
                   key="1.3"
                   className={selectedKey === "1.3" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/4")}
+                  onClick={() => navigate("/gioi-thieu/3")}
                 >
                   Nhẫn
+                </Menu.Item>
+                <Menu.Item
+                  key="1.4"
+                  className={selectedKey === "1.4" ? "menu-item-selected" : ""}
+                  onClick={() => navigate("/gioi-thieu/4")}
+                >
+                  Khuyên tai
                 </Menu.Item>
               </SubMenu>
 
@@ -183,6 +191,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                   selectedKey.startsWith("2") ? "menu-item-selected" : ""
                 }
                 onTitleClick={() => navigate("/chat-lieu")}
+                theme="dark"
               >
 
 
@@ -213,6 +222,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                   selectedKey.startsWith("3") ? "menu-item-selected" : ""
                 }
                 onTitleClick={() => navigate("/qua-tang")}
+                theme="dark"
               >
 
 

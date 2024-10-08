@@ -20,9 +20,10 @@ function App() {
           <Route path='/resetpassword/:consumerid' element={<PasswordChangeForm/>}></Route>
           <Route path='/detailuser' element={<Detailuser/>}></Route>
           <Route path="/gioi-thieu" element={<div>HomePage</div>} />
-          <Route path="/gioi-thieu/2" element={<div>Vòng Cổ</div>} />
-          <Route path="/gioi-thieu/3" element={<div>vòng tay</div>} />
-          <Route path="/gioi-thieu/4" element={<div>nhẫn</div>} />
+          <Route path="/gioi-thieu/1" element={<div>Vòng Cổ</div>} />
+          <Route path="/gioi-thieu/2" element={<div>vòng tay</div>} />
+          <Route path="/gioi-thieu/3" element={<div>nhẫn</div>} />
+          <Route path="/gioi-thieu/4" element={<div>khuyên tai</div>} />
 
 
 
