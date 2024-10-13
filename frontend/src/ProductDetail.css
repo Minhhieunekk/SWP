@@ -1,0 +1,269 @@
+/* Container for the entire product detail page */
+.product-detail-container {
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
+    padding: 20px;
+    position: relative;
+}
+
+/* Breadcrumb navigation */
+.product-breadcrumb {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 5px 10px;
+    z-index: 10;
+    border-radius: 5px;
+}
+
+/* Main product detail section */
+.product-detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+/* Image container and thumbnail display */
+.product-image-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    position: relative;
+}
+
+.main-product-image {
+    width: 600px;
+    height: auto;
+    margin-bottom: 20px;
+    margin-left: 100px;
+}
+
+.product-thumbnails {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.product-thumbnails img {
+    width: 80px;
+    height: 80px;
+    margin-right: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s ease;
+}
+
+.product-thumbnails img:hover {
+    border: 2px solid #000;
+}
+
+/* Navigation arrows for image slider */
+.prev-arrow, .next-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(186, 175, 175, 0.5);
+    color: white;
+    font-size: 24px;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    margin-left: 70px;
+}
+
+.prev-arrow {
+    left: -40px;
+}
+
+.next-arrow {
+    right: -40px;
+}
+
+/* Product information section */
+.product-info {
+    max-width: 600px;
+}
+
+.product-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.product-price {
+    font-size: 28px;
+    color: #ff424e;
+    font-weight: bold;
+    margin-bottom: 5px;
+    margin-top: -30px;
+}
+
+.product-installment {
+    font-size: 16px;
+    color: #6e6e6e;
+    margin-bottom: 20px;
+}
+
+.product-availability {
+    font-style: italic;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.product-size select {
+    padding: 5px;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+.product-quantity input {
+    width: 50px;
+    padding: 5px;
+    margin-left: 10px;
+}
+
+/* Promotions box styling */
+.promotion-box {
+    border: 2px solid #ffcc00;
+    border-radius: 10px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    margin-top: 20px;
+}
+
+.promotion-box ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+.promotion-box li {
+    margin-bottom: 8px;
+    color: #333;
+}
+
+/* Add to cart buttons */
+.add-to-cart-container {
+    margin-top: 20px;
+}
+
+.buy-now {
+    background-color: #ff424e;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.add-to-cart {
+    background-color: #2a2a2a;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+.add-to-cart-container button:hover {
+    opacity: 0.9;
+}
+
+/* Star rating section */
+.star-rate {
+    display: flex;
+    justify-content: right;
+}
+
+/* Lightbox styling for image enlargement */
+.lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.lightbox-image {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.lightbox-image:hover {
+    transform: scale(1.05);
+}
+
+.lightbox-prev, .lightbox-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #000;
+    font-size: 40px;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+}
+
+.lightbox-prev {
+    left: 20px;
+}
+
+.lightbox-next {
+    right: 20px;
+}
+
+.lightbox-overlay:hover .lightbox-prev, 
+.lightbox-overlay:hover .lightbox-next {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Information section styling */
+.information {
+    margin-top: 20px;
+}
+
+.info-tabs {
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    width: 830px; 
+}
+
+.info-tab {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    flex: 1;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.info-tab:hover {
+    background-color: #f0f0f0;
+}
+
+.active {
+    background-color: #d3d3d3; /* Highlight active tab */
+    font-weight: bold; /* Make active tab bold */
+}
+
+/* Content of the information tabs */
+.info-content {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-top: 10px;
+    width: 800px; /* Fixed width for content */
+}
+
+.info-content p {
+    margin: 0; /* Remove default margin */
+    margin-bottom: 10px; /* Add space between items */
+    display: block; /* Ensure each item is on a new line */
+}
