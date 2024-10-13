@@ -127,7 +127,7 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) return res.sendStatus(401);
-
+  
   jwt.verify(token, "22112004", (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
@@ -210,6 +210,35 @@ app.get('/dashboard', (req, res) => {
   })
 })
 
+// lấy sản phẩm bằng productid
+app.get('/productdetail', (req, res) => {
+  const { productid } = req.query; 
+  const sql = `
+    SELECT 
+      p.*,
+      c.categoryname,
+      c.material,
+      c.gender
+    FROM 
+      product p
+    JOIN 
+      category c ON p.category = c.categoryid
+    WHERE 
+      p.productid = ?
+  `;
+
+  db.query(sql, [productid], (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    if (data && data.length > 0) {
+      return res.json({product:data});
+    } else {
+      return res.status(404).json({ error: "Product not found" });
+    }
+  });
+});
+
 // Lấy sản phẩm + pagniation 
 app.get("/home", (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -259,6 +288,99 @@ app.get("/home/bongtai", (req, res) => {
 
     // Then, get the products for the current page
     const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy dây chuyền
+app.get("/home/daychuyen", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 7 and 12 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy vòng tay
+app.get("/home/vongtay", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 13 and 18 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy nhẫn
+app.get("/home/nhan", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 19 and 24 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -498,35 +620,6 @@ app.get('/auth/google/callback',
     res.redirect(`http://localhost:3000/home?token=${token}`);
   });
 
-// // Thêm route để kiểm tra trạng thái đăng nhập
-// app.get('/auth/check', (req, res) => {
-//   if (req.isAuthenticated()) {
-//     res.json({ isLoggedIn: true, user: req.user });
-//   } else {
-//     res.json({ isLoggedIn: false });
-//   }
-// });
-
-// // Route đăng xuất
-// app.get('/auth/logout', (req, res) => {
-//   req.logout((err) => {
-//     if (err) {
-//       return res.status(500).json({ error: "Lỗi khi đăng xuất" });
-//     }
-//     res.json({ message: "Đăng xuất thành công" });
-//   });
-// });
-
-// app.get('/api/user', (req, res) => {
-//   res.json(req.user || null);
-// });
-
-// app.get('/api/logout', (req, res) => {
-//   req.logout((err) => {
-//     if (err) return res.status(500).json({ error: "Error logging out" });
-//     res.json({ success: true });
-//   });
-// });
 
 // login via Facebook
 passport.use(new FacebookStrategy({

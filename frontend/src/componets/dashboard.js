@@ -10,7 +10,6 @@ const Dashboard = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-
   useEffect(() => {
     fetchEmployees();
   }, []);
