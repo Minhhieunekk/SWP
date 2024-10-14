@@ -5,6 +5,8 @@ import "../styles/home.scss";
 import axios from "axios";
 import AppHeader from "./Header";
 import Footer from "./Footer";
+// import Cart from './Cart';
+
 import { useLocation, useNavigate } from "react-router";
 
 const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate }) => {
@@ -86,6 +88,7 @@ const Home = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setUser(res.data);
+            localStorage.setItem('userId', res.data.consumerid);
         } catch (err) {
             console.error(err);
             navigate('/');

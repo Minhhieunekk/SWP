@@ -14,6 +14,8 @@ import SubMenu from "antd/es/menu/SubMenu";
 import { Link, useNavigate } from "react-router-dom";
 import { HomeFilled, SearchOutlined } from "@ant-design/icons";
 import CentralSearchModal from "./Search";
+// import Cart from './Cart';
+
 
 const { Header } = Layout;
 
@@ -61,7 +63,7 @@ const AppHeader = ({ username, password, consumerid }) => {
       
 
       {
-        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===1) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
         
@@ -106,7 +108,7 @@ const AppHeader = ({ username, password, consumerid }) => {
               </Col>
               <Col>
                 <Badge count={0} offset={[9, 0]}>
-                  <ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng
+                  <div onClick={() => navigate(`/cart/${consumerid}`)}><ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng </div>
                 </Badge>
               </Col>
             </Row>

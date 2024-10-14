@@ -3,6 +3,7 @@ import { Card, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { Star } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import AppHeader from "./Header";
 
 const ProductCard = ({
     image,
@@ -13,12 +14,15 @@ const ProductCard = ({
     totalrate,
     peoplerate,
     description,
-    amount
+    amount,
+    productid,
+    navigate
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(5);
     const sizes = [5, 6, 7, 8, 9, 10];
     const rate = Math.round(totalrate / peoplerate);
+    const userId = localStorage.getItem('userId');
 
     const handleQuantityChange = (e) => {
         const newQuantity = parseInt(e.target.value);
@@ -40,6 +44,19 @@ const ProductCard = ({
     };
 
     const currentPrice = calculatePrice(price, selectedSize) * quantity;
+
+    const AddToCart = async () => {
+        // const navigate = useNavigate();
+        try {
+            const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity});
+            console.log(response.data);
+            // navigate(`/cart/${userId}`);
+        } catch (error) {
+            console.error('Error fetching cart items', error);
+        } 
+    };
+
+    // const addtocart
     
     return (
         <div className="container mt-4">
@@ -90,7 +107,7 @@ const ProductCard = ({
                             </Form.Group>
                             <div className="d-grid gap-2">
                                 <Button variant="primary" size="lg" disabled={amount === 0}>Mua ngay</Button>
-                                <Button variant="outline-primary" size="lg" disabled={amount === 0}>Thêm vào giỏ hàng</Button>
+                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
                             </div>
                         </Card.Body>
                     </Col>

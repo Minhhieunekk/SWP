@@ -8,6 +8,7 @@ import OTP from './componets/otp';
 import PasswordChangeForm from './componets/Resetpassword';
 import Detailuser from './componets/Detailuser';
 import ProductDetailPage from './componets/Detailproduct';
+import Cart from './componets/cart';
 function App() {
   return (
     <div className="App">
@@ -43,6 +44,7 @@ function App() {
           <Route path="/blog" element={<div>Blog</div>} />
 
           <Route path="/khuyen-mai" element={<div>khuyen mai</div>} />
+          <Route path="/cart/:consumerid" element={<Cart />} />
         </Routes>
       </BrowserRouter>
 

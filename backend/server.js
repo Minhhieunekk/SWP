@@ -1,6 +1,6 @@
 const { createHash } = require('crypto')
 const express = require("express");
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const passport = require('passport');
@@ -50,8 +50,9 @@ app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
+  port: 3306,
   user: "root",
-  password: "",
+  password: "abcd1234",
   database: "swp1872"
 })
 function generateToken(user) {
@@ -561,157 +562,157 @@ app.post('/resetpass', (req, res) => {
   })
 })
 
-//login via google
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/google/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.displayName) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.displayName;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.displayName,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value; // Use email as identifier
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
+// //login via google
+// passport.use(new GoogleStrategy({
+//   clientID: process.env.GOOGLE_CLIENT_ID,
+//   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/google/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.displayName) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.displayName;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.displayName,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value; // Use email as identifier
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
 
-passport.serializeUser((user, done) => {
-  done(null, user.email); // Use email instead of id
-});
+// passport.serializeUser((user, done) => {
+//   done(null, user.email); // Use email instead of id
+// });
 
-passport.deserializeUser((email, done) => {
-  db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
-    if (err) return done(err);
-    done(null, result[0] || null);
-  });
-});
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
+// passport.deserializeUser((email, done) => {
+//   db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
+//     if (err) return done(err);
+//     done(null, result[0] || null);
+//   });
+// });
+// app.get('/auth/google',
+//   passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
+// app.get('/auth/google/callback',
+//   passport.authenticate('google', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
 
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  });
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
+//   });
 
 
-// login via Facebook
-passport.use(new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID,
-  clientSecret: process.env.FACEBOOK_APP_SECRET,
-  callbackURL: "http://localhost:8088/auth/facebook/callback",
-  profileFields: ['id', 'displayName', 'email']
-}, function (accessToken, refreshToken, profile, done) {
-  const sql = "SELECT * FROM user WHERE email = ?";
-  db.query(sql, [profile.emails[0].value], (err, result) => {
-    if (err) return done(err);
-    if (result.length) {
-      // User exists, update username if it has changed and log them in
-      const user = result[0];
-      if (user.username !== profile.displayName) {
-        db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-          if (err) return done(err);
-          user.username = profile.displayName;
-          return done(null, user);
-        });
-      } else {
-        return done(null, user);
-      }
-    } else {
-      // User doesn't exist, create new user
-      const newUser = {
-        username: profile.displayName,
-        email: profile.emails[0].value
-      };
-      db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-        if (err) return done(err);
-        newUser.email = profile.emails[0].value;
-        return done(null, newUser);
-      });
-    }
-  });
-}));
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  }
-);
+// // login via Facebook
+// passport.use(new FacebookStrategy({
+//   clientID: process.env.FACEBOOK_APP_ID,
+//   clientSecret: process.env.FACEBOOK_APP_SECRET,
+//   callbackURL: "http://localhost:8088/auth/facebook/callback",
+//   profileFields: ['id', 'displayName', 'email']
+// }, function (accessToken, refreshToken, profile, done) {
+//   const sql = "SELECT * FROM user WHERE email = ?";
+//   db.query(sql, [profile.emails[0].value], (err, result) => {
+//     if (err) return done(err);
+//     if (result.length) {
+//       // User exists, update username if it has changed and log them in
+//       const user = result[0];
+//       if (user.username !== profile.displayName) {
+//         db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//           if (err) return done(err);
+//           user.username = profile.displayName;
+//           return done(null, user);
+//         });
+//       } else {
+//         return done(null, user);
+//       }
+//     } else {
+//       // User doesn't exist, create new user
+//       const newUser = {
+//         username: profile.displayName,
+//         email: profile.emails[0].value
+//       };
+//       db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//         if (err) return done(err);
+//         newUser.email = profile.emails[0].value;
+//         return done(null, newUser);
+//       });
+//     }
+//   });
+// }));
+// app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+// app.get('/auth/facebook/callback',
+//   passport.authenticate('facebook', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
+//   }
+// );
 
-//login via github
-passport.use(new GitHubStrategy({
-  clientID: process.env.GITHUB_CLIENT_ID,
-  clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/github/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.username) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.username;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.username,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value;
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
-app.get('/auth/github',
-  passport.authenticate('github', { scope: ['user:email'] }));
-app.get('/auth/github/callback',
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    // Successful authentication, redirect home.
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  });
+// //login via github
+// passport.use(new GitHubStrategy({
+//   clientID: process.env.GITHUB_CLIENT_ID,
+//   clientSecret: process.env.GITHUB_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/github/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.username) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.username;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.username,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value;
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
+// app.get('/auth/github',
+//   passport.authenticate('github', { scope: ['user:email'] }));
+// app.get('/auth/github/callback',
+//   passport.authenticate('github', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     // Successful authentication, redirect home.
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
+//   });
 
 //update profile 
 app.post('/updateuser',(req,res)=>{
@@ -748,3 +749,68 @@ function hashPass(content) {
   }
   return createHash('sha256').update(content).digest('hex');
 }
+
+////////////Cart
+app.post('/addtocart', (req, res) => {
+  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
+  const values = [
+    req.body.quantity,
+    req.body.userid,
+    req.body.productid,
+  ]
+  db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
+    if (error) {
+      return res.status(500).json("error")
+    }
+    if (checkData.length > 0) {
+      const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?"
+      db.query(updateSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    } else {
+      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
+      db.query(insertSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    }
+  }) ;
+})
+
+app.delete('/removefromcart/:userid/:productid', (req, res) => {
+  const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
+  const values = [
+    req.params.userid,
+    req.params.productid,
+  ]
+  db.query(sql, values, (err, data) => {
+    if (err) {
+      return res.status(500).json("error")
+    }
+    return res.json(data);
+  })
+});
+
+app.post('/cart', (req, res) => {
+  const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+  // const values = [
+  //   req.body.userid,
+  // ]
+  const userId = [req.body.userId];
+  db.query(sql, userId,(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    if (data.length > 0) {
+      return res.json(data)
+    } else {
+      return res.json("No item in cart")
+    }
+  })
+})
+
