@@ -118,7 +118,7 @@ const AppHeader = ({ username, password, consumerid }) => {
       <Header style={{ backgroundColor: "#fff", padding: "0 50px" }}>
         <Row justify="space-between" align="middle">
           <Col span={2}>
-            <Image src="logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/home")} />
+            <Image src="/images/logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/home")} />
           </Col>
           <Col span={8}>
             <Menu
@@ -142,7 +142,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 className={
                   selectedKey.startsWith("1") ? "menu-item-selected" : ""
                 }
-                onTitleClick={() => navigate("/gioi-thieu")}
+                onTitleClick={() => navigate("/filter")}
                 theme="dark"
               >
 

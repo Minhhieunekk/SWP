@@ -738,6 +738,155 @@ app.post('/upload',upload.single('image'),(req,res) =>{
     return res.json({status:"true", filename: image})
 })
 })
+
+//cart
+app.post('/addtocart', (req, res) => {
+  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
+  const values = [
+    req.body.quantity,
+    req.body.userid,
+    req.body.productid,
+  ]
+  db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
+    if (error) {
+      return res.status(500).json("error")
+    }
+    if (checkData.length > 0) {
+      const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
+      db.query(updateSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    } else {
+      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
+      db.query(insertSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    }
+  }) ;
+})
+
+app.delete('/removefromcart/:userid/:productid', (req, res) => {
+  const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
+  const values = [
+    req.params.userid,
+    req.params.productid,
+  ]
+  db.query(sql, values, (err, data) => {
+    if (err) {
+      return res.status(500).json("error")
+    }
+    return res.json(data);
+  })
+});
+
+app.post('/cart', (req, res) => {
+  const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+  // const values = [
+  //   req.body.userid,
+  // ]
+  const userId = [req.body.userId];
+  db.query(sql, userId,(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    if (data.length > 0) {
+      return res.json(data)
+    } else {
+      return res.json("No item in cart")
+    }
+  })
+})
+
+//filter 
+// app.get('/api/products', (req, res) => {
+//   const sql = "SELECT * FROM product,category where product.category=category.categoryid";
+//   db.query(sql, (err, data) => {
+//     if (err) {
+//       console.error('Error fetching products:', err);
+//       return res.status(500).json({ error: "Internal server error" });
+//     }
+//     if (data.length > 0) {
+//       console.log(data)
+//       return res.json(data);
+//     } else {
+//       return res.json([]);
+//     }
+//   });
+// });
+
+app.get('/api/products', (req, res) => {
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+  `;
+
+  db.query(sql, (err, data) => {
+    if (err) {
+      console.error('Error fetching products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (data.length > 0) {
+      console.log(data);
+      return res.json(data);
+    } else {
+      return res.json([]);
+    }
+  });
+});
+
+
+// Endpoint để lấy dữ liệu cho bộ lọc
+app.get('/api/filters', (req, res) => {
+  const queries = [
+    "SELECT DISTINCT NULLIF(brand, '') AS brand FROM product WHERE brand IS NOT NULL",
+    "SELECT DISTINCT NULLIF(goldage, '') AS goldage FROM product WHERE goldage IS NOT NULL",
+    "SELECT DISTINCT NULLIF(material, '') AS material FROM category WHERE material IS NOT NULL",
+    "SELECT DISTINCT CASE gender WHEN 0 THEN 'Nam' WHEN 1 THEN 'Nữ' END AS gender FROM category WHERE gender IS NOT NULL",
+    "SELECT DISTINCT NULLIF(categoryname, '') AS categoryname FROM category WHERE categoryname IS NOT NULL"
+  ];
+
+  Promise.all(queries.map(query => 
+    new Promise((resolve, reject) => {
+      db.query(query, (err, results) => {
+        if (err) reject(err);
+        resolve(results);
+      });
+    })
+  ))
+  .then(([brands, goldAges, materials, genders, productTypes]) => {
+    const filters = {
+      brands: ['Tất cả', ...brands.map(b => b.brand)],
+      goldAges: ['Tất cả', ...goldAges.map(g => g.goldage)],
+      materials: ['Tất cả', ...materials.map(m => m.material)],
+      genders: ['Tất cả', ...genders.map(g => g.gender)],
+      productTypes: ['Tất cả', ...productTypes.map(p => p.categoryname)]
+    };
+    res.json(filters);
+  })
+  .catch(err => {
+    console.error('Error fetching filters:', err);
+    res.status(500).json({ error: "Internal server error" });
+  });
+});
+
+
+
+
 app.listen(8088, () => {
   console.log("listening")
 })

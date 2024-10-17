@@ -3,8 +3,9 @@ import { Card, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { Star } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-
+import AppHeader from './Header';
 const ProductCard = ({
+    productid,
     image,
     name,
     categoryname,
@@ -19,7 +20,7 @@ const ProductCard = ({
     const [selectedSize, setSelectedSize] = useState(5);
     const sizes = [5, 6, 7, 8, 9, 10];
     const rate = Math.round(totalrate / peoplerate);
-
+    const userId = localStorage.getItem('consumerid');
     const handleQuantityChange = (e) => {
         const newQuantity = parseInt(e.target.value);
         setQuantity(newQuantity > amount ? amount : newQuantity);
@@ -40,9 +41,19 @@ const ProductCard = ({
     };
 
     const currentPrice = calculatePrice(price, selectedSize) * quantity;
-    
+    const AddToCart = async () => {
+        // const navigate = useNavigate();
+        try {
+            const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity});
+            console.log(response.data);
+            // navigate(`/cart/${userId}`);
+        } catch (error) {
+            console.error('Error fetching cart items', error);
+        } 
+    };
     return (
-        <div className="container mt-4">
+        <div className="container mt-4" style={{ position: "relative", top: "50px" }}>
+
             <Card className="product-detail-card shadow-sm" style={{ width: '800px' }}>
                 <Row className="g-0">
                     <Col md={6} className="d-flex align-items-center">
@@ -51,8 +62,6 @@ const ProductCard = ({
                             src={`/images/${image}`}
                             alt={name}
                             className="img-fluid"
-                            onLoad={() => console.log("Image loaded successfully")}
-                            onError={() => console.log("Image URL:", image)}
                         />
                     </Col>
                     <Col md={6}>
@@ -90,7 +99,7 @@ const ProductCard = ({
                             </Form.Group>
                             <div className="d-grid gap-2">
                                 <Button variant="primary" size="lg" disabled={amount === 0}>Mua ngay</Button>
-                                <Button variant="outline-primary" size="lg" disabled={amount === 0}>Thêm vào giỏ hàng</Button>
+                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={{AddToCart}}>Thêm vào giỏ hàng</Button>
                             </div>
                         </Card.Body>
                     </Col>
@@ -108,7 +117,7 @@ const ProductCard = ({
 }
 const ProductDetailPage = () => {
     const [productData, setProductData] = useState([]);
-    
+
     const [error, setError] = useState(null);
     const { productid } = useParams();
     useEffect(() => {
@@ -137,16 +146,17 @@ const ProductDetailPage = () => {
     if (!productData) {
         return <Alert variant="info" className="mt-4">Loading...</Alert>;
     }
-    
 
-return (
-    <>
-        {productData.map((product) => (
-            <ProductCard key={product.id} {...product}/>
-        ))}     
-    </>
-)
-   
+
+    return (
+        <div style={{ overflow: "hidden" }}>
+            <AppHeader />
+            {productData.map((product) => (
+                <ProductCard key={product.id} {...product} />
+            ))}
+        </div>
+    )
+
 };
 
 export default ProductDetailPage;
