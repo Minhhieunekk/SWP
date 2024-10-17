@@ -752,18 +752,19 @@ function hashPass(content) {
 
 ////////////Cart
 app.post('/addtocart', (req, res) => {
-  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
+  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ? AND size = ?"
   const values = [
     req.body.quantity,
     req.body.userid,
     req.body.productid,
+    req.body.size
   ]
-  db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
+  db.query(checkedSql, [req.body.userid,req.body.productid,req.body.size,], (error, checkData) => {
     if (error) {
       return res.status(500).json("error")
     }
     if (checkData.length > 0) {
-      const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?"
+      const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?"
       db.query(updateSql, values, (err, data) => {
         if (err) {
           return res.status(500).json("error")
@@ -771,7 +772,7 @@ app.post('/addtocart', (req, res) => {
         return res.json(data);
       })
     } else {
-      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
+      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`,`size`) VALUES (?,?,?,?)"
       db.query(insertSql, values, (err, data) => {
         if (err) {
           return res.status(500).json("error")
@@ -782,11 +783,10 @@ app.post('/addtocart', (req, res) => {
   }) ;
 })
 
-app.delete('/removefromcart/:userid/:productid', (req, res) => {
-  const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
+app.delete('/removefromcart/:cartid', (req, res) => {
+  const sql = "DELETE FROM `cart` WHERE `cart_id` = ?"
   const values = [
-    req.params.userid,
-    req.params.productid,
+    req.params.cartid,
   ]
   db.query(sql, values, (err, data) => {
     if (err) {
@@ -797,7 +797,7 @@ app.delete('/removefromcart/:userid/:productid', (req, res) => {
 });
 
 app.post('/cart', (req, res) => {
-  const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+  const sql = "select c.quantity , c.size, c.cart_id as cartid, p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
   // const values = [
   //   req.body.userid,
   // ]
@@ -812,5 +812,117 @@ app.post('/cart', (req, res) => {
       return res.json("No item in cart")
     }
   })
-})
+});
+
+app.post('/order', (req, res) => {
+  const { userId, total, phone, address, email, paymentStatus, items } = req.body;
+  const sql = "INSERT INTO order_detail(user_id, total, payment_status, phone, address, email) VALUES (?,?,?,?,?,?)";
+  const value = [
+    req.body.userId,
+    req.body.total,
+    req.body.paymentStatus,
+    req.body.phone,
+    req.body.address,
+    req.body.email,
+  ]
+  // const values = [
+  //   req.body.userid,
+  // ]
+  db.query(sql, value, async (err, result) => {
+    if (err) {
+      return res.json("Error")
+    }
+    const orderDetailId = result.insertId;
+    items.forEach(item => {
+      const sql2 = "INSERT INTO order_item(order_id, product_id, size, quantity) VALUES (?,?,?,?)";
+      db.query(sql2,[orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
+        if(err2) {
+          return res.json("Error 2");
+        }
+        //https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>
+        const sql3 = "DELETE FROM cart WHERE product_id = ? and size = ?"
+        db.execute(sql3,[item.productId, item.size]);
+        //TODO update inventory
+        const sql4 = "UPDATE product SET amount = amount - ? where productid = ?"
+        db.execute(sql4,[item.quantity, item.productId]);
+        if (paymentStatus === 1) {
+          return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
+        } else {
+          const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
+          return res.json({ imageUrl });
+        }
+        // return res.json(data);
+      })
+    });
+  })
+});
+
+app.post('/userInfomation', (req, res) => {
+  const sql = "select * from `user` where consumerid = ?";
+  // const values = [
+  //   req.body.userid,
+  // ]
+  const userId = [req.body.userId];
+  db.query(sql, userId,(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    if (data.length > 0) {
+      return res.json(data)
+    } else {
+      return res.json("No user match")
+    }
+  })
+});
+
+app.get('/orders', (req, res) => {
+  const sql = "select od.*, u.username from order_detail od join `user` u on u.consumerid = od.user_id order by order_date desc";
+  // const values = [
+  //   req.body.userid,
+  // ]
+  db.query(sql,(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    if (data.length > 0) {
+      return res.json(data)
+    } else {
+      return res.json("No order till now")
+    }
+  })
+});
+
+app.get('/orders/:orderId/items', async (req, res) => {
+  const { orderId } = req.params;
+  // const connection = await mysql.createConnection(dbConfig);
+  // const [rows] = await connection.query(`
+    
+  // `, [orderId]);
+  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image 
+    FROM order_item oi 
+    JOIN product p ON oi.product_id = p.productid 
+    WHERE oi.order_id = ?
+  `
+  db.query(sql,[orderId],(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    return res.json(data)
+  })
+});
+
+app.put('/orders/:orderId', async (req, res) => {
+  const { orderId } = req.params;
+  const { paymentStatus } = req.body;
+  // const connection = await mysql.createConnection(dbConfig);
+  const sql = 'UPDATE order_detail SET payment_status = ? WHERE order_id = ?';
+  
+  db.query(sql,[paymentStatus, orderId],(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    return res.json(data)
+  })
+  // res.status(204).send();
+});
 

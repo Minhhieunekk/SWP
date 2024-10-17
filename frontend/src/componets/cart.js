@@ -4,6 +4,7 @@ import { Edit, Trash, PlusCircle } from 'react-feather';
 import '../styles/dashboard.scss'; 
 import axios from "axios";
 import { useParams } from 'react-router-dom';
+import ImageAlertModal from "./ImageAlertModal";
 
 
 const Cart = () => {
@@ -11,8 +12,25 @@ const Cart = () => {
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
-    const [selectedItems, setSelectedItems] = useState({}); // Track selected items
+    const [selectedItems, setSelectedItems] = useState([]); // Track selected items
     const [totalPrice, setTotalPrice] = useState(0);
+    const [userInfo, setUserInfo] = useState({});
+    const [paymentMethod, setPaymentMethod] = useState('cod');
+    const [useDeffaultAdd, setUseDeffaultAdd] = useState(true)
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [imgUrl, setImgUrl] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+    const [email, setEmail] = useState('');
+
+    const openAlert = () => {
+        setIsModalOpen(true);
+    };
+
+    const closeAlert = () => {
+        setIsModalOpen(false);
+    };
 
 
     useEffect(() => {
@@ -39,22 +57,42 @@ const Cart = () => {
         fetchCart();
     }, [consumerId]);
 
-    const handleQuantityChange = (id, quantity, amount) => {
-        setCartItems((prevItems) =>
-            prevItems.map((item) =>
-                item.id === id ? { ...item, quantity: Math.max(1, amount) } : item
-            )
-        );
+    const handleCheckboxChange = (item) => {
+        // Ensure selectedItems is always treated as an array
+        setSelectedItems(prevSelectedItems => {
+            if (prevSelectedItems.includes(item.cartid)) {
+                return prevSelectedItems.filter(id => id !== item.cartid);
+            } else {
+                return [...prevSelectedItems, item.cartid];
+            }
+        });
     };
+
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                const response = await axios.post('http://localhost:8088/userInfomation', { userId: consumerId });
+                setUserInfo(response.data);
+                setPhone(response.data.phone);
+                setAddress(response.data.address);
+                setEmail(response.data.email);
+                console.log(response.data);
+            } catch (error) {
+                console.error('Error fetching user information', error);
+            }
+        };
+
+        fetchUserInfo();
+    }, [consumerId]);
 
     const handleDeleteItem = (id) => {
         //aaaaaaaaaaaaa aa
-        const confirmDelete = window.confirm("Ban co muon xoa mon nay khong?");
+        const confirmDelete = window.confirm("Bạn có muốn xóa món đồ này không?");
         if (confirmDelete) {
-            axios.delete(`http://localhost:8088/removefromcart/${consumerId}/${id}`).then((res) => {
+            axios.delete(`http://localhost:8088/removefromcart/${id}`).then((res) => {
                 console.log("Deleted successfully");
                 let updatedCartList = cartItems.filter((item) => {
-                return item.productid !== id;
+                return item.cartid !== id;
                 });
                 setCartItems(updatedCartList);
             })
@@ -62,12 +100,32 @@ const Cart = () => {
                 console.log("Error occurred");
             });
         }
-        // setCartItems((prevItems) => prevItems.filter((item) => item.productid !== id));
+        // setCartItems((prevItems) => prevItems.filter((item) => item.cartid !== id));
         // setSelectedItems((prev) => {
         //     const newSelected = { ...prev };
         //     delete newSelected[id];
         //     return newSelected;
         // });
+    };
+
+    const deleteSelectedItems = () => {
+        console.log(selectedItems.length);
+        if (selectedItems.length === 0) {
+            alert('Không có sản phẩm nào được chọn');
+            return;
+        }
+
+        const confirmDelete = window.confirm('Bạn có muốn xóa các món đã chọn không?');
+        if (confirmDelete) {
+            Promise.all(selectedItems.map(cartid => 
+                axios.delete(`http://localhost:8088/removefromcart/${cartid}`)
+            )).then(() => {
+                setCartItems(cartItems.filter(item => !selectedItems.includes(item.cartid)));
+                setSelectedItems([]);
+            }).catch(error => {
+                console.error('Error deleting selected items', error);
+            });
+        }
     };
 
     const handleSelectItem = (id) => {
@@ -77,25 +135,88 @@ const Cart = () => {
         }));
     };
 
-    // const calculateTotalPrice = () => {
-    //     let total = 0;
-    //     selectedItems.forEach(id => {
-    //         const item = cartItems.find(item => item.id === id);
-    //         if (item) {
-    //             total += item.price * item.quantity;
-    //         }
-    //     });
-    //     return total;
-    // };
+    const calculateTotalPrice = () => {
+        let total = 0;
+        selectedItems.forEach(id => {
+            const item = cartItems.find(item => item.cartid === id);
+            if (item) {
+                total += item.price * item.quantity;
+            }
+        });
+        return total;
+    };
 
-    // useEffect(() => {
-    //     const total = calculateTotalPrice();
-    //     setTotalPrice(total);
-    // }, [selectedItems, cartItems]);
+    const handlePayment = async (paymentType) => {
+        handleCheckout(paymentType);
+        setIsPopupOpen(false);
+        if (paymentMethod === 'cod') {
+            setIsModalOpen(false)
+        } else {
+            setIsModalOpen(true);
+        }
+    };
+    const beforeHandlePay = () => {
+        if (selectedItems.length === 0) {
+            alert('Không có sản phẩm nào được chọn');
+            return;
+        }
+        setIsPopupOpen(true);
+    };
 
-    const totalPricee = cartItems.reduce((total, item) => {
-        return total + (selectedItems[item.productid] ? item.price * item.quantity : 0);
-    }, 0);
+    const handleCheckout = async (paymentType) => {
+        setPaymentMethod(paymentType);
+        const selectedItemsData = cartItems.filter(item => selectedItems.includes(item.cartid));
+        const orderData = {
+            userId: consumerId,
+            total: totalPrice,
+            phone: phone,
+            address:  address,
+            email: email,
+            paymentStatus: paymentMethod === 'cod' ? 1 : 2,
+            items: selectedItemsData.map(item => ({
+                productId: item.productid,
+                quantity: item.quantity,
+                size: item.size // Assuming size is part of the cart item
+            }))
+        };
+        axios.post('http://localhost:8088/order', orderData)
+            .then(async response => {
+                if (paymentMethod === 'cod') {
+                    alert('Cảm ơn bạn đã đặt hàng');
+                } else {
+                    alert(`Payment URL: ${response.data.imageUrl}`);
+                }
+                try {
+                    const response = await axios.post(`http://localhost:8088/cart`,{userId : consumerId});
+                    console.log(response.data);
+                    if (response.data === "No item in cart") {
+                        setCartItems([]);
+                        setErrorMessage("No items in cart");
+                    } else {
+                        setCartItems(response.data);
+                        setErrorMessage('');
+                    }
+                } catch (error) {
+                    console.error('Error fetching cart items', error);
+                    setErrorMessage('Error fetching cart items');
+                    setCartItems([]);
+                } finally {
+                    setLoading(false);
+                }
+            })
+            .catch(error => {
+                console.error('Error placing order', error);
+            });
+    };
+
+    useEffect(() => {
+        const total = calculateTotalPrice();
+        setTotalPrice(total);
+    }, [selectedItems, cartItems]);
+
+    // const totalPricee = cartItems.reduce((total, item) => {
+    //     return total + (selectedItems[item.cartid] ? item.price * item.quantity : 0);
+    // }, 0);
 
     if (loading) return <div>Loading...</div>;
 
@@ -120,7 +241,7 @@ const Cart = () => {
                                         setSelectedItems([]);
                                     } else {
                                         console.log("bbbbbbbbbbbbbbbbbbb");
-                                        setSelectedItems(cartItems.map(item => item.id));
+                                        setSelectedItems(cartItems.map(item => item.cartid));
                                     }
                                 }} 
                             />
@@ -135,15 +256,25 @@ const Cart = () => {
                 </thead>
                 <tbody>
                     {cartItems.map((item) => (
-                        <tr key={item.productid}>
+                        <tr key={item.cartid}>
                             <td>
-                                <input
+                                {/* <input
                                     type="checkbox"
-                                    checked={!!selectedItems[item.productid]}
-                                    onChange={() => handleSelectItem(item.productid)}
-                                />
+                                    checked={!!selectedItems[item.cartid]}
+                                    onChange={() => handleSelectItem(item.cartid)}
+                                /> */}
+                                <input
+                                        type="checkbox"
+                                        checked={selectedItems.includes(item.cartid)}
+                                        onChange={() => handleCheckboxChange(item)}
+                                    />
                             </td>
-                            <td>{item.name}</td>
+                            <td>
+                                {item.name} <br></br>
+                                Size: {item.size}
+                                
+
+                            </td>
                             <td>
                                 {/* <img src={item.image} alt={item.name} style={{ width: '50px' }} /> */}
                                 <Card.Img
@@ -167,14 +298,17 @@ const Cart = () => {
                                     value={item.quantity}
                                     onChange={e => {
                                         const newQuantity = Math.min(Math.max(parseInt(e.target.value), 1), item.amount);
-                                        const newItems = cartItems.map(i => i.id === item.id ? { ...i, quantity: newQuantity } : i);
-                                        setCartItems(newItems);
+                                        // Create a new cartItems array with the updated quantity
+                                        const newCartItems = cartItems.map(i => 
+                                            i.cartid === item.cartid ? { ...i, quantity: newQuantity } : i
+                                        );
+                                        setCartItems(newCartItems); // Update state with new cartItems array
                                     }}
                                 />
                             </td>
                             <td>{(item.price * item.quantity).toLocaleString()} VND</td>
                             <td>
-                                <button onClick={() => handleDeleteItem(item.productid)}>Bỏ khỏi giỏ hàng</button>
+                                <button onClick={() => handleDeleteItem(item.cartid)}>Bỏ khỏi giỏ hàng</button>
                             </td>
                         </tr>
                     ))}
@@ -182,9 +316,76 @@ const Cart = () => {
             </table>
             {cartItems.length > 0 && (
                 <div>
-                    <h2>Tổng cộng: {totalPricee.toLocaleString()} VND</h2>
+                    <h2>Tổng cộng: {totalPrice.toLocaleString()} VND</h2>
                     {/* <button onClick={handlePayment}>Thanh toán</button> */}
-                    <button>Thanh toán</button>
+                    <button onClick={deleteSelectedItems}>Xóa nhiều</button>
+                    <button onClick={() => beforeHandlePay()}>Thanh toán</button>
+                    {isPopupOpen && (
+                        <div className="popup">
+                        <div className="container-xl">
+                        <div className="table-responsive">
+                        <div className="table-wrapper">
+                        <div className="table-title">
+                        <div className="row">
+                            <h2>Chọn địa chỉ</h2>
+                            <label>
+                                <input
+                                    type="radio"
+                                    value="default"
+                                    checked={useDeffaultAdd === true}
+                                    onChange={() => setUseDeffaultAdd(true)}
+                                />
+                                Địa chỉ mặc định
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    value="other"
+                                    checked={useDeffaultAdd === false}
+                                    onChange={() => setUseDeffaultAdd(false)}
+                                />
+                                Địa chỉ khác
+                            </label>
+                            {useDeffaultAdd === true ? (
+                                <div>
+                                    <p>Điện thoại: {userInfo.phone}</p>
+                                    <p>Địa chỉ: {userInfo.address}</p>
+                                    <p>Email: {userInfo.email}</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    Điện thoại: <input type="text"  value={phone} />  <br></br>
+                                    Địa chỉ: <input type="text"  defaultValue={address} /><br></br>
+                                    Email: <input type="text"  defaultValue={email} />
+                                </div>
+                            )}
+                            <button onClick={() => {
+                                handlePayment('cod');
+                                // setPaymentMethod('cod');
+                                // handleCheckout();
+                                // setIsPopupOpen(false);
+                            }}>Thanh toán COD</button>
+                            <button onClick={() => {
+                                handlePayment('online');
+                                // setPaymentMethod('online');
+                                // handleCheckout();
+                                // setIsPopupOpen(false);
+                                // setIsModalOpen(true);
+                            }}>Thanh toán online</button>
+                        </div>
+                        </div>
+                        </div>
+                        </div>
+                        </div>
+                        </div>
+                    )}
+
+                    <ImageAlertModal
+                        isOpen={isModalOpen}
+                        onClose={closeAlert}
+                        message=""
+                        imageUrl={imgUrl} // Replace with your image URL
+                    />
                 </div>
             )}
             </div>

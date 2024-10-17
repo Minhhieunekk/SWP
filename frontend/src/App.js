@@ -9,6 +9,7 @@ import PasswordChangeForm from './componets/Resetpassword';
 import Detailuser from './componets/Detailuser';
 import ProductDetailPage from './componets/Detailproduct';
 import Cart from './componets/cart';
+import TrackingOrder from './componets/order';
 function App() {
   return (
     <div className="App">
@@ -45,6 +46,7 @@ function App() {
 
           <Route path="/khuyen-mai" element={<div>khuyen mai</div>} />
           <Route path="/cart/:consumerid" element={<Cart />} />
+          <Route path="/trackingorder" element={<TrackingOrder />} />
         </Routes>
       </BrowserRouter>
 
