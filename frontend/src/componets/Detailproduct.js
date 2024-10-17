@@ -4,6 +4,7 @@ import { Star } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import AppHeader from "./Header";
+import { useLocation, useNavigate } from "react-router";
 
 const ProductCard = ({
     image,
@@ -15,14 +16,14 @@ const ProductCard = ({
     peoplerate,
     description,
     amount,
-    productid,
-    navigate
+    productid
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(5);
     const sizes = [5, 6, 7, 8, 9, 10];
     const rate = Math.round(totalrate / peoplerate);
     const userId = localStorage.getItem('userId');
+    const navigate = useNavigate();
 
     const handleQuantityChange = (e) => {
         const newQuantity = parseInt(e.target.value);
@@ -50,6 +51,7 @@ const ProductCard = ({
         try {
             const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity});
             console.log(response.data);
+            navigate(`/cart/${userId}`)
             // navigate(`/cart/${userId}`);
         } catch (error) {
             console.error('Error fetching cart items', error);
