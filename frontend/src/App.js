@@ -10,6 +10,7 @@ import Detailuser from './componets/Detailuser';
 import ProductDetailPage from './componets/Detailproduct';
 import Cart from './componets/cart';
 import TrackingOrder from './componets/order';
+import ProductFilter from './componets/Filter';
 function App() {
   return (
     <div className="App">
@@ -23,6 +24,7 @@ function App() {
           <Route path='/resetpassword/:consumerid' element={<PasswordChangeForm/>}></Route>
           <Route path='/detailuser' element={<Detailuser/>}></Route>
           <Route path='/productdetail/:productid' element={<ProductDetailPage/>}></Route>
+          <Route path='/filter' element={<ProductFilter/>}></Route>
           <Route path="/gioi-thieu" element={<div>HomePage</div>} />
           <Route path="/gioi-thieu/1" element={<div>Vòng Cổ</div>} />
           <Route path="/gioi-thieu/2" element={<div>vòng tay</div>} />

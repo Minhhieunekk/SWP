@@ -8,6 +8,7 @@ import AppHeader from "./Header";
 import { useLocation, useNavigate } from "react-router";
 
 const ProductCard = ({
+    productid,
     image,
     name,
     categoryname,
@@ -72,7 +73,8 @@ const ProductCard = ({
     // const addtocart
     
     return (
-        <div className="container mt-4">
+        <div className="container mt-4" style={{ position: "relative", top: "50px" }}>
+
             <Card className="product-detail-card shadow-sm" style={{ width: '800px' }}>
                 <Row className="g-0">
                     <Col md={6} className="d-flex align-items-center">
@@ -81,8 +83,6 @@ const ProductCard = ({
                             src={`/images/${image}`}
                             alt={name}
                             className="img-fluid"
-                            onLoad={() => console.log("Image loaded successfully")}
-                            onError={() => console.log("Image URL:", image)}
                         />
                     </Col>
                     <Col md={6}>
@@ -145,7 +145,7 @@ const ProductCard = ({
 }
 const ProductDetailPage = () => {
     const [productData, setProductData] = useState([]);
-    
+
     const [error, setError] = useState(null);
     const { productid } = useParams();
     useEffect(() => {
@@ -174,16 +174,17 @@ const ProductDetailPage = () => {
     if (!productData) {
         return <Alert variant="info" className="mt-4">Loading...</Alert>;
     }
-    
 
-return (
-    <>
-        {productData.map((product) => (
-            <ProductCard key={product.id} {...product}/>
-        ))}     
-    </>
-)
-   
+
+    return (
+        <div style={{ overflow: "hidden" }}>
+            <AppHeader />
+            {productData.map((product) => (
+                <ProductCard key={product.id} {...product} />
+            ))}
+        </div>
+    )
+
 };
 
 export default ProductDetailPage;
