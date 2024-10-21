@@ -72,7 +72,7 @@ const TrackingOrder = () => {
             <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status)}>
               <td>{order.order_id}</td>
               <td>{order.username}</td>
-              <td>{(order.total).toLocaleString()}</td>
+              <td>{(order.total * 1).toLocaleString()}</td>
               <td>{new Date(order.order_date).toLocaleDateString()}</td>
               <td>{paymentStatusLabels[order.payment_status]}</td> {/* Display label */}
               <td>{order.phone}</td>
@@ -103,7 +103,7 @@ const TrackingOrder = () => {
             {selectedOrderItems.map(item => (
               <tr key={item.order_item_id}>
                 <td>{item.name}</td>
-                <td><img src={item.image} alt={item.name} style={{ width: '50px' }} /></td>
+                <td><img src={item.image} alt={item.name} style={{ width: '100px' }} /></td>
                 <td>{item.size}</td>
                 <td>{item.quantity}</td>
               </tr>

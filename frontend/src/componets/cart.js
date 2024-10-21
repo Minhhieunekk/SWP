@@ -15,7 +15,7 @@ const Cart = () => {
     const [selectedItems, setSelectedItems] = useState([]); // Track selected items
     const [totalPrice, setTotalPrice] = useState(0);
     const [userInfo, setUserInfo] = useState({});
-    const [paymentMethod, setPaymentMethod] = useState('cod');
+    // const [paymentMethod, setPaymentMethod] = useState('');
     const [useDeffaultAdd, setUseDeffaultAdd] = useState(true)
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,11 +72,15 @@ const Cart = () => {
         const fetchUserInfo = async () => {
             try {
                 const response = await axios.post('http://localhost:8088/userInfomation', { userId: consumerId });
-                setUserInfo(response.data);
-                setPhone(response.data.phone);
-                setAddress(response.data.address);
-                setEmail(response.data.email);
-                console.log(response.data);
+                setUserInfo(response.data[0]);
+                setPhone(response.data[0].phone);
+                setAddress(response.data[0].address);
+                setEmail(response.data[0].email);
+                console.log(response.data[0].phone)
+                console.log(response.data[0].address);
+                console.log(response.data[0].email);
+                console.log(response.data[0]);
+                console.log(address);
             } catch (error) {
                 console.error('Error fetching user information', error);
             }
@@ -149,13 +153,14 @@ const Cart = () => {
     const handlePayment = async (paymentType) => {
         handleCheckout(paymentType);
         setIsPopupOpen(false);
-        if (paymentMethod === 'cod') {
+        if (paymentType === 'cod') {
             setIsModalOpen(false)
         } else {
             setIsModalOpen(true);
         }
     };
     const beforeHandlePay = () => {
+        console.log(selectedItems);
         if (selectedItems.length === 0) {
             alert('Không có sản phẩm nào được chọn');
             return;
@@ -163,8 +168,7 @@ const Cart = () => {
         setIsPopupOpen(true);
     };
 
-    const handleCheckout = async (paymentType) => {
-        setPaymentMethod(paymentType);
+    const handleCheckout =  (paymentType) => {
         const selectedItemsData = cartItems.filter(item => selectedItems.includes(item.cartid));
         const orderData = {
             userId: consumerId,
@@ -172,18 +176,21 @@ const Cart = () => {
             phone: phone,
             address:  address,
             email: email,
-            paymentStatus: paymentMethod === 'cod' ? 1 : 2,
+            paymentStatus: paymentType === 'cod' ? 1 : 2,
             items: selectedItemsData.map(item => ({
                 productId: item.productid,
                 quantity: item.quantity,
                 size: item.size // Assuming size is part of the cart item
             }))
         };
-        axios.post('http://localhost:8088/order', orderData)
+         axios.post('http://localhost:8088/order', orderData)
             .then(async response => {
-                if (paymentMethod === 'cod') {
+                if (paymentType === 'cod') {
                     alert('Cảm ơn bạn đã đặt hàng');
                 } else {
+                    setImgUrl(`${response.data.imageUrl}`);
+                    console.log("HHHHHHHHHHHHHHHHHHHHHHHHHHH")
+                    console.log(imgUrl) 
                     alert(`Payment URL: ${response.data.imageUrl}`);
                 }
                 try {
@@ -196,6 +203,7 @@ const Cart = () => {
                         setCartItems(response.data);
                         setErrorMessage('');
                     }
+                        setSelectedItems([]);
                 } catch (error) {
                     console.error('Error fetching cart items', error);
                     setErrorMessage('Error fetching cart items');
@@ -208,6 +216,18 @@ const Cart = () => {
                 console.error('Error placing order', error);
             });
     };
+
+    const handlePhoneChange = (e) => {
+        setPhone(e.target.value);
+      };
+    
+      const handleAddressChange = (e) => {
+        setAddress(e.target.value);
+      };
+    
+      const handleEmailChange = (e) => {
+        setEmail(e.target.value);
+      };
 
     useEffect(() => {
         const total = calculateTotalPrice();
@@ -348,15 +368,15 @@ const Cart = () => {
                             </label>
                             {useDeffaultAdd === true ? (
                                 <div>
-                                    <p>Điện thoại: {userInfo.phone}</p>
-                                    <p>Địa chỉ: {userInfo.address}</p>
-                                    <p>Email: {userInfo.email}</p>
+                                    <p>Điện thoại: {userInfo.phone === '' ? '0775667899':userInfo.phone} </p>
+                                    <p>Địa chỉ: {userInfo.address === '' ? 'Hà Lội':userInfo.address}</p>
+                                    <p>Email: {userInfo.email === '' ? 'chidechoinum1@gmail.com':userInfo.email}</p>
                                 </div>
                             ) : (
                                 <div>
-                                    Điện thoại: <input type="text"  value={phone} />  <br></br>
-                                    Địa chỉ: <input type="text"  defaultValue={address} /><br></br>
-                                    Email: <input type="text"  defaultValue={email} />
+                                    Điện thoại: <input type="text"  defaultValue={phone} onChange={handlePhoneChange}/>  <br></br>
+                                    Địa chỉ: <input type="text"  defaultValue={address} onChange={handleAddressChange}/><br></br>
+                                    Email: <input type="text"  defaultValue={email} onChange={handleEmailChange}/>
                                 </div>
                             )}
                             <button onClick={() => {
