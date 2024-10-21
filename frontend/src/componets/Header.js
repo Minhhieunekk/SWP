@@ -33,7 +33,7 @@ const AppHeader = ({ username, password, consumerid }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/');
+    navigate('/login');
   };
 
   const customTheme = {
@@ -56,7 +56,7 @@ const AppHeader = ({ username, password, consumerid }) => {
       <Menu.Item key="3" icon={<LogoutOutlined />} onClick={handleLogout}>
         Đăng xuất
       </Menu.Item> :
-      <Menu.Item key="3" icon={<LogoutOutlined />} onClick={()=>navigate("/")}>
+      <Menu.Item key="3" icon={<LogoutOutlined />} onClick={()=>navigate("/login")}>
         Đăng nhập {consumerid}
       </Menu.Item>
       }
@@ -74,10 +74,6 @@ const AppHeader = ({ username, password, consumerid }) => {
       }
     </Menu>
   );
-
-  // const [text, setText] = useState(
-  //   "https://youtu.be/0tDtRBvPCrk?si=ymfkdLX86OwFSt5_"
-  // );
 
   return (
     <Layout style={{position: "fixed", width: "100%", zIndex: "2"}}>
@@ -124,7 +120,7 @@ const AppHeader = ({ username, password, consumerid }) => {
       <Header style={{ backgroundColor: "#fff", padding: "0 50px" }}>
         <Row justify="space-between" align="middle">
           <Col span={2}>
-            <Image src="/images/logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/home")} />
+            <Image src="/images/logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/")} />
           </Col>
           <Col span={8}>
             <Menu
@@ -137,7 +133,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 key="home"
                 className={selectedKey === "home" ? "menu-item-selected" : ""}
               >
-                <Link to="/" style={{ color: customTheme.color }}>
+                <Link to="/login" style={{ color: customTheme.color }}>
                   <HomeFilled style={{ color: customTheme.color }} />
                 </Link>
               </Menu.Item>
@@ -230,8 +226,6 @@ const AppHeader = ({ username, password, consumerid }) => {
                 onTitleClick={() => navigate("/qua-tang")}
                 theme="dark"
               >
-
-
                 {/* Cho Nam */}
                 <Menu.Item
                   key="3.1"
@@ -240,8 +234,6 @@ const AppHeader = ({ username, password, consumerid }) => {
                 >
                   Cho Nam
                 </Menu.Item>
-
-
                 {/*Bạc */}
                 <Menu.Item
                   key="3.2"
@@ -251,9 +243,6 @@ const AppHeader = ({ username, password, consumerid }) => {
                   Cho Nữ
                 </Menu.Item>
               </SubMenu>
-
-
-
               <SubMenu
                 key="4"
                 title="Blog"
@@ -304,19 +293,3 @@ export default AppHeader;
 
 
 
-
-
-
-
-
-{/* 
-      // import { QRCode, Space } from "antd";
-      <Space direction="vertical" align="center">
-        <QRCode value={text || "-"} />
-        <Input
-          placeholder="-"
-          maxLength={60}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-      </Space> */}

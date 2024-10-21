@@ -120,19 +120,19 @@ body {
 }
 
 .login__submit {
-	background: #fff;
+	background: #f0f0f5; 
 	font-size: 14px;
 	margin-top: 30px;
 	padding: 16px 20px;
 	border-radius: 26px;
-	border: 1px solid #D4D3E8;
+	border: 1px solid #B2B1C8; 
 	text-transform: uppercase;
 	font-weight: 700;
 	display: flex;
 	align-items: center;
 	width: 100%;
-	color: #4C489D;
-	box-shadow: 0px 2px 2px #5C5696;
+	color: #3E3B8A; 
+	box-shadow: 0px 2px 4px rgba(62, 59, 138, 0.4); 
 	cursor: pointer;
 	transition: .2s;
 	text-decoration: none;
@@ -141,8 +141,10 @@ body {
 .login__submit:active,
 .login__submit:focus,
 .login__submit:hover {
-	border-color: #6A679E;
+	border-color: #4B48A4; 
 	outline: none;
+	background-color: #6E70AF; 
+	color: #fff; 
 }
 
 .button__icon {
@@ -152,7 +154,8 @@ body {
 }
 
 .social-login {	
-	position: absolute;
+	position: relative;
+	top: 530px;
 	height: 140px;
 	width: 160px;
 	text-align: center;
@@ -172,6 +175,7 @@ body {
 	color: #fff;
 	text-decoration: none;	
 	text-shadow: 0px 0px 8px #7875B5;
+	font-size: 20px;
 }
 
 .social-login__icon:hover {
@@ -180,11 +184,11 @@ body {
 .forgotpass {
 	padding-top: 20px;
 	.linkreset {
-		color: black;
+		color: #ffffff; /* Màu trắng đậm để nổi bật trên nền tối */
 		text-decoration: none;
 	}
-	:hover {
-		color: #be15b6
+	.linkreset:hover {
+		color: #FFD700; /* Màu vàng tươi khi hover để tạo sự nổi bật */
 	}
-	
 }
+

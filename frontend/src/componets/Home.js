@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { Container, Row, Col } from 'react-bootstrap';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import "../styles/home.scss";
@@ -62,38 +62,25 @@ const Home = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (!token) {
-            const queryParams = new URLSearchParams(location.search);
-            const tokenFromUrl = queryParams.get('token');
-            if (tokenFromUrl) {
-                localStorage.setItem('token', tokenFromUrl);
-                navigate('/home');
-            } else {
-                navigate('/');
-                return;
-            }
+        const queryParams = new URLSearchParams(location.search);
+        const tokenFromUrl = queryParams.get('token');
+    
+        // Save token from URL if it exists
+        if (!token && tokenFromUrl) {
+            localStorage.setItem('token', tokenFromUrl);
+            fetchUserData(tokenFromUrl);
+        } else if (token) {
+            fetchUserData(token);
         }
 
-        fetchUserData(token);
+        
         fetchProductsData(currentPage, 'products');
         fetchProductsData(currentPageBt, 'productsbt');
         fetchProductsData(currentPageDc, 'productsdc'); // Fetch for dây chuyền
         fetchProductsData(currentPageVt, 'productsvt'); // Fetch for vòng tay
         fetchProductsData(currentPageNh, 'productsnh'); // Fetch for nhẫn
+       
     }, [currentPage, currentPageBt, currentPageDc, currentPageVt, currentPageNh, location.search, navigate]);
-
-    const fetchUserData = async (token) => {
-        try {
-            const res = await axios.get('http://localhost:8088/protected', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setUser(res.data);
-            localStorage.setItem('userId', res.data.consumerid);
-        } catch (err) {
-            console.error(err);
-            navigate('/');
-        }
-    };
 
     const fetchProductsData = async (page, type) => {
         let endpoint;
@@ -125,6 +112,24 @@ const Home = () => {
             console.error(err);
         }
     };
+    const fetchUserData = async (token) => {
+        try {
+          
+          const res = await axios.get('http://localhost:8088/api/user/details', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          setUser(res.data);
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+         
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            localStorage.removeItem('token');
+            
+          }
+        }
+      };
+
+   
 
     const handlePageChange = (direction, type) => {
         if (type === 'products') {
@@ -163,6 +168,7 @@ const Home = () => {
     return (
         <>
             <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
+           
             <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000" style={{ position: "relative", top: "120px" }}>
                 <div class="carousel-indicators">
                     <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-label="Slide 1"></button>

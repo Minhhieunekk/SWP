@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import Validation from './Loginvalidation';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import AppHeader from './Header';
 
 const Login = () => {
 	const [values,setValues] =useState(
@@ -24,7 +25,7 @@ const Login = () => {
 			.then(res => {
 				if (res.data.success) {
 					localStorage.setItem('token', res.data.token);
-					navigate('/home');
+					navigate('/');
 				} else {
 					alert("No user information");
 				}
@@ -56,39 +57,43 @@ const Login = () => {
   }
 	return (
 		<>
-			<div className="container">
+		<AppHeader/>
+			<div className="container" style={{position:'relative',top:'80px'}}>
 				<div className="screen">
 					<div className="screen__content">
+					 	
 						<form className="login" action='' onSubmit={handlesubmit}>
+						<h3>Đăng nhập</h3>
 							<div className="login__field">
 								<i className="login__icon fas fa-user"></i>
-								<input type="text" className="login__input" placeholder="User name" onChange={handleinput} name='username'/>
+								<input type="text" className="login__input" placeholder="Tên đăng nhập" onChange={handleinput} name='username'/>
 								
 							</div>
 							<div className="login__field">
 								<i classNameName="login__icon fas fa-lock"></i>
-								<input type="password" className="login__input" placeholder="Password" onChange={handleinput} name='password'  />
+								<input type="password" className="login__input" placeholder="Mật khẩu" onChange={handleinput} name='password'  />
 							</div>
-							<button type='submit' className="button login__submit">
-								<span className="button__text">Log In Now</span>
+							<button type='submit' className="button login__submit ">
+								<span className="button__text">Đăng nhập ngay</span>
 								<i className="button__icon fas fa-chevron-right"></i>
 							</button>
 							
 							<Link to="/signup" className="button login__submit" >
-								<span className="button__text">Sign up</span>
+								<span className="button__text">Đăng ký </span>
 								<i className="button__icon fas fa-chevron-right"></i>
 							</Link>
 							<div className='forgotpass'>
-							<Link to="/otp" className='linkreset'>Forgot password?</Link>
+							<Link to="/otp" className='linkreset'>Quên mật khẩu?</Link>
 							</div>
 						</form>
 
 						<div className="social-login">
-							<h3>log in via</h3>
+						<p style={{margin: 'auto'}}>Đăng nhập qua</p>
 							<div className="social-icons">
-								<a href="#" className="social-login__icon fab fa-facebook" onClick={handleFacebookLogin}><IoLogoFacebook /></a>
-								<a href="#" className="social-login__icon fab fa-instagram" onClick={handleGithubLogin} ><FaGithub /></a>
-								<a href="#" className="social-login__icon fab fa-twitter" onClick={handleGoogleLogin}><FaGoogle /></a>
+							
+								<div className="social-login__icon fab fa-facebook" onClick={handleFacebookLogin}><IoLogoFacebook /></div>
+								<div className="social-login__icon fab fa-instagram" onClick={handleGithubLogin} ><FaGithub /></div>
+								<div className="social-login__icon fab fa-twitter" onClick={handleGoogleLogin}><FaGoogle /></div>
 							</div>
 						</div>
 					</div>
