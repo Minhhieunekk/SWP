@@ -34,15 +34,15 @@ const Login = () => {
 	const handleinput = (event) => {
 		setValues(prev => ({...prev,[event.target.name]:event.target.value}))		
 	}
-  const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8088/auth/google';
-  };
-  const handleFacebookLogin=() => {
-	window.location.href = 'http://localhost:8088/auth/facebook'
-  }
-  const handleGithubLogin = () => {
-	window.location.href = 'http://localhost:8088/auth/github'
-  }
+//   const handleGoogleLogin = () => {
+//     window.location.href = 'http://localhost:8088/auth/google';
+//   };
+//   const handleFacebookLogin=() => {
+// 	window.location.href = 'http://localhost:8088/auth/facebook'
+//   }
+//   const handleGithubLogin = () => {
+// 	window.location.href = 'http://localhost:8088/auth/github'
+//   }
 	return (
 		<>
 			<div className="container">
@@ -55,23 +55,23 @@ const Login = () => {
 								
 							</div>
 							<div className="login__field">
-								<i classNameName="login__icon fas fa-lock"></i>
+								
 								<input type="password" className="login__input" placeholder="Password" onChange={handleinput} name='password'  />
 							</div>
 							<button type='submit' className="button login__submit">
 								<span className="button__text">Log In Now</span>
-								<i className="button__icon fas fa-chevron-right"></i>
+								
 							</button>
 							
 							<Link to="/signup" className="button login__submit" >
 								<span className="button__text">Sign up</span>
-								<i className="button__icon fas fa-chevron-right"></i>
+								
 							</Link>
 							<div className='forgotpass'>
 							<Link to="/otp" className='linkreset'>Forgot password?</Link>
 							</div>
 						</form>
-
+{/* 
 						<div className="social-login">
 							<h3>log in via</h3>
 							<div className="social-icons">
@@ -79,7 +79,7 @@ const Login = () => {
 								<a href="#" className="social-login__icon fab fa-instagram" onClick={handleGithubLogin} ><FaGithub /></a>
 								<a href="#" className="social-login__icon fab fa-twitter" onClick={handleGoogleLogin}><FaGoogle /></a>
 							</div>
-						</div>
+						</div> */}
 					</div>
 					<div className="screen__background">
 						<span className="screen__background__shape screen__background__shape4"></span>

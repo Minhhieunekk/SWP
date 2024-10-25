@@ -25,13 +25,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
   position: relative;
   padding: 0 60px;
 }
 
 .product-grid {
   display: flex;
-  justify-content: space-between;
+  
+  justify-content: space-evenly;
   gap: 2rem;
   width: 100%;
 }

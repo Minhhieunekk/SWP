@@ -52,7 +52,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "swp1872"
+  database: "swp"
 })
 function generateToken(user) {
   return jwt.sign(
@@ -127,7 +127,7 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) return res.sendStatus(401);
-
+  
   jwt.verify(token, "22112004", (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
@@ -210,6 +210,35 @@ app.get('/dashboard', (req, res) => {
   })
 })
 
+// lấy sản phẩm bằng productid
+app.get('/productdetail', (req, res) => {
+  const { productid } = req.query; 
+  const sql = `
+    SELECT 
+      p.*,
+      c.categoryname,
+      c.material,
+      c.gender
+    FROM 
+      product p
+    JOIN 
+      category c ON p.category = c.categoryid
+    WHERE 
+      p.productid = ?
+  `;
+
+  db.query(sql, [productid], (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    if (data && data.length > 0) {
+      return res.json({product:data});
+    } else {
+      return res.status(404).json({ error: "Product not found" });
+    }
+  });
+});
+
 // Lấy sản phẩm + pagniation 
 app.get("/home", (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -259,6 +288,99 @@ app.get("/home/bongtai", (req, res) => {
 
     // Then, get the products for the current page
     const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy dây chuyền
+app.get("/home/daychuyen", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 7 and 12 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy vòng tay
+app.get("/home/vongtay", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 13 and 18 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
+//lấy nhẫn
+app.get("/home/nhan", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products
+  db.query("SELECT COUNT(*) as total FROM product where product.category between 19 and 24 ", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products for the current page
+    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -439,186 +561,157 @@ app.post('/resetpass', (req, res) => {
   })
 })
 
-//login via google
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/google/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.displayName) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.displayName;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.displayName,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value; // Use email as identifier
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
-
-passport.serializeUser((user, done) => {
-  done(null, user.email); // Use email instead of id
-});
-
-passport.deserializeUser((email, done) => {
-  db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
-    if (err) return done(err);
-    done(null, result[0] || null);
-  });
-});
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  });
-
-// // Thêm route để kiểm tra trạng thái đăng nhập
-// app.get('/auth/check', (req, res) => {
-//   if (req.isAuthenticated()) {
-//     res.json({ isLoggedIn: true, user: req.user });
-//   } else {
-//     res.json({ isLoggedIn: false });
+// //login via google
+// passport.use(new GoogleStrategy({
+//   clientID: process.env.GOOGLE_CLIENT_ID,
+//   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/google/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.displayName) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.displayName;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.displayName,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value; // Use email as identifier
+//           return done(null, newUser);
+//         });
+//       }
+//     });
 //   }
+// ));
+
+// passport.serializeUser((user, done) => {
+//   done(null, user.email); // Use email instead of id
 // });
 
-// // Route đăng xuất
-// app.get('/auth/logout', (req, res) => {
-//   req.logout((err) => {
-//     if (err) {
-//       return res.status(500).json({ error: "Lỗi khi đăng xuất" });
+// passport.deserializeUser((email, done) => {
+//   db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
+//     if (err) return done(err);
+//     done(null, result[0] || null);
+//   });
+// });
+// app.get('/auth/google',
+//   passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// app.get('/auth/google/callback',
+//   passport.authenticate('google', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
+//   });
+
+
+// // login via Facebook
+// passport.use(new FacebookStrategy({
+//   clientID: process.env.FACEBOOK_APP_ID,
+//   clientSecret: process.env.FACEBOOK_APP_SECRET,
+//   callbackURL: "http://localhost:8088/auth/facebook/callback",
+//   profileFields: ['id', 'displayName', 'email']
+// }, function (accessToken, refreshToken, profile, done) {
+//   const sql = "SELECT * FROM user WHERE email = ?";
+//   db.query(sql, [profile.emails[0].value], (err, result) => {
+//     if (err) return done(err);
+//     if (result.length) {
+//       // User exists, update username if it has changed and log them in
+//       const user = result[0];
+//       if (user.username !== profile.displayName) {
+//         db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//           if (err) return done(err);
+//           user.username = profile.displayName;
+//           return done(null, user);
+//         });
+//       } else {
+//         return done(null, user);
+//       }
+//     } else {
+//       // User doesn't exist, create new user
+//       const newUser = {
+//         username: profile.displayName,
+//         email: profile.emails[0].value
+//       };
+//       db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//         if (err) return done(err);
+//         newUser.email = profile.emails[0].value;
+//         return done(null, newUser);
+//       });
 //     }
-//     res.json({ message: "Đăng xuất thành công" });
 //   });
-// });
+// }));
+// app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+// app.get('/auth/facebook/callback',
+//   passport.authenticate('facebook', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
+//   }
+// );
 
-// app.get('/api/user', (req, res) => {
-//   res.json(req.user || null);
-// });
-
-// app.get('/api/logout', (req, res) => {
-//   req.logout((err) => {
-//     if (err) return res.status(500).json({ error: "Error logging out" });
-//     res.json({ success: true });
+// //login via github
+// passport.use(new GitHubStrategy({
+//   clientID: process.env.GITHUB_CLIENT_ID,
+//   clientSecret: process.env.GITHUB_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/github/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.username) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.username;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.username,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value;
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
+// app.get('/auth/github',
+//   passport.authenticate('github', { scope: ['user:email'] }));
+// app.get('/auth/github/callback',
+//   passport.authenticate('github', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     // Successful authentication, redirect home.
+//     res.redirect(`http://localhost:3000/home?token=${token}`);
 //   });
-// });
-
-// login via Facebook
-passport.use(new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID,
-  clientSecret: process.env.FACEBOOK_APP_SECRET,
-  callbackURL: "http://localhost:8088/auth/facebook/callback",
-  profileFields: ['id', 'displayName', 'email']
-}, function (accessToken, refreshToken, profile, done) {
-  const sql = "SELECT * FROM user WHERE email = ?";
-  db.query(sql, [profile.emails[0].value], (err, result) => {
-    if (err) return done(err);
-    if (result.length) {
-      // User exists, update username if it has changed and log them in
-      const user = result[0];
-      if (user.username !== profile.displayName) {
-        db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-          if (err) return done(err);
-          user.username = profile.displayName;
-          return done(null, user);
-        });
-      } else {
-        return done(null, user);
-      }
-    } else {
-      // User doesn't exist, create new user
-      const newUser = {
-        username: profile.displayName,
-        email: profile.emails[0].value
-      };
-      db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-        if (err) return done(err);
-        newUser.email = profile.emails[0].value;
-        return done(null, newUser);
-      });
-    }
-  });
-}));
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  }
-);
-
-//login via github
-passport.use(new GitHubStrategy({
-  clientID: process.env.GITHUB_CLIENT_ID,
-  clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/github/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.username) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.username;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.username,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value;
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
-app.get('/auth/github',
-  passport.authenticate('github', { scope: ['user:email'] }));
-app.get('/auth/github/callback',
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    // Successful authentication, redirect home.
-    res.redirect(`http://localhost:3000/home?token=${token}`);
-  });
 
 //update profile 
 app.post('/updateuser',(req,res)=>{
@@ -645,6 +738,155 @@ app.post('/upload',upload.single('image'),(req,res) =>{
     return res.json({status:"true", filename: image})
 })
 })
+
+//cart
+app.post('/addtocart', (req, res) => {
+  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
+  const values = [
+    req.body.quantity,
+    req.body.userid,
+    req.body.productid,
+  ]
+  db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
+    if (error) {
+      return res.status(500).json("error")
+    }
+    if (checkData.length > 0) {
+      const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
+      db.query(updateSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    } else {
+      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
+      db.query(insertSql, values, (err, data) => {
+        if (err) {
+          return res.status(500).json("error")
+        }
+        return res.json(data);
+      })
+    }
+  }) ;
+})
+
+app.delete('/removefromcart/:userid/:productid', (req, res) => {
+  const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
+  const values = [
+    req.params.userid,
+    req.params.productid,
+  ]
+  db.query(sql, values, (err, data) => {
+    if (err) {
+      return res.status(500).json("error")
+    }
+    return res.json(data);
+  })
+});
+
+app.post('/cart', (req, res) => {
+  const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+  // const values = [
+  //   req.body.userid,
+  // ]
+  const userId = [req.body.userId];
+  db.query(sql, userId,(err, data) => {
+    if (err) {
+      return res.json("Error")
+    }
+    if (data.length > 0) {
+      return res.json(data)
+    } else {
+      return res.json("No item in cart")
+    }
+  })
+})
+
+//filter 
+// app.get('/api/products', (req, res) => {
+//   const sql = "SELECT * FROM product,category where product.category=category.categoryid";
+//   db.query(sql, (err, data) => {
+//     if (err) {
+//       console.error('Error fetching products:', err);
+//       return res.status(500).json({ error: "Internal server error" });
+//     }
+//     if (data.length > 0) {
+//       console.log(data)
+//       return res.json(data);
+//     } else {
+//       return res.json([]);
+//     }
+//   });
+// });
+
+app.get('/api/products', (req, res) => {
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+  `;
+
+  db.query(sql, (err, data) => {
+    if (err) {
+      console.error('Error fetching products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (data.length > 0) {
+      console.log(data);
+      return res.json(data);
+    } else {
+      return res.json([]);
+    }
+  });
+});
+
+
+// Endpoint để lấy dữ liệu cho bộ lọc
+app.get('/api/filters', (req, res) => {
+  const queries = [
+    "SELECT DISTINCT NULLIF(brand, '') AS brand FROM product WHERE brand IS NOT NULL",
+    "SELECT DISTINCT NULLIF(goldage, '') AS goldage FROM product WHERE goldage IS NOT NULL",
+    "SELECT DISTINCT NULLIF(material, '') AS material FROM category WHERE material IS NOT NULL",
+    "SELECT DISTINCT CASE gender WHEN 0 THEN 'Nam' WHEN 1 THEN 'Nữ' END AS gender FROM category WHERE gender IS NOT NULL",
+    "SELECT DISTINCT NULLIF(categoryname, '') AS categoryname FROM category WHERE categoryname IS NOT NULL"
+  ];
+
+  Promise.all(queries.map(query => 
+    new Promise((resolve, reject) => {
+      db.query(query, (err, results) => {
+        if (err) reject(err);
+        resolve(results);
+      });
+    })
+  ))
+  .then(([brands, goldAges, materials, genders, productTypes]) => {
+    const filters = {
+      brands: ['Tất cả', ...brands.map(b => b.brand)],
+      goldAges: ['Tất cả', ...goldAges.map(g => g.goldage)],
+      materials: ['Tất cả', ...materials.map(m => m.material)],
+      genders: ['Tất cả', ...genders.map(g => g.gender)],
+      productTypes: ['Tất cả', ...productTypes.map(p => p.categoryname)]
+    };
+    res.json(filters);
+  })
+  .catch(err => {
+    console.error('Error fetching filters:', err);
+    res.status(500).json({ error: "Internal server error" });
+  });
+});
+
+
+
+
 app.listen(8088, () => {
   console.log("listening")
 })
