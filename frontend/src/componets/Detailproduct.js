@@ -111,6 +111,11 @@ const ProductCard = ({
                     <p><span style={{ fontStyle: "italic" }}>Bảo hành trong 1 năm, đổi trả hoàn toàn miễn phí</span></p>
                     <p><span style={{ fontStyle: "italic" }}>Mua 2 sản phẩm trở lên, sẽ được tặng 1 sản phẩm cùng loại</span></p>
                 </Card.Body>
+                <Card.Body>
+                     <h4>Sản phẩm tương tự</h4>               
+                    <p>{productid}</p>
+                    
+                </Card.Body>
             </Card>
         </div>
     );
