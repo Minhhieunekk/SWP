@@ -43,23 +43,23 @@ const Validationsignup = (values) => {
         error.address="Address should not be empty"
         Swal.fire({
             title: "Error signup",
-            text: "Address should not be empty",
+            text: "Địa chỉ không được để trống",
             icon: "warning"
           });
     }
     
    if (Object.keys(error).length===0) {
     Swal.fire({
-        title: "Success Signup",
-        text: "Do you want to login?",
+        title: "Đăng ký thành công",
+        text: "Hãy bấm đăng nhập ngay",
         icon: "success",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Login"
+        confirmButtonText: "Đăng nhập"
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href="/"
+            window.location.href="/login"
         }
     });
    }

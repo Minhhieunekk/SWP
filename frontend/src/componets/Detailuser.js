@@ -63,7 +63,7 @@ const Detailuser = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        axios.get('http://localhost:8088/protected', {
+        axios.get('http://localhost:8088/api/user/details', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => {
@@ -105,7 +105,7 @@ const Detailuser = () => {
 
     return (
         <>
-            <AppHeader />
+             <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
             <div className="container-fluid py-5" style={{ maxWidth: "1400px",position:"relative",top:"100px" }}>
                 <div className="row gx-5">
                     <div className="col-lg-5 mb-5">

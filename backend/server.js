@@ -113,34 +113,50 @@ app.post('/login', (req, res) => {
     if (data.length > 0) {
       const user = data[0];
       const token = generateToken(user);
+      // Include basic user info in login response
       return res.json({
         success: true,
-        token: token
+        token: token,
+        user: {
+          username: user.username,
+          consumerid: user.consumerid,
+          password: user.password
+        }
       });
     } else {
       return res.json({ success: false, message: "Failed" });
     }
   })
-})
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+});
 
-  if (token == null) return res.sendStatus(401);
+// New lazy endpoint for getting user details when needed
+app.get('/api/user/details', (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
   
-  jwt.verify(token, "22112004", (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-}
-app.get('/protected', authenticateToken, (req, res) => {
-  res.json({
-    message: 'This is a protected route',
-    username: req.user.username,
-    consumerid: req.user.consumerid,
-    password: req.user.password
-  });
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, "22112004");
+    const sql = "SELECT username, consumerid, password FROM user WHERE consumerid = ?";
+    
+    db.query(sql, [decoded.consumerid], (err, data) => {
+      if (err) {
+        return res.status(500).json({ message: "Database error" });
+      }
+      if (data.length > 0) {
+        return res.json({
+          username: data[0].username,
+          consumerid: data[0].consumerid,
+          password: data[0].password
+        });
+      }
+      return res.status(404).json({ message: "User not found" });
+    });
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
 });
 
 //check username sign up 
@@ -617,7 +633,7 @@ app.get('/auth/google/callback',
   function (req, res) {
     const token = generateToken(req.user);
 
-    res.redirect(`http://localhost:3000/home?token=${token}`);
+    res.redirect(`http://localhost:3000/?token=${token}`);
   });
 
 
@@ -662,7 +678,7 @@ app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
   function (req, res) {
     const token = generateToken(req.user);
-    res.redirect(`http://localhost:3000/home?token=${token}`);
+    res.redirect(`http://localhost:3000/?token=${token}`);
   }
 );
 
@@ -710,7 +726,7 @@ app.get('/auth/github/callback',
   function (req, res) {
     const token = generateToken(req.user);
     // Successful authentication, redirect home.
-    res.redirect(`http://localhost:3000/home?token=${token}`);
+    res.redirect(`http://localhost:3000/?token=${token}`);
   });
 
 //update profile 
@@ -802,23 +818,6 @@ app.post('/cart', (req, res) => {
     }
   })
 })
-
-//filter 
-// app.get('/api/products', (req, res) => {
-//   const sql = "SELECT * FROM product,category where product.category=category.categoryid";
-//   db.query(sql, (err, data) => {
-//     if (err) {
-//       console.error('Error fetching products:', err);
-//       return res.status(500).json({ error: "Internal server error" });
-//     }
-//     if (data.length > 0) {
-//       console.log(data)
-//       return res.json(data);
-//     } else {
-//       return res.json([]);
-//     }
-//   });
-// });
 
 app.get('/api/products', (req, res) => {
   const sql = `
