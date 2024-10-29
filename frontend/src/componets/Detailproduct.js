@@ -3,7 +3,10 @@ import { Card, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { Star } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import AppHeader from './Header';
+import "../styles/detailproduct.scss";
+import AppHeader from "./Header";
+import { useLocation, useNavigate } from "react-router";
+
 const ProductCard = ({
     productid,
     image,
@@ -14,13 +17,17 @@ const ProductCard = ({
     totalrate,
     peoplerate,
     description,
-    amount
+    amount,
+    productid
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(5);
+    const [popupVisible, setPopupVisible] = useState(false); 
     const sizes = [5, 6, 7, 8, 9, 10];
     const rate = Math.round(totalrate / peoplerate);
-    const userId = localStorage.getItem('consumerid');
+    const userId = localStorage.getItem('userId');
+    const navigate = useNavigate();
+
     const handleQuantityChange = (e) => {
         const newQuantity = parseInt(e.target.value);
         setQuantity(newQuantity > amount ? amount : newQuantity);
@@ -41,16 +48,30 @@ const ProductCard = ({
     };
 
     const currentPrice = calculatePrice(price, selectedSize) * quantity;
+
     const AddToCart = async () => {
         // const navigate = useNavigate();
         try {
-            const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity});
+            const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity, size: selectedSize});
             console.log(response.data);
-            // navigate(`/cart/${userId}`);
+            setPopupVisible(true); 
+            // navigate(`/cart/${userId}`)
         } catch (error) {
             console.error('Error fetching cart items', error);
         } 
     };
+
+    const handleContinueShopping = () => {
+        setPopupVisible(false); // Close the popup
+    };
+
+    const handleGoToCart = () => {
+        setPopupVisible(false); // Close the popup
+        navigate(`/cart/${userId}`); // Navigate to the cart page
+    };
+
+    // const addtocart
+    
     return (
         <div className="container mt-4" style={{ position: "relative", top: "50px" }}>
 
@@ -99,7 +120,14 @@ const ProductCard = ({
                             </Form.Group>
                             <div className="d-grid gap-2">
                                 <Button variant="primary" size="lg" disabled={amount === 0}>Mua ngay</Button>
-                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={{AddToCart}}>Thêm vào giỏ hàng</Button>
+                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
+                                {popupVisible && (
+                                    <div className="popup">
+                                        <p>Đã thêm sản phẩm vào giỏ hàng</p>
+                                        <button onClick={handleContinueShopping}>Tiếp tục mua hàng</button>
+                                        <button onClick={handleGoToCart}>Đến giỏ hàng</button>
+                                    </div>
+                                )}
                             </div>
                         </Card.Body>
                     </Col>

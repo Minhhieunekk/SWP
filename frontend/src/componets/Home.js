@@ -5,6 +5,8 @@ import "../styles/home.scss";
 import axios from "axios";
 import AppHeader from "./Header";
 import Footer from "./Footer";
+// import Cart from './Cart';
+
 import { useLocation, useNavigate } from "react-router";
 
 const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate }) => {

@@ -20,6 +20,7 @@ const Login = () => {
 	const handlesubmit = (event) => {
 		event.preventDefault();
 		Validation(values);
+		console.log(values);
 		axios.post('http://localhost:8088/login', values)
 			.then(res => {
 				if (res.data.success) {
@@ -29,7 +30,17 @@ const Login = () => {
 					alert("No user information");
 				}
 			})
-			.catch(err => console.log(err));
+			.catch(err => {
+				if (err	.response) {
+					console.log("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
+					console.error('Error data:', err.response.data);
+					console.error('Error status:', err.response.status);
+					console.error('Error headers:', err.response.headers);
+				  } else {
+					console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+					console.error('Error', err.message);
+				  }
+			});
 	}
 
 	const handleinput = (event) => {
