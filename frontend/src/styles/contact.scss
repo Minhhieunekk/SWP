@@ -1,0 +1,66 @@
+
+.contact-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #f3f4f6;
+}
+
+.contact-card {
+    display: flex;
+    flex-direction: row;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+}
+
+.contact-info {
+    flex: 2;
+    padding-right: 20px;
+}
+
+.logo {
+    width: 80px;
+    border-radius: 50%;
+}
+
+h1 {
+    font-size: 1.5em;
+    margin-top: 10px;
+}
+
+.verified {
+    color: #ffc107; /* Yellow color for the verified icon */
+}
+
+.message-button {
+    background-color: #1877f2; /* Blue button color */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    margin: 15px 0;
+}
+
+.details p, .description {
+    color: #333;
+    line-height: 1.6;
+}
+
+.qr-code-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-code {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 10px;
+}
