@@ -25,21 +25,14 @@ const Login = () => {
 			.then(res => {
 				if (res.data.success) {
 					localStorage.setItem('token', res.data.token);
+					// localStorage.setItem('userId', res.data.user.consumerid);
 					navigate('/');
 				} else {
 					alert("No user information");
 				}
 			})
 			.catch(err => {
-				if (err	.response) {
-					console.log("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
-					console.error('Error data:', err.response.data);
-					console.error('Error status:', err.response.status);
-					console.error('Error headers:', err.response.headers);
-				  } else {
-					console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEE");
-					console.error('Error', err.message);
-				  }
+				console.log(err);
 			});
 	}
 

@@ -119,6 +119,7 @@ const Home = () => {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           setUser(res.data);
+             
         } catch (err) {
           console.error('Error fetching user data:', err);
          

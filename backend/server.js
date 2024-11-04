@@ -50,10 +50,9 @@ app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
-  port: 3306,
   user: "root",
-  password: "abcd1234",
-  database: "swp1872"
+  password: "",
+  database: "swpvip"
 })
 function generateToken(user) {
   return jwt.sign(
@@ -757,68 +756,68 @@ app.post('/upload',upload.single('image'),(req,res) =>{
 })
 
 //cart
-app.post('/addtocart', (req, res) => {
-  const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
-  const values = [
-    req.body.quantity,
-    req.body.userid,
-    req.body.productid,
-  ]
-  db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
-    if (error) {
-      return res.status(500).json("error")
-    }
-    if (checkData.length > 0) {
-      const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
-      db.query(updateSql, values, (err, data) => {
-        if (err) {
-          return res.status(500).json("error")
-        }
-        return res.json(data);
-      })
-    } else {
-      const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
-      db.query(insertSql, values, (err, data) => {
-        if (err) {
-          return res.status(500).json("error")
-        }
-        return res.json(data);
-      })
-    }
-  }) ;
-})
+// app.post('/addtocart', (req, res) => {
+//   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
+//   const values = [
+//     req.body.quantity,
+//     req.body.userid,
+//     req.body.productid,
+//   ]
+//   db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
+//     if (error) {
+//       return res.status(500).json("error")
+//     }
+//     if (checkData.length > 0) {
+//       const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
+//       db.query(updateSql, values, (err, data) => {
+//         if (err) {
+//           return res.status(500).json("error")
+//         }
+//         return res.json(data);
+//       })
+//     } else {
+//       const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
+//       db.query(insertSql, values, (err, data) => {
+//         if (err) {
+//           return res.status(500).json("error")
+//         }
+//         return res.json(data);
+//       })
+//     }
+//   }) ;
+// })
 
-app.delete('/removefromcart/:userid/:productid', (req, res) => {
-  const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
-  const values = [
-    req.params.userid,
-    req.params.productid,
-  ]
-  db.query(sql, values, (err, data) => {
-    if (err) {
-      return res.status(500).json("error")
-    }
-    return res.json(data);
-  })
-});
+// app.delete('/removefromcart/:userid/:productid', (req, res) => {
+//   const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
+//   const values = [
+//     req.params.userid,
+//     req.params.productid,
+//   ]
+//   db.query(sql, values, (err, data) => {
+//     if (err) {
+//       return res.status(500).json("error")
+//     }
+//     return res.json(data);
+//   })
+// });
 
-app.post('/cart', (req, res) => {
-  const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
-  // const values = [
-  //   req.body.userid,
-  // ]
-  const userId = [req.body.userId];
-  db.query(sql, userId,(err, data) => {
-    if (err) {
-      return res.json("Error")
-    }
-    if (data.length > 0) {
-      return res.json(data)
-    } else {
-      return res.json("No item in cart")
-    }
-  })
-})
+// app.post('/cart', (req, res) => {
+//   const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+//   // const values = [
+//   //   req.body.userid,
+//   // ]
+//   const userId = [req.body.userId];
+//   db.query(sql, userId,(err, data) => {
+//     if (err) {
+//       return res.json("Error")
+//     }
+//     if (data.length > 0) {
+//       return res.json(data)
+//     } else {
+//       return res.json("No item in cart")
+//     }
+//   })
+// })
 
 app.get('/api/products', (req, res) => {
   const sql = `

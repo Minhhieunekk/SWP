@@ -17,8 +17,7 @@ const ProductCard = ({
     totalrate,
     peoplerate,
     description,
-    amount,
-    productid
+    amount
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(5);
@@ -52,8 +51,11 @@ const ProductCard = ({
     const AddToCart = async () => {
         // const navigate = useNavigate();
         try {
-            const response = await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity, size: selectedSize});
-            console.log(response.data);
+            console.log(`userId là:${userId}`);
+            console.log(userId);
+            console.log(localStorage);
+             await axios.post(`http://localhost:8088/addtocart`,{userid : userId, productid:productid, quantity:quantity, size: selectedSize});
+            
             setPopupVisible(true); 
             // navigate(`/cart/${userId}`)
         } catch (error) {

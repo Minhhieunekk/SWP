@@ -21,7 +21,10 @@ const { Header } = Layout;
 
 const AppHeader = ({ username, password, consumerid }) => {
   const navigate = useNavigate();
-
+  if (consumerid) {
+    localStorage.setItem('userId', consumerid);
+  }
+  
   // Thêm state để quản lý mục được chọn
   const [selectedKey, setSelectedKey] = useState("1");
   
@@ -63,12 +66,12 @@ const AppHeader = ({ username, password, consumerid }) => {
       
 
       {
-        (consumerid===8) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }

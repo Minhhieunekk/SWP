@@ -90,7 +90,7 @@ const Cart = () => {
     }, [consumerId]);
 
     const handleDeleteItem = (id) => {
-        //aaaaaaaaaaaaa aa
+        
         const confirmDelete = window.confirm("Bạn có muốn xóa món đồ này không?");
         if (confirmDelete) {
             axios.delete(`http://localhost:8088/removefromcart/${id}`).then((res) => {
