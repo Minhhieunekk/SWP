@@ -218,17 +218,51 @@ const Cart = () => {
             });
     };
 
+    const [phoneErrors, setPhoneErrors] = useState('');
+    const [mailErrors, setMailErrors] = useState('');
+    const [addressErrors, setAddressErrors] = useState('');
+    const [isSubmitDisabled, setIsSubmitDisabled] = useState(false);
+
+
     const handlePhoneChange = (e) => {
-        setPhone(e.target.value);
+        if (e.target.value && (!/^\d{10}$/.test(e.target.value) || e.target.value.length !== 10)) {
+            setPhoneErrors('Số điện thoại phải có 10 số');
+            setIsSubmitDisabled(true);
+          } else {
+            setPhoneErrors('');
+            setPhone(e.target.value);
+            setIsSubmitDisabled(false);
+          }
+        
       };
     
       const handleAddressChange = (e) => {
-        setAddress(e.target.value);
+        if (!e.target.value) {
+            setAddressErrors('Chưa nhập địa chỉ');
+            setIsSubmitDisabled(true);
+          } else {
+            setAddressErrors('');
+            setAddress(e.target.value);
+            setIsSubmitDisabled(false);
+          }
+        
       };
     
       const handleEmailChange = (e) => {
-        setEmail(e.target.value);
+        if (e.target.value && !emailRegex.test(e.target.value)) {
+            setMailErrors('Email chưa đúng');
+            setIsSubmitDisabled(true);
+          } else {
+            setMailErrors('');
+            setEmail(e.target.value);
+            setIsSubmitDisabled(false);
+        }
+        
       };
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    //   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+  
+
 
     useEffect(() => {
         const total = calculateTotalPrice();
@@ -378,22 +412,26 @@ const Cart = () => {
                             ) : (
                                 <div>
                                     Điện thoại: <input type="text"  defaultValue={phone} onChange={handlePhoneChange}/>  <br></br>
+                                    {phoneErrors && <p style={{ color: 'red' }}>{phoneErrors}</p>}  <br></br>
                                     Địa chỉ: <input type="text"  defaultValue={address} onChange={handleAddressChange}/><br></br>
-                                    Email: <input type="text"  defaultValue={email} onChange={handleEmailChange}/>
+                                    {addressErrors && <p style={{ color: 'red' }}>{addressErrors}</p>}<br></br>
+                                    Email: <input type="text"  defaultValue={email} onChange={handleEmailChange}/> <br></br>
+                                    {mailErrors && <p style={{ color: 'red' }}>{mailErrors}</p>}<br></br>
                                 </div>
                             )}
-                            <button onClick={() => {
+                            <button disabled={isSubmitDisabled} onClick={() => {
                                 handlePayment('cod');
                                 // setPaymentMethod('cod');
                                 // handleCheckout();
                                 // setIsPopupOpen(false);
                             }}>Thanh toán COD</button>
-                            <button onClick={() => {
+                            <button disabled={isSubmitDisabled} onClick={() => {
                                 handlePayment('online');
                                 // setPaymentMethod('online');
                                 // handleCheckout();
                                 // setIsPopupOpen(false);
                                 // setIsModalOpen(true);
+                                
                             }}>Thanh toán online</button>
                         </div>
                         </div>
