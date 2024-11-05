@@ -9,10 +9,11 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
+const { stat } = require('fs');
 
-const GitHubStrategy = require('passport-github2').Strategy;
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
+// const GitHubStrategy = require('passport-github2').Strategy;
+// const GoogleStrategy = require('passport-google-oauth20').Strategy;
+// const FacebookStrategy = require('passport-facebook').Strategy;
 
 
 require('dotenv').config();
@@ -50,9 +51,10 @@ app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
+  port: 3306,
   user: "root",
-  password: "",
-  database: "swpvip"
+  password: "abcd1234",
+  database: "swp1872"
 })
 function generateToken(user) {
   return jwt.sign(
@@ -577,157 +579,157 @@ app.post('/resetpass', (req, res) => {
   })
 })
 
-//login via google
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/google/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.displayName) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.displayName;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.displayName,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value; // Use email as identifier
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
+// //login via google
+// passport.use(new GoogleStrategy({
+//   clientID: process.env.GOOGLE_CLIENT_ID,
+//   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/google/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.displayName) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.displayName;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.displayName,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value; // Use email as identifier
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
 
-passport.serializeUser((user, done) => {
-  done(null, user.email); // Use email instead of id
-});
+// passport.serializeUser((user, done) => {
+//   done(null, user.email); // Use email instead of id
+// });
 
-passport.deserializeUser((email, done) => {
-  db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
-    if (err) return done(err);
-    done(null, result[0] || null);
-  });
-});
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
+// passport.deserializeUser((email, done) => {
+//   db.query("SELECT * FROM user WHERE email = ?", [email], (err, result) => {
+//     if (err) return done(err);
+//     done(null, result[0] || null);
+//   });
+// });
+// app.get('/auth/google',
+//   passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
+// app.get('/auth/google/callback',
+//   passport.authenticate('google', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
 
-    res.redirect(`http://localhost:3000/?token=${token}`);
-  });
+//     res.redirect(`http://localhost:3000/?token=${token}`);
+//   });
 
 
-// login via Facebook
-passport.use(new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID,
-  clientSecret: process.env.FACEBOOK_APP_SECRET,
-  callbackURL: "http://localhost:8088/auth/facebook/callback",
-  profileFields: ['id', 'displayName', 'email']
-}, function (accessToken, refreshToken, profile, done) {
-  const sql = "SELECT * FROM user WHERE email = ?";
-  db.query(sql, [profile.emails[0].value], (err, result) => {
-    if (err) return done(err);
-    if (result.length) {
-      // User exists, update username if it has changed and log them in
-      const user = result[0];
-      if (user.username !== profile.displayName) {
-        db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-          if (err) return done(err);
-          user.username = profile.displayName;
-          return done(null, user);
-        });
-      } else {
-        return done(null, user);
-      }
-    } else {
-      // User doesn't exist, create new user
-      const newUser = {
-        username: profile.displayName,
-        email: profile.emails[0].value
-      };
-      db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-        if (err) return done(err);
-        newUser.email = profile.emails[0].value;
-        return done(null, newUser);
-      });
-    }
-  });
-}));
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    res.redirect(`http://localhost:3000/?token=${token}`);
-  }
-);
+// // login via Facebook
+// passport.use(new FacebookStrategy({
+//   clientID: process.env.FACEBOOK_APP_ID,
+//   clientSecret: process.env.FACEBOOK_APP_SECRET,
+//   callbackURL: "http://localhost:8088/auth/facebook/callback",
+//   profileFields: ['id', 'displayName', 'email']
+// }, function (accessToken, refreshToken, profile, done) {
+//   const sql = "SELECT * FROM user WHERE email = ?";
+//   db.query(sql, [profile.emails[0].value], (err, result) => {
+//     if (err) return done(err);
+//     if (result.length) {
+//       // User exists, update username if it has changed and log them in
+//       const user = result[0];
+//       if (user.username !== profile.displayName) {
+//         db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//           if (err) return done(err);
+//           user.username = profile.displayName;
+//           return done(null, user);
+//         });
+//       } else {
+//         return done(null, user);
+//       }
+//     } else {
+//       // User doesn't exist, create new user
+//       const newUser = {
+//         username: profile.displayName,
+//         email: profile.emails[0].value
+//       };
+//       db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//         if (err) return done(err);
+//         newUser.email = profile.emails[0].value;
+//         return done(null, newUser);
+//       });
+//     }
+//   });
+// }));
+// app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+// app.get('/auth/facebook/callback',
+//   passport.authenticate('facebook', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     res.redirect(`http://localhost:3000/?token=${token}`);
+//   }
+// );
 
-//login via github
-passport.use(new GitHubStrategy({
-  clientID: process.env.GITHUB_CLIENT_ID,
-  clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/github/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.username) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.username;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.username,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value;
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
-app.get('/auth/github',
-  passport.authenticate('github', { scope: ['user:email'] }));
-app.get('/auth/github/callback',
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  function (req, res) {
-    const token = generateToken(req.user);
-    // Successful authentication, redirect home.
-    res.redirect(`http://localhost:3000/?token=${token}`);
-  });
+// //login via github
+// passport.use(new GitHubStrategy({
+//   clientID: process.env.GITHUB_CLIENT_ID,
+//   clientSecret: process.env.GITHUB_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/github/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.username) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.username, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.username;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.username,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value;
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
+// app.get('/auth/github',
+//   passport.authenticate('github', { scope: ['user:email'] }));
+// app.get('/auth/github/callback',
+//   passport.authenticate('github', { failureRedirect: '/login' }),
+//   function (req, res) {
+//     const token = generateToken(req.user);
+//     // Successful authentication, redirect home.
+//     res.redirect(`http://localhost:3000/?token=${token}`);
+//   });
 
 //update profile 
 app.post('/updateuser',(req,res)=>{
@@ -1022,22 +1024,86 @@ app.post('/userInfomation', (req, res) => {
   })
 });
 
+// app.get('/orders', (req, res) => {
+//   const sql = "select od.*, u.username from order_detail od join `user` u on u.consumerid = od.user_id order by order_date desc";
+//   // const values = [
+//   //   req.body.userid,
+//   // ]
+//   db.query(sql,(err, data) => {
+//     if (err) {
+//       return res.json("Error")
+//     }
+//     if (data.length > 0) {
+//       return res.json(data)
+//     } else {
+//       return res.json("No order till now")
+//     }
+//   })
+// });
+
+const formatDate = (date) => {
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+};
+
+// API to fetch orders
 app.get('/orders', (req, res) => {
-  const sql = "select od.*, u.username from order_detail od join `user` u on u.consumerid = od.user_id order by order_date desc";
-  // const values = [
-  //   req.body.userid,
-  // ]
-  db.query(sql,(err, data) => {
+  const { startDate, endDate, status, numberPerPage, page, sortColumn, sortDirection } = req.query;
+
+  const start = new Date(startDate || new Date(new Date().setDate(new Date().getDate() - 7)));
+  const end = new Date(endDate || new Date());
+
+  // Set end time to 23:59:59
+  start.setHours(0, 0, 0, 0)
+  end.setHours(23, 59, 59, 999);
+
+  const statusFilter = status === '-1' ? '' : `AND od.payment_status = ${status}`;
+  const limit = parseInt(numberPerPage) || 10;
+  const offset = (parseInt(page) - 1) * limit || 0;
+  const column = sortColumn || 'order_date';
+  const direction = sortDirection || 'DESC';
+
+  const query = `
+    SELECT od.*, u.username 
+    FROM order_detail od
+    JOIN user u ON u.consumerid = od.user_id
+    WHERE od.order_date BETWEEN ? AND ?
+    ${statusFilter}
+    ORDER BY od.${column} ${direction}
+    LIMIT ? OFFSET ?
+  `;
+
+  db.query(query, [start, end, limit, offset], (err, results) => {
     if (err) {
-      return res.json("Error")
+      console.error(err);
+      return res.status(500).send('Database query error');
     }
-    if (data.length > 0) {
-      return res.json(data)
-    } else {
-      return res.json("No order till now")
-    }
-  })
+
+    const countQuery = `
+      SELECT COUNT(*) AS total 
+      FROM order_detail od
+      JOIN user u ON u.consumerid = od.user_id
+      WHERE od.order_date BETWEEN ? AND ?
+      ${statusFilter}
+    `;
+
+    db.query(countQuery, [start, end], (err, countResults) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database query error');
+      }
+
+      const total = countResults[0].total;
+      res.json({
+        orders: results,
+        total,
+        totalPages: Math.ceil(total / limit),
+      });
+    });
+  });
 });
+
+
+
 
 app.get('/orders/:orderId/items', async (req, res) => {
   const { orderId } = req.params;
@@ -1045,7 +1111,7 @@ app.get('/orders/:orderId/items', async (req, res) => {
   // const [rows] = await connection.query(`
     
   // `, [orderId]);
-  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image 
+  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, p.amount 
     FROM order_item oi 
     JOIN product p ON oi.product_id = p.productid 
     WHERE oi.order_id = ?
@@ -1072,4 +1138,90 @@ app.put('/orders/:orderId', async (req, res) => {
   })
   // res.status(204).send();
 });
+
+// Fetch order details
+app.get('/order-details/:orderId', (req, res) => {
+  const { orderId } = req.params;
+
+  const query = `
+    SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, p.amount
+    FROM order_item oi
+    JOIN product p ON oi.product_id = p.productid
+    WHERE oi.order_id = ?;
+  `;
+  
+  db.query(query, [orderId], (err, rows) => {
+    if (err) return res.status(500).send({ error: 'Error fetching order items' });
+    res.json({ items: rows });
+  });
+});
+
+// Update quantity of an order item
+app.put('/order-item/quantity', (req, res) => {
+  const { orderItemId, newQuantity } = req.body;
+
+  // First, get the current product's amount to check if the new quantity is valid
+  db.query('SELECT p.amount FROM order_item oi JOIN product p ON oi.product_id = p.productid WHERE oi.order_item_id = ?', [orderItemId], (err, result) => {
+    if (err) return res.status(500).send({ error: 'Error fetching product data' });
+
+    const availableAmount = result[0].amount;
+    
+    if (newQuantity > availableAmount) {
+      return res.status(400).send({ error: 'Quantity exceeds available stock' });
+    }
+
+    // Update order item
+    db.query(
+      'UPDATE order_item SET quantity = ? WHERE order_item_id = ?',
+      [newQuantity, orderItemId],
+      (err, result) => {
+        if (err) return res.status(500).send({ error: 'Error updating item quantity' });
+
+        // Update product stock
+        db.query('UPDATE product SET amount = amount - ? WHERE productid = (SELECT product_id FROM order_item WHERE order_item_id = ?)', [newQuantity, orderItemId], (err, result) => {
+          if (err) return res.status(500).send({ error: 'Error updating product stock' });
+          res.send({ message: 'Item quantity updated successfully' });
+        });
+      }
+    );
+  });
+});
+
+// Delete order item and update product stock
+app.delete('/order-item/:orderItemId', (req, res) => {
+  const { orderItemId } = req.params;
+
+  // First, get the quantity to restore product stock
+  db.query('SELECT quantity, product_id FROM order_item WHERE order_item_id = ?', [orderItemId], (err, result) => {
+    if (err) return res.status(500).send({ error: 'Error fetching item data' });
+
+    const { quantity, product_id } = result[0];
+
+    // Delete order item
+    db.query('DELETE FROM order_item WHERE order_item_id = ?', [orderItemId], (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error deleting order item' });
+
+      // Restore product stock
+      db.query('UPDATE product SET amount = amount + ? WHERE productid = ?', [quantity, product_id], (err, result) => {
+        if (err) return res.status(500).send({ error: 'Error restoring product stock' });
+        res.send({ message: 'Item deleted successfully and stock updated' });
+      });
+    });
+  });
+});
+
+// Update payment status of the order
+app.put('/order/payment-status', (req, res) => {
+  const { orderId, status } = req.body;
+
+  db.query(
+    'UPDATE order_detail SET payment_status = ? WHERE order_id = ?',
+    [status, orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Payment status updated successfully' });
+    }
+  );
+});
+
 
