@@ -756,69 +756,6 @@ app.post('/upload',upload.single('image'),(req,res) =>{
 })
 })
 
-//cart
-// app.post('/addtocart', (req, res) => {
-//   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
-//   const values = [
-//     req.body.quantity,
-//     req.body.userid,
-//     req.body.productid,
-//   ]
-//   db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
-//     if (error) {
-//       return res.status(500).json("error")
-//     }
-//     if (checkData.length > 0) {
-//       const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
-//       db.query(updateSql, values, (err, data) => {
-//         if (err) {
-//           return res.status(500).json("error")
-//         }
-//         return res.json(data);
-//       })
-//     } else {
-//       const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
-//       db.query(insertSql, values, (err, data) => {
-//         if (err) {
-//           return res.status(500).json("error")
-//         }
-//         return res.json(data);
-//       })
-//     }
-//   }) ;
-// })
-
-// app.delete('/removefromcart/:userid/:productid', (req, res) => {
-//   const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
-//   const values = [
-//     req.params.userid,
-//     req.params.productid,
-//   ]
-//   db.query(sql, values, (err, data) => {
-//     if (err) {
-//       return res.status(500).json("error")
-//     }
-//     return res.json(data);
-//   })
-// });
-
-// app.post('/cart', (req, res) => {
-//   const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
-//   // const values = [
-//   //   req.body.userid,
-//   // ]
-//   const userId = [req.body.userId];
-//   db.query(sql, userId,(err, data) => {
-//     if (err) {
-//       return res.json("Error")
-//     }
-//     if (data.length > 0) {
-//       return res.json(data)
-//     } else {
-//       return res.json("No item in cart")
-//     }
-//   })
-// })
 
 app.get('/api/products', (req, res) => {
   const sql = `
@@ -884,7 +821,87 @@ app.get('/api/filters', (req, res) => {
   });
 });
 
+// Endpoint cho trang sức (jewelry)
+app.get('/api/jewelry/:type', (req, res) => {
+  const { type } = req.params;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.categoryname = ?
+  `;
 
+  db.query(sql, [type], (err, data) => {
+    if (err) {
+      console.error('Error fetching jewelry products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
+
+// Endpoint cho chất liệu (materials)
+app.get('/api/materials/:material', (req, res) => {
+  const { material } = req.params;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.material = ?
+  `;
+
+  db.query(sql, [material], (err, data) => {
+    if (err) {
+      console.error('Error fetching material products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
+
+// Endpoint cho quà tặng (gifts)
+app.get('/api/gifts/:gender', (req, res) => {
+  const { gender } = req.params;
+  const genderValue = gender === 'Nam' ? 0 : 1;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.gender = ?
+  `;
+
+  db.query(sql, [genderValue], (err, data) => {
+    if (err) {
+      console.error('Error fetching gift products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
 ////////////Cart
 app.post('/addtocart', (req, res) => {
   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ? AND size = ?"

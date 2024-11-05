@@ -11,7 +11,7 @@ const Signup = () => {
         phone: '',
         email: '',
         address: '',
-        streetAddress: '', // Thêm trường cho số nhà và tên đường
+        streetAddress: '', 
         province: '',
         district: '',
         ward: ''
@@ -285,6 +285,7 @@ const Signup = () => {
                                             placeholder="Tên đăng nhập" 
                                             onChange={handleInput} 
                                             name="username" 
+                                            required
                                         />
                                         {messages.username && (
                                             <span className={isUsernameAvailable ? "success" : "error"}>
@@ -299,6 +300,7 @@ const Signup = () => {
                                             placeholder="Mật khẩu" 
                                             onChange={handleInput} 
                                             name="password" 
+                                            required
                                         />
                                     </div>
                                     <div className="login__field">
@@ -308,6 +310,7 @@ const Signup = () => {
                                             placeholder="Số điện thoại" 
                                             onChange={handleInput} 
                                             name="phone" 
+                                            required
                                         />
                                         {messages.phone && (
                                             <span className={isPhoneAvailable ? "success" : "error"}>
@@ -322,6 +325,7 @@ const Signup = () => {
                                             placeholder="Email" 
                                             onChange={handleInput} 
                                             name="email" 
+                                            required
                                         />
                                         {messages.email && (
                                             <span className={isEmailAvailable ? "success" : "error"}>
@@ -341,6 +345,7 @@ const Signup = () => {
                                             onChange={handleInput}
                                             name="streetAddress"
                                             value={values.streetAddress}
+                                            required
                                         />
                                     </div>
                                     <div className="login__field">
@@ -350,6 +355,7 @@ const Signup = () => {
                                             onChange={handleInput}
                                             placeholder="Chọn Tỉnh/Thành phố"
                                             name="province"
+                                            required
                                         />
                                     </div>
                                     {values.province && (
@@ -360,6 +366,7 @@ const Signup = () => {
                                                 onChange={handleInput}
                                                 placeholder="Chọn Quận/Huyện"
                                                 name="district"
+                                                required
                                             />
                                         </div>
                                     )}
@@ -371,6 +378,7 @@ const Signup = () => {
                                                 onChange={handleInput}
                                                 placeholder="Chọn Phường/Xã"
                                                 name="ward"
+                                                required
                                             />
                                         </div>
                                     )}

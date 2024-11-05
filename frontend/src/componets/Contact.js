@@ -43,7 +43,7 @@ const Contact = () => {
                 <Divider />
 
                 <div className="text-center">
-                    <Button variant='outline-success' href="https://zalo.me/your-id" target="_blank" rel="noopener noreferrer">
+                    <Button variant='outline-success' href="https://zalo.me/g/gcrgqq630" target="_blank" rel="noopener noreferrer">
                         Nhắn tin
                     </Button>
                 </div>
@@ -70,7 +70,7 @@ const Contact = () => {
                 <Divider />
 
                 <div className="text-center">
-                    <Image src="/images/QR-code.jpeg" alt="QR Code" style={{ width: '150px' }} />
+                    <Image src="images\zaloqr.jpg" alt="QR Code" style={{ width: '150px' }} />
                     <Paragraph> Mở Zalo, bấm quét QR để quét và xem trên điện thoại </Paragraph>
                 </div>
             </Card>

@@ -157,7 +157,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                   em
                   key="1.1"
                   className={selectedKey === "1.1" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/1")}
+                  onClick={() => navigate("/gioithieu/1")}
                 >
                   Dây chuyền
                 </Menu.Item>
@@ -167,7 +167,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 <Menu.Item
                   key="1.2"
                   className={selectedKey === "1.2" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/2")}
+                  onClick={() => navigate("/gioithieu/2")}
                 >
                   Vòng Tay
                 </Menu.Item>
@@ -177,14 +177,14 @@ const AppHeader = ({ username, password, consumerid }) => {
                 <Menu.Item
                   key="1.3"
                   className={selectedKey === "1.3" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/3")}
+                  onClick={() => navigate("/gioithieu/3")}
                 >
                   Nhẫn
                 </Menu.Item>
                 <Menu.Item
                   key="1.4"
                   className={selectedKey === "1.4" ? "menu-item-selected" : ""}
-                  onClick={() => navigate("/gioi-thieu/4")}
+                  onClick={() => navigate("/gioithieu/4")}
                 >
                   Khuyên tai
                 </Menu.Item>
@@ -196,7 +196,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 className={
                   selectedKey.startsWith("2") ? "menu-item-selected" : ""
                 }
-                onTitleClick={() => navigate("/chat-lieu")}
+                
                 theme="dark"
               >
 
@@ -227,7 +227,7 @@ const AppHeader = ({ username, password, consumerid }) => {
                 className={
                   selectedKey.startsWith("3") ? "menu-item-selected" : ""
                 }
-                onTitleClick={() => navigate("/qua-tang")}
+               
                 theme="dark"
               >
                 {/* Cho Nam */}

@@ -4,7 +4,9 @@ import { IoLogoFacebook } from "react-icons/io";
 import { FaGithub } from "react-icons/fa";
 import { FaGoogle } from "react-icons/fa6";
 import { Link } from 'react-router-dom';
-import Validation from './Loginvalidation';
+import Swal from 'sweetalert2/dist/sweetalert2.js'
+import 'sweetalert2/src/sweetalert2.scss'
+
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from './Header';
@@ -19,7 +21,7 @@ const Login = () => {
 	const navigate=useNavigate();
 	const handlesubmit = (event) => {
 		event.preventDefault();
-		Validation(values);
+		
 		console.log(values);
 		axios.post('http://localhost:8088/login', values)
 			.then(res => {
@@ -28,7 +30,11 @@ const Login = () => {
 					// localStorage.setItem('userId', res.data.user.consumerid);
 					navigate('/');
 				} else {
-					alert("No user information");
+					Swal.fire({
+						title: "Lỗi đăng nhập",
+						text: "Mật khẩu sai hoặc tài khoản không tồn tại",
+						icon: "warning"
+					  });
 				}
 			})
 			.catch(err => {
@@ -59,12 +65,12 @@ const Login = () => {
 						<h3>Đăng nhập</h3>
 							<div className="login__field">
 								<i className="login__icon fas fa-user"></i>
-								<input type="text" className="login__input" placeholder="Tên đăng nhập" onChange={handleinput} name='username'/>
+								<input type="text" className="login__input" placeholder="Tên đăng nhập" onChange={handleinput} name='username' required/>
 								
 							</div>
 							<div className="login__field">
 								<i classNameName="login__icon fas fa-lock"></i>
-								<input type="password" className="login__input" placeholder="Mật khẩu" onChange={handleinput} name='password'  />
+								<input type="password" className="login__input" placeholder="Mật khẩu" onChange={handleinput} name='password' required />
 							</div>
 							<button type='submit' className="button login__submit ">
 								<span className="button__text">Đăng nhập ngay</span>
