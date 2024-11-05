@@ -9,7 +9,10 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
-const { stat } = require('fs');
+// const { stat } = require('fs');
+// const bodyParser = require('body-parser');
+// const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 // const GitHubStrategy = require('passport-github2').Strategy;
 // const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -46,6 +49,7 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
+app.use(bodyParser.json());
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -56,6 +60,8 @@ const db = mysql.createConnection({
   password: "abcd1234",
   database: "swp1872"
 })
+
+
 function generateToken(user) {
   return jwt.sign(
     { username: user.username, consumerid: user.consumerid, password: user.password },
@@ -257,37 +263,41 @@ app.get('/productdetail', (req, res) => {
   });
 });
 
-// Lấy sản phẩm + pagniation 
 app.get("/home", (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 4;
+  const limit = 4; // Display 4 products per page
   const offset = (page - 1) * limit;
 
-  // First, get the total count of products
-  db.query("SELECT COUNT(*) as total FROM product", (err, countResult) => {
+  // Step 1: Get the last 10 products by productid
+  const last10ProductsQuery = `
+    SELECT * 
+    FROM product 
+    JOIN category ON product.category = category.categoryid 
+    ORDER BY productid DESC 
+    LIMIT 10
+  `;
+
+  db.query(last10ProductsQuery, (err, last10ProductsResult) => {
     if (err) {
-      return res.status(500).json("Error counting products");
+      return res.status(500).json("Error fetching the last 10 products");
     }
 
-    const totalProducts = countResult[0].total;
+    
+    const totalProducts = last10ProductsResult.length;
     const totalPages = Math.ceil(totalProducts / limit);
 
-    // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid ORDER BY productid LIMIT ? OFFSET ?";
-    db.query(sql, [limit, offset], (err, data) => {
-      if (err) {
-        return res.status(500).json("Error fetching products");
-      }
+    
+    const paginatedProducts = last10ProductsResult.slice(offset, offset + limit);
 
-      return res.json({
-        products: data,
-        currentPage: page,
-        totalPages: totalPages,
-        totalProducts: totalProducts
-      });
+    return res.json({
+      products: paginatedProducts,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts
     });
   });
 });
+
 
 // lấy bông tai
 app.get("/home/bongtai", (req, res) => {
@@ -757,69 +767,6 @@ app.post('/upload',upload.single('image'),(req,res) =>{
 })
 })
 
-//cart
-// app.post('/addtocart', (req, res) => {
-//   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?"
-//   const values = [
-//     req.body.quantity,
-//     req.body.userid,
-//     req.body.productid,
-//   ]
-//   db.query(checkedSql, [req.body.userid,req.body.productid,], (error, checkData) => {
-//     if (error) {
-//       return res.status(500).json("error")
-//     }
-//     if (checkData.length > 0) {
-//       const updateSql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?"
-//       db.query(updateSql, values, (err, data) => {
-//         if (err) {
-//           return res.status(500).json("error")
-//         }
-//         return res.json(data);
-//       })
-//     } else {
-//       const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`) VALUES (?,?,?)"
-//       db.query(insertSql, values, (err, data) => {
-//         if (err) {
-//           return res.status(500).json("error")
-//         }
-//         return res.json(data);
-//       })
-//     }
-//   }) ;
-// })
-
-// app.delete('/removefromcart/:userid/:productid', (req, res) => {
-//   const sql = "DELETE FROM `cart` WHERE  `user_id` = ? AND `product_id` = ?"
-//   const values = [
-//     req.params.userid,
-//     req.params.productid,
-//   ]
-//   db.query(sql, values, (err, data) => {
-//     if (err) {
-//       return res.status(500).json("error")
-//     }
-//     return res.json(data);
-//   })
-// });
-
-// app.post('/cart', (req, res) => {
-//   const sql = "select c.quantity , p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
-//   // const values = [
-//   //   req.body.userid,
-//   // ]
-//   const userId = [req.body.userId];
-//   db.query(sql, userId,(err, data) => {
-//     if (err) {
-//       return res.json("Error")
-//     }
-//     if (data.length > 0) {
-//       return res.json(data)
-//     } else {
-//       return res.json("No item in cart")
-//     }
-//   })
-// })
 
 app.get('/api/products', (req, res) => {
   const sql = `
@@ -885,20 +832,87 @@ app.get('/api/filters', (req, res) => {
   });
 });
 
+// Endpoint cho trang sức (jewelry)
+app.get('/api/jewelry/:type', (req, res) => {
+  const { type } = req.params;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.categoryname = ?
+  `;
 
+  db.query(sql, [type], (err, data) => {
+    if (err) {
+      console.error('Error fetching jewelry products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
 
+// Endpoint cho chất liệu (materials)
+app.get('/api/materials/:material', (req, res) => {
+  const { material } = req.params;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.material = ?
+  `;
 
-app.listen(8088, () => {
-  console.log("listening")
-})
+  db.query(sql, [material], (err, data) => {
+    if (err) {
+      console.error('Error fetching material products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
 
-function hashPass(content) {
-  if (typeof content !== 'string') {
-    content = JSON.stringify(content);
-  }
-  return createHash('sha256').update(content).digest('hex');
-}
+// Endpoint cho quà tặng (gifts)
+app.get('/api/gifts/:gender', (req, res) => {
+  const { gender } = req.params;
+  const genderValue = gender === 'Nam' ? 0 : 1;
+  const sql = `
+    SELECT 
+      product.*, 
+      category.categoryname, 
+      category.material,
+      CASE 
+        WHEN category.gender = 0 THEN 'Nam'
+        WHEN category.gender = 1 THEN 'Nữ'
+        ELSE 'Khác'
+      END AS gender
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE category.gender = ?
+  `;
 
+  db.query(sql, [genderValue], (err, data) => {
+    if (err) {
+      console.error('Error fetching gift products:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json(data);
+  });
+});
 ////////////Cart
 app.post('/addtocart', (req, res) => {
   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ? AND size = ?"
@@ -1225,3 +1239,187 @@ app.put('/order/payment-status', (req, res) => {
 });
 
 
+// //AI
+// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+// function getKnowledgeBase() {
+//   return new Promise((resolve, reject) => {
+//     db.query('SELECT topic, content FROM knowledge_base', (err, rows) => {
+//       if (err) {
+//         reject(err);
+//         return;
+//       }
+//       if (!rows || rows.length === 0) {
+//         resolve(''); // Return empty if no rows found
+//         return;
+//       }
+//       const knowledgeBaseText = rows.reduce((acc, row) => {
+//         return acc + `\n\nTopic: ${row.topic}\n${row.content}`;
+//       }, '');
+//       resolve(knowledgeBaseText);
+//     });
+//   });
+// }
+
+// /**
+//  * Function to process chat with knowledge base using Gemini API
+//  * @param {string} userMessage - The user's input message
+//  * @returns {Promise<string>} Generated response from Gemini API
+//  */
+// async function processChatWithKnowledgeBase(userMessage) {
+//   try {
+//     const knowledgeBase = await getKnowledgeBase();
+
+//     const prompt = `
+//       You are an AI assistant. Use the following information to answer the question.
+
+//       Knowledge Base:
+//       ${knowledgeBase}
+
+//       User Question:
+//       ${userMessage}
+
+//       Answer:
+//     `;
+
+//     const result = await model.generateContent(prompt);
+
+//     if (!result || !result.response || !result.response.text) {
+//       throw new Error('Received an undefined response from Gemini API');
+//     }
+
+//     return result.response.text;
+//   } catch (error) {
+//     console.error('Error processing chat:', error);
+//     throw error;
+//   }
+// }
+
+// /**
+//  * Function to save chat history to the database
+//  * @param {string} question - The user's question
+//  * @param {string} answer - The AI's answer
+//  */
+// async function saveChatHistory(question, answer) {
+//   try {
+//     // Check if question and answer are strings
+//     if (typeof question !== 'string' || typeof answer !== 'string') {
+//       throw new TypeError('Question and answer must be strings.');
+//     }
+
+//     const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
+
+//     // Log the values being inserted for debugging
+//     console.log('Inserting into chat_history:', { question, answer });
+
+//     await db.query(query, [question, answer]);
+//   } catch (error) {
+//     console.error('Error saving chat history:', error);
+//     // Do not throw error to prevent disrupting user experience
+//   }
+// }
+
+
+// /**
+//  * API Endpoint: Process chat message
+//  * Method: POST
+//  * Route: /api/chat
+//  * Body Parameters:
+//  *   - message: string
+//  */
+// app.post('/api/chat', async (req, res) => {
+//   try {
+//     const { message } = req.body;
+
+//     // Log the incoming request body
+//     console.log('Incoming chat message:', req.body);
+
+//     if (!message) {
+//       return res.status(400).json({ error: 'Message parameter is required.' });
+//     }
+
+//     const responseText = await processChatWithKnowledgeBase(message);
+//     await saveChatHistory(message, responseText);
+
+//     res.json({ response: responseText });
+//   } catch (error) {
+//     console.error('Error processing chat request:', error);
+//     res.status(500).json({ error: 'An error occurred while processing your request.' });
+//   }
+// });
+
+
+// /**
+//  * API Endpoint: Get chat history
+//  * Method: GET
+//  * Route: /api/chat-history
+//  */
+// app.get('/api/chat-history', async (req, res) => {
+//   try {
+//     const query = 'SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT 50';
+//     db.query(query, (err, rows) => {
+//       if (err) {
+//         console.error('Error retrieving chat history:', err);
+//         return res.status(500).json({ error: 'Failed to retrieve chat history.' });
+//       }
+//       res.json(rows);
+//     });
+//   } catch (error) {
+//     console.error('Error retrieving chat history:', error);
+//     res.status(500).json({ error: 'Failed to retrieve chat history.' });
+//   }
+// });
+
+// /**
+//  * API Endpoint: Retrieve knowledge base
+//  * Method: GET
+//  * Route: /api/knowledge-base
+//  */
+// app.get('/api/knowledge-base', async (req, res) => {
+//   try {
+//     const knowledgeBase = await getKnowledgeBase();
+//     res.json({ knowledgeBase });
+//   } catch (error) {
+//     console.error('Error retrieving knowledge base:', error);
+//     res.status(500).json({ error: 'Failed to retrieve knowledge base.' });
+//   }
+// });
+
+// /**
+//  * API Endpoint: Add to knowledge base
+//  * Method: POST
+//  * Route: /api/knowledge-base
+//  * Body Parameters:
+//  *   - topic: string
+//  *   - content: string
+//  */
+// app.post('/api/knowledge-base', async (req, res) => {
+//   try {
+//     const { topic, content } = req.body;
+
+//     if (!topic || !content) {
+//       return res.status(400).json({ error: 'Topic and content are required.' });
+//     }
+
+//     const query = 'INSERT INTO knowledge_base (topic, content) VALUES (?, ?)';
+//     await db.query(query, [topic, content]);
+
+//     res.status(201).json({ message: 'Knowledge base entry added successfully.' });
+//   } catch (error) {
+//     console.error('Error adding to knowledge base:', error);
+//     res.status(500).json({ error: 'Failed to add to knowledge base.' });
+//   }
+// });
+
+
+app.listen(8088, () => {
+  console.log("listening")
+})
+
+function hashPass(content) {
+  if (typeof content !== 'string') {
+    content = JSON.stringify(content);
+  }
+  return createHash('sha256').update(content).digest('hex');
+}

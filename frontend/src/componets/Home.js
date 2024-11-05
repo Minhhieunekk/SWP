@@ -9,7 +9,7 @@ import Footer from "./Footer";
 
 import { useLocation, useNavigate } from "react-router";
 
-const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate }) => {
+const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate, isNew }) => {
     const navigate = useNavigate();
     const rate = Math.round(totalrate / peoplerate);
 
@@ -21,12 +21,12 @@ const ProductCard = ({ productid, image, name, categoryname, material, price, to
         <div className="product-card" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
             <div className="product-image-wrapper">
                 <img src={image} alt={name} className="product-image" />
-                <span className="tag hot">HOT</span>
+                {isNew && <span className="tag NEW">NEW</span> }
             </div>
             <div className="product-info">
                 <h3 className="product-title">{name}</h3>
                 <p className="product-category">{categoryname} {material}</p>
-                <p className="product-price">{price} VND</p>
+                <p className="product-price">{parseInt(price).toLocaleString()} VND</p>
                
                 <div className="rating">
                     {[...Array(5)].map((_, i) => (
@@ -191,7 +191,7 @@ const Home = () => {
 
 
             <Container fluid className="home-container" style={{ position: "relative", top: "130px" }}>
-                <div className="center-text mb-3"><h2>Sản phẩm chúng tôi</h2></div>
+                <div className="center-text mb-3"><h2>Sản phẩm mới</h2></div>
                 <Row className="justify-content-center g-0">
                     <Col md={11}>
                         <div className="carousel-container">
@@ -205,7 +205,7 @@ const Home = () => {
                             </button>
                             <div className="product-grid">
                                 {products.map((product) => (
-                                    <ProductCard key={product.id} {...product} />
+                                    <ProductCard key={product.id} {...product} isNew={true}/>
                                 ))}
                             </div>
                             <button
@@ -221,7 +221,7 @@ const Home = () => {
                 </Row>
                 <Row className="justify-content-center g-0 mt-4">
                     <Col md={11} className="text-center">
-                        <img src="banner4.jpg" alt="anh1" className="img-fluid" style={{ width: "200%" }} />
+                        <img src="banner1.jpg" alt="anh1" className="img-fluid" style={{ width: "200%",cursor:'pointer' }} onClick={()=>navigate('/gioithieu/4')} />
                         <div className="center-text mt-3 mb-3"><h2>Trang sức khuyên tai</h2></div>
                     </Col>
                     <Col md={11}>
@@ -252,7 +252,7 @@ const Home = () => {
                 </Row>
                 <Row className="justify-content-center g-0 mt-4">
                     <Col md={11} className="text-center">
-                        <img src="banner5.jpg" alt="anh1" className="img-fluid" style={{ width: "200%" }} />
+                        <img src="banner3.jpg" alt="anh1" className="img-fluid" style={{ width: "200%",cursor:'pointer' }} onClick={()=>navigate('/gioithieu/1')}/>
                         <div className="center-text mt-3 mb-3"><h2>Trang sức dây chuyền</h2></div>
                     </Col>
                     <Col md={11}>
@@ -283,7 +283,7 @@ const Home = () => {
                 </Row>
                 <Row className="justify-content-center g-0 mt-4">
                     <Col md={11} className="text-center">
-                        <img src="banner3.jpg" alt="anh1" className="img-fluid" style={{ width: "200%" }} />
+                        <img src="banner2.jpg" alt="anh1" className="img-fluid" style={{ width: "200%",cursor:'pointer' }} onClick={()=>navigate('/gioithieu/2')} />
                         <div className="center-text mt-3 mb-3"><h2>Trang sức vòng tay</h2></div>
                     </Col>
                     <Col md={11}>
@@ -314,7 +314,7 @@ const Home = () => {
                 </Row>
                 <Row className="justify-content-center g-0 mt-4">
                     <Col md={11} className="text-center">
-                        <img src="banner1.jpg" alt="anh1" className="img-fluid" style={{ width: "200%" }} />
+                        <img src="banner4.jpg" alt="anh1" className="img-fluid" style={{ width: "200%",cursor:'pointer' }} onClick={()=>navigate('/gioithieu/3')} />
                         <div className="center-text mt-3 mb-3"><h2>Trang sức nhẫn</h2></div>
                     </Col>
                     <Col md={11}>

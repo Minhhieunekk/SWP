@@ -14,6 +14,7 @@ const ProductFilter = () => {
 
   const [products, setProducts] = useState([]);
   const [filters, setFilters] = useState([]);
+  const [sortOption, setSortOption] = useState('all'); // Default to show all products
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,8 +23,6 @@ const ProductFilter = () => {
           axios.get('http://localhost:8088/api/products'),
           axios.get('http://localhost:8088/api/filters')
         ]);
-        console.log('Products:', productsResponse.data);
-        console.log('Filters:', filtersResponse.data);
         setProducts(productsResponse.data);
         setFilters(formatFilters(filtersResponse.data));
       } catch (error) {
@@ -63,6 +62,26 @@ const ProductFilter = () => {
     }));
   };
 
+  const handleSortChange = (event) => {
+    setSortOption(event.target.value);
+  };
+
+  const getSortedProducts = () => {
+    let sortedProducts = [...filteredProducts];
+
+    switch (sortOption) {
+      case 'newest':
+        return sortedProducts.slice(-20); // Show last 20 products for "Sản phẩm mới nhất"
+      case 'priceLowToHigh':
+        return sortedProducts.sort((a, b) => a.price - b.price);
+      case 'priceHighToLow':
+        return sortedProducts.sort((a, b) => b.price - a.price);
+      case 'all':
+      default:
+        return sortedProducts; // Show all products
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     return Object.entries(selectedFilters).every(([key, value]) => {
       if (!value) return true;
@@ -85,76 +104,76 @@ const ProductFilter = () => {
     });
   });
 
+  const sortedProducts = getSortedProducts();
+
   return (
     <>
-    <AppHeader/>
-    <Container fluid className="py-4" style={{position:"relative",top:"200px"}}>
-      <Row>
-        <Col xs={12} className="mb-4">
-          
-          <Row>
-            {filters.map(filter => (
-              <Col key={filter.id} xs={6} sm={4} md={3} lg={2} className="mb-2">
-                <Form.Select
-                  size="sm"
-                  onChange={e => handleFilterChange(filter.id, e.target.value)}
-                  value={selectedFilters[filter.id]}
-                >
-                  <option value="">{filter.label}</option>
-                  {filter.options.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Form.Select>
+      <AppHeader/>
+      <Container fluid className="py-4" style={{position:"relative",top:"200px"}}>
+        <Row>
+          <Col xs={12} className="mb-4">
+            <Row>
+              {filters.map(filter => (
+                <Col key={filter.id} xs={6} sm={4} md={3} lg={2} className="mb-2">
+                  <Form.Select
+                    size="sm"
+                    onChange={e => handleFilterChange(filter.id, e.target.value)}
+                    value={selectedFilters[filter.id]}
+                  >
+                    <option value="">{filter.label}</option>
+                    {filter.options.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Col>
+              ))}
+              <Col xs={6} sm={4} md={3} lg={2} className="mb-2">
+                <Form.Check 
+                  type="checkbox"
+                  id="promotion-checkbox"
+                  label="KHUYẾN MÃI"
+                />
               </Col>
-            ))}
-            <Col xs={6} sm={4} md={3} lg={2} className="mb-2">
-              <Form.Check 
-                type="checkbox"
-                id="promotion-checkbox"
-                label="KHUYẾN MÃI"
-              />
-            </Col>
-          </Row>
-        </Col>
-      </Row>
-      <Row>
-        <Col xs={12}>
-          <Form.Select className="mb-4" size="sm">
-            <option>Sản phẩm mới nhất</option>
-            <option>Sản phẩm phổ biến nhất</option>
-            <option>Giá từ thấp đến cao</option>
-            <option>Giá từ cao đến thấp</option>
-            <option>Sản phẩm bán chạy nhất</option>
-          </Form.Select>
-        </Col>
-      </Row>
-      <Row xs={2} md={3} lg={4} className="g-4">
-        {filteredProducts.map(product => (
-          <Col key={product.id}>
-            <Card className="h-100">
-              <Card.Img variant="top" src={product.image} />
-              {product.isnew === 1 && (
-                <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">
-                  NEW
-                </Badge>
-              )}
-              <Card.Body className="d-flex flex-column">
-                <Card.Title className="h6">{product.name}</Card.Title>
-                <Card.Text className="text-danger fw-bold mt-auto">
-                  {parseInt(product.price).toLocaleString()}đ
-                </Card.Text>
-                <small className="text-muted">{product.code}</small>
-                {product.soldcount > 0 && (
-                  <small className="text-muted">{product.soldcount} đã bán</small>
-                )}
-              </Card.Body>
-            </Card>
+            </Row>
           </Col>
-        ))}
-      </Row>
-    </Container>
+        </Row>
+        <Row>
+          <Col xs={12}>
+            <Form.Select className="mb-4" size="sm" onChange={handleSortChange}>
+              <option value="all">Tất cả sản phẩm</option>
+              <option value="newest">Sản phẩm mới nhất</option>
+              <option value="priceLowToHigh">Giá từ thấp đến cao</option>
+              <option value="priceHighToLow">Giá từ cao đến thấp</option>
+            </Form.Select>
+          </Col>
+        </Row>
+        <Row xs={2} md={3} lg={4} className="g-4">
+          {sortedProducts.map(product => (
+            <Col key={product.id}>
+              <Card className="h-100">
+                <Card.Img variant="top" src={product.image} />
+                {product.isnew === 1 && (
+                  <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">
+                    NEW
+                  </Badge>
+                )}
+                <Card.Body className="d-flex flex-column">
+                  <Card.Title className="h6">{product.name}</Card.Title>
+                  <Card.Text className="text-danger fw-bold mt-auto">
+                    {parseInt(product.price).toLocaleString()}đ
+                  </Card.Text>
+                  <small className="text-muted">{product.code}</small>
+                  {product.soldcount > 0 && (
+                    <small className="text-muted">{product.soldcount} đã bán</small>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </Container>
     </>
   );
 };
