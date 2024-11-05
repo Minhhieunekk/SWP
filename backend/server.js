@@ -9,7 +9,9 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
+const bodyParser = require('body-parser');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -46,6 +48,7 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
+app.use(bodyParser.json());
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -55,6 +58,8 @@ const db = mysql.createConnection({
   password: "",
   database: "swpvip"
 })
+
+
 function generateToken(user) {
   return jwt.sign(
     { username: user.username, consumerid: user.consumerid, password: user.password },
@@ -256,37 +261,41 @@ app.get('/productdetail', (req, res) => {
   });
 });
 
-// Lấy sản phẩm + pagniation 
 app.get("/home", (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 4;
+  const limit = 4; // Display 4 products per page
   const offset = (page - 1) * limit;
 
-  // First, get the total count of products
-  db.query("SELECT COUNT(*) as total FROM product", (err, countResult) => {
+  // Step 1: Get the last 10 products by productid
+  const last10ProductsQuery = `
+    SELECT * 
+    FROM product 
+    JOIN category ON product.category = category.categoryid 
+    ORDER BY productid DESC 
+    LIMIT 10
+  `;
+
+  db.query(last10ProductsQuery, (err, last10ProductsResult) => {
     if (err) {
-      return res.status(500).json("Error counting products");
+      return res.status(500).json("Error fetching the last 10 products");
     }
 
-    const totalProducts = countResult[0].total;
+    
+    const totalProducts = last10ProductsResult.length;
     const totalPages = Math.ceil(totalProducts / limit);
 
-    // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid ORDER BY productid LIMIT ? OFFSET ?";
-    db.query(sql, [limit, offset], (err, data) => {
-      if (err) {
-        return res.status(500).json("Error fetching products");
-      }
+    
+    const paginatedProducts = last10ProductsResult.slice(offset, offset + limit);
 
-      return res.json({
-        products: data,
-        currentPage: page,
-        totalPages: totalPages,
-        totalProducts: totalProducts
-      });
+    return res.json({
+      products: paginatedProducts,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts
     });
   });
 });
+
 
 // lấy bông tai
 app.get("/home/bongtai", (req, res) => {
@@ -1081,43 +1090,53 @@ app.put('/orders/:orderId', async (req, res) => {
 //AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-async function getKnowledgeBase() {
-  try {
-    const query = 'SELECT topic, content FROM knowledge_base';
-    return new Promise((resolve, reject) => {
-      db.query(query, (error, rows) => {
-        if (error) {
-          console.error('Error fetching knowledge base:', error);
-          reject(error);
-        } else {
-          const knowledgeBaseText = rows.reduce((acc, row) => {
-            return acc + `\n\nTopic: ${row.topic}\n${row.content}`;
-          }, '');
-          resolve(knowledgeBaseText);
-        }
-      });
+
+function getKnowledgeBase() {
+  return new Promise((resolve, reject) => {
+    db.query('SELECT topic, content FROM knowledge_base', (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      if (!rows || rows.length === 0) {
+        resolve(''); // Return empty if no rows found
+        return;
+      }
+      const knowledgeBaseText = rows.reduce((acc, row) => {
+        return acc + `\n\nTopic: ${row.topic}\n${row.content}`;
+      }, '');
+      resolve(knowledgeBaseText);
     });
-  } catch (error) {
-    throw error;
-  }
+  });
 }
 
-// Function to process chat with knowledge base
+/**
+ * Function to process chat with knowledge base using Gemini API
+ * @param {string} userMessage - The user's input message
+ * @returns {Promise<string>} Generated response from Gemini API
+ */
 async function processChatWithKnowledgeBase(userMessage) {
   try {
-    // Fetch knowledge base from database
     const knowledgeBase = await getKnowledgeBase();
 
-    // Create prompt for Gemini API
     const prompt = `
-      Here is the knowledge base that the chatbot has access to:
+      You are an AI assistant. Use the following information to answer the question.
+
+      Knowledge Base:
       ${knowledgeBase}
 
-      Based on this knowledge base, please provide a relevant and informative response to the following user question:
-      User Question: ${userMessage}
+      User Question:
+      ${userMessage}
+
+      Answer:
     `;
 
     const result = await model.generateContent(prompt);
+
+    if (!result || !result.response || !result.response.text) {
+      throw new Error('Received an undefined response from Gemini API');
+    }
+
     return result.response.text;
   } catch (error) {
     console.error('Error processing chat:', error);
@@ -1125,45 +1144,122 @@ async function processChatWithKnowledgeBase(userMessage) {
   }
 }
 
-// Function to save chat history
+/**
+ * Function to save chat history to the database
+ * @param {string} question - The user's question
+ * @param {string} answer - The AI's answer
+ */
 async function saveChatHistory(question, answer) {
   try {
+    // Check if question and answer are strings
+    if (typeof question !== 'string' || typeof answer !== 'string') {
+      throw new TypeError('Question and answer must be strings.');
+    }
+
     const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
-    db.query(query, [question, answer], (error) => {
-      if (error) {
-        console.error('Error saving chat history:', error);
-      }
-    });
+
+    // Log the values being inserted for debugging
+    console.log('Inserting into chat_history:', { question, answer });
+
+    await db.query(query, [question, answer]);
   } catch (error) {
     console.error('Error saving chat history:', error);
+    // Do not throw error to prevent disrupting user experience
   }
 }
 
-// API Endpoints
 
-// Process chat message
+/**
+ * API Endpoint: Process chat message
+ * Method: POST
+ * Route: /api/chat
+ * Body Parameters:
+ *   - message: string
+ */
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
+
+    // Log the incoming request body
+    console.log('Incoming chat message:', req.body);
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message parameter is required.' });
+    }
+
     const responseText = await processChatWithKnowledgeBase(message);
     await saveChatHistory(message, responseText);
+
     res.json({ response: responseText });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error processing chat request:', error);
+    res.status(500).json({ error: 'An error occurred while processing your request.' });
   }
 });
 
-// Get chat history
-app.get('/api/chat-history', (req, res) => {
-  const query = 'SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT 50';
-  db.query(query, (error, rows) => {
-    if (error) {
-      res.status(500).json({ error: 'Failed to retrieve chat history.' });
-    } else {
+
+/**
+ * API Endpoint: Get chat history
+ * Method: GET
+ * Route: /api/chat-history
+ */
+app.get('/api/chat-history', async (req, res) => {
+  try {
+    const query = 'SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT 50';
+    db.query(query, (err, rows) => {
+      if (err) {
+        console.error('Error retrieving chat history:', err);
+        return res.status(500).json({ error: 'Failed to retrieve chat history.' });
+      }
       res.json(rows);
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Error retrieving chat history:', error);
+    res.status(500).json({ error: 'Failed to retrieve chat history.' });
+  }
 });
+
+/**
+ * API Endpoint: Retrieve knowledge base
+ * Method: GET
+ * Route: /api/knowledge-base
+ */
+app.get('/api/knowledge-base', async (req, res) => {
+  try {
+    const knowledgeBase = await getKnowledgeBase();
+    res.json({ knowledgeBase });
+  } catch (error) {
+    console.error('Error retrieving knowledge base:', error);
+    res.status(500).json({ error: 'Failed to retrieve knowledge base.' });
+  }
+});
+
+/**
+ * API Endpoint: Add to knowledge base
+ * Method: POST
+ * Route: /api/knowledge-base
+ * Body Parameters:
+ *   - topic: string
+ *   - content: string
+ */
+app.post('/api/knowledge-base', async (req, res) => {
+  try {
+    const { topic, content } = req.body;
+
+    if (!topic || !content) {
+      return res.status(400).json({ error: 'Topic and content are required.' });
+    }
+
+    const query = 'INSERT INTO knowledge_base (topic, content) VALUES (?, ?)';
+    await db.query(query, [topic, content]);
+
+    res.status(201).json({ message: 'Knowledge base entry added successfully.' });
+  } catch (error) {
+    console.error('Error adding to knowledge base:', error);
+    res.status(500).json({ error: 'Failed to add to knowledge base.' });
+  }
+});
+
 
 app.listen(8088, () => {
   console.log("listening")
