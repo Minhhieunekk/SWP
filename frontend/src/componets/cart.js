@@ -5,6 +5,7 @@ import '../styles/dashboard.scss';
 import axios from "axios";
 import { useParams } from 'react-router-dom';
 import ImageAlertModal from "./ImageAlertModal";
+import AppHeader from './Header';
 
 
 const Cart = () => {
@@ -241,7 +242,9 @@ const Cart = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <div>
+        <>
+        <AppHeader/>
+        <div style={{position:'relative',top:'150px'}}>
             <h1>Giỏ hàng của bạn</h1>
             <div className="container-xl">
             <div className="table-responsive">
@@ -413,6 +416,7 @@ const Cart = () => {
             </div>
             </div>
         </div>
+        </>
     );
 };
 

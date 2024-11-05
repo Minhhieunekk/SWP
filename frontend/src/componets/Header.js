@@ -36,6 +36,7 @@ const AppHeader = ({ username, password, consumerid }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     navigate('/login');
   };
 
@@ -248,21 +249,21 @@ const AppHeader = ({ username, password, consumerid }) => {
               </SubMenu>
               <SubMenu
                 key="4"
-                title="Blog"
+                title="Tư vấn"
                 className={
                   selectedKey.startsWith("4") ? "menu-item-selected" : ""
                 }
-                onTitleClick={() => navigate("/blog")}
+                onTitleClick={() => navigate("/chat")}
               ></SubMenu>
 
 
               <SubMenu
                 key="5"
-                title="Khuyến Mãi"
+                title="Liên hệ"
                 className={
                   selectedKey.startsWith("5") ? "menu-item-selected" : ""
                 }
-                onTitleClick={() => navigate("/khuyen-mai")}
+                onTitleClick={() => navigate("/contact")}
               ></SubMenu>
 
 

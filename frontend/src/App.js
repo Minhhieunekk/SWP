@@ -12,6 +12,8 @@ import Cart from './componets/cart';
 import TrackingOrder from './componets/order';
 import ProductFilter from './componets/Filter';
 import Chart from './componets/chart';
+import Chatbot from './componets/chatbot';
+import Contact from './componets/Contact';
 function App() {
   return (
     <div className="App">
@@ -46,9 +48,9 @@ function App() {
           <Route path="/qua-tang/2" element={<div>trang sức nữ</div>} />
 
 
-          <Route path="/blog" element={<div>Blog</div>} />
+          <Route path="/chat" element={<Chatbot/>} />
 
-          <Route path="/khuyen-mai" element={<div>khuyen mai</div>} />
+          <Route path="/contact" element={<Contact/>} />
           <Route path="/cart/:consumerid" element={<Cart />} />
           <Route path="/trackingorder" element={<TrackingOrder />} />
         </Routes>

@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -884,19 +885,6 @@ app.get('/api/filters', (req, res) => {
 });
 
 
-
-
-app.listen(8088, () => {
-  console.log("listening")
-})
-
-function hashPass(content) {
-  if (typeof content !== 'string') {
-    content = JSON.stringify(content);
-  }
-  return createHash('sha256').update(content).digest('hex');
-}
-
 ////////////Cart
 app.post('/addtocart', (req, res) => {
   const checkedSql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ? AND size = ?"
@@ -1073,3 +1061,100 @@ app.put('/orders/:orderId', async (req, res) => {
   // res.status(204).send();
 });
 
+//AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+async function getKnowledgeBase() {
+  try {
+    const query = 'SELECT topic, content FROM knowledge_base';
+    return new Promise((resolve, reject) => {
+      db.query(query, (error, rows) => {
+        if (error) {
+          console.error('Error fetching knowledge base:', error);
+          reject(error);
+        } else {
+          const knowledgeBaseText = rows.reduce((acc, row) => {
+            return acc + `\n\nTopic: ${row.topic}\n${row.content}`;
+          }, '');
+          resolve(knowledgeBaseText);
+        }
+      });
+    });
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Function to process chat with knowledge base
+async function processChatWithKnowledgeBase(userMessage) {
+  try {
+    // Fetch knowledge base from database
+    const knowledgeBase = await getKnowledgeBase();
+
+    // Create prompt for Gemini API
+    const prompt = `
+      Here is the knowledge base that the chatbot has access to:
+      ${knowledgeBase}
+
+      Based on this knowledge base, please provide a relevant and informative response to the following user question:
+      User Question: ${userMessage}
+    `;
+
+    const result = await model.generateContent(prompt);
+    return result.response.text;
+  } catch (error) {
+    console.error('Error processing chat:', error);
+    throw error;
+  }
+}
+
+// Function to save chat history
+async function saveChatHistory(question, answer) {
+  try {
+    const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
+    db.query(query, [question, answer], (error) => {
+      if (error) {
+        console.error('Error saving chat history:', error);
+      }
+    });
+  } catch (error) {
+    console.error('Error saving chat history:', error);
+  }
+}
+
+// API Endpoints
+
+// Process chat message
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    const responseText = await processChatWithKnowledgeBase(message);
+    await saveChatHistory(message, responseText);
+    res.json({ response: responseText });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get chat history
+app.get('/api/chat-history', (req, res) => {
+  const query = 'SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT 50';
+  db.query(query, (error, rows) => {
+    if (error) {
+      res.status(500).json({ error: 'Failed to retrieve chat history.' });
+    } else {
+      res.json(rows);
+    }
+  });
+});
+
+app.listen(8088, () => {
+  console.log("listening")
+})
+
+function hashPass(content) {
+  if (typeof content !== 'string') {
+    content = JSON.stringify(content);
+  }
+  return createHash('sha256').update(content).digest('hex');
+}
