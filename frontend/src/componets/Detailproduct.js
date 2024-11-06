@@ -4,6 +4,7 @@ import { Star } from 'lucide-react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import "../styles/detailproduct.scss";
+import { Image } from 'antd';
 import AppHeader from "./Header";
 
 const ProductCard = ({
@@ -79,7 +80,7 @@ const ProductCard = ({
                 <Card.Title className="fw-bold mt-3">{name}</Card.Title>
                     <Col md={6} className="d-flex align-items-center">
                     
-                        <Card.Img variant="top" src={`/images/${image}`} alt={name} className="img-fluid" />
+                        <Image variant="top" src={`/images/${image}`} alt={name} className="img-fluid" />
                     </Col>
                     <Col md={6}>
                         <Card.Body>

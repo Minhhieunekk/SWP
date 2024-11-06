@@ -122,6 +122,11 @@ const AppHeader = () => {
           Quản lý đơn hàng
         </Menu.Item>)
       }
+      {
+        (consumerid===11) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
+          Quản lý người dùng
+        </Menu.Item>)
+      }
     </Menu>
   );
 

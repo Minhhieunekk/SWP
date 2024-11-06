@@ -289,7 +289,26 @@ app.post('/addproduct', (req, res) => {
   });
 });
 
+//quản lý người dùng 
+app.get('/manageruser', (req, res) => {
+  const sql = `
+    SELECT 
+      u.consumerid, u.username, u.phone, u.email, u.address, u.image_url,
+      SUM(od.total) AS total_spent, 
+      COUNT(od.order_id) AS total_products
+    FROM user u
+    LEFT JOIN order_detail od ON u.consumerid = od.user_id
+    GROUP BY u.consumerid
+  `;
 
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).json({ error: 'Error fetching users' });
+    }
+    res.json(results);
+  });
+});
 
 //đăng nhập
 app.post('/login', (req, res) => {
@@ -1606,7 +1625,6 @@ async function initializeQASystem() {
   Bạn là nhân viên tiệm trang sức. Bạn hãy dựa vào lịch sử hội thoại, câu hỏi để tạo nên query vào database SQL của bạn và đưa ra câu trả lời hữu ích.
 
   Lịch sử hội thoại:  {chat_history}
-
   Câu hỏi: {question}
   SQL Query: {query}
   SQL Đầu ra: {result}

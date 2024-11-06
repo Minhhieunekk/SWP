@@ -17,6 +17,7 @@ import Contact from './componets/Contact';
 import { JewelryCategory } from './componets/JewelryCategory';
 import { MaterialCategory } from './componets/MaterialCategory';
 import { GiftCategory } from './componets/GiftCategory';
+import UserManagementComponent from './componets/manageruser';
 function App() {
   return (
     <div className="App">
@@ -35,7 +36,7 @@ function App() {
           <Route path="/gioithieu/:type" element={<JewelryCategory />} />
           <Route path="/chat-lieu/:id" element={<MaterialCategory />} />
           <Route path="/qua-tang/:id" element={<GiftCategory />} />
-
+          <Route path="/manageuser" element={<UserManagementComponent />} />
 
           <Route path="/chat" element={<Chatbot />} />
 
