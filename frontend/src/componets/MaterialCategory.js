@@ -3,12 +3,13 @@ import { Container, Row, Col, Card, Form, Badge, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import AppHeader from "./Header";
 import { useParams } from 'react-router-dom';
-
+import { useNavigate } from "react-router";
 export const MaterialCategory = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState('all'); // Default to show all products
   const { id } = useParams();
+  const [isNew,setIsNew]=useState(false);
   
   const materialMap = {
     "1": "Vàng",
@@ -31,7 +32,14 @@ export const MaterialCategory = () => {
   }, [id]);
 
   const handleSortChange = (e) => {
-    setSortOption(e.target.value);
+    const selectedOption = e.target.value;
+    setSortOption(selectedOption);
+  
+    if (selectedOption === 'newest') {
+      setIsNew(true); // Đặt isNew thành true khi chọn sản phẩm mới nhất
+    } else {
+      setIsNew(false); // Đặt isNew thành false cho các tùy chọn khác
+    }
   };
 
   const getSortedProducts = () => {
@@ -53,7 +61,7 @@ export const MaterialCategory = () => {
   };
 
   const sortedProducts = getSortedProducts();
-
+  const navigate=useNavigate();
   return (
     <>
       <AppHeader />
@@ -73,9 +81,9 @@ export const MaterialCategory = () => {
         <Row xs={2} md={3} lg={4} className="g-4">
           {sortedProducts.map(product => (
             <Col key={product.id}>
-              <Card className="h-100">
+              <Card className="h-100" style={{cursor:'pointer'}} onClick={()=>navigate(`/productdetail/${product.productid}`)}>
                 <Card.Img variant="top" src={`/images/${product.image}`} />
-                {product.isnew === 1 && (
+                {isNew && (
                   <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">
                     NEW
                   </Badge>

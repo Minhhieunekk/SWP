@@ -58,20 +58,10 @@ const Home = () => {
     const limit = 4;
     const location = useLocation();
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const queryParams = new URLSearchParams(location.search);
-        const tokenFromUrl = queryParams.get('token');
-    
-        // Save token from URL if it exists
-        if (!token && tokenFromUrl) {
-            localStorage.setItem('token', tokenFromUrl);
-            fetchUserData(tokenFromUrl);
-        } else if (token) {
-            fetchUserData(token);
-        }
+       
 
         
         fetchProductsData(currentPage, 'products');
@@ -112,23 +102,7 @@ const Home = () => {
             console.error(err);
         }
     };
-    const fetchUserData = async (token) => {
-        try {
-          
-          const res = await axios.get('http://localhost:8088/api/user/details', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          setUser(res.data);
-             
-        } catch (err) {
-          console.error('Error fetching user data:', err);
-         
-          if (err.response?.status === 401 || err.response?.status === 403) {
-            localStorage.removeItem('token');
-            
-          }
-        }
-      };
+    
 
    
 
@@ -168,7 +142,7 @@ const Home = () => {
 
     return (
         <>
-            <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
+            <AppHeader  />
            
             <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000" style={{ position: "relative", top: "120px" }}>
                 <div class="carousel-indicators">

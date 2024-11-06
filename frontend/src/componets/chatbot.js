@@ -20,38 +20,64 @@ function Chatbot() {
     scrollToBottom();
   }, [messages]);
 
-  const loadChatHistory = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/chat-history`);
-      setMessages(response.data);
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
-
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Update loadChatHistory to transform the data format
+  const loadChatHistory = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/chat-history`);
+      // Transform the data into message format
+      const chatHistory = response.data.map(chat => [
+        {
+          type: 'user',
+          content: chat.question,
+          timestamp: chat.timestamp
+        },
+        {
+          type: 'bot', 
+          content: chat.answer,
+          timestamp: chat.timestamp
+        }
+      ]).flat();
+      setMessages(chatHistory);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
-
-    // Add user message to chat
-    setMessages(prev => [...prev, { type: 'user', content: inputMessage, timestamp: new Date() }]);
+    const message = inputMessage.trim();
+    if (!message) return;
+  
+    const newUserMessage = {
+      type: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+  
+    setMessages(prev => [...prev, newUserMessage]);
     setInputMessage('');
     setIsLoading(true);
-
+  
     try {
-      const response = await axios.post(`${API_URL}/chat`, {
-        message: inputMessage
-      });
-
-      // Add bot response to chat
-      setMessages(prev => [...prev, { type: 'bot', content: response.data.response, timestamp: new Date() }]);
+      const response = await axios.post(`${API_URL}/chat`, { message });
+      const newBotMessage = {
+        type: 'bot',
+        content: response.data.response,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, newBotMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, { type: 'bot', content: 'Sorry, there was an error processing your message.', timestamp: new Date() }]);
+      const errorMessage = {
+        type: 'bot',
+        content: 'Sorry, there was an error processing your message.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

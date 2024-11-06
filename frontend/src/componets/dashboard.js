@@ -1,68 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { Edit, Trash, PlusCircle } from 'react-feather';
-import '../styles/dashboard.scss'; 
+import {Image} from 'antd';
+import '../styles/dashboard.scss';
 import axios from "axios";
-
+import AppHeader from './Header';
 const Dashboard = () => {
-  const [employees, setEmployees] = useState([]);
+  const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const itemsPerPage = 10;
+
   useEffect(() => {
-    fetchEmployees();
-  }, []);
+    fetchProducts(currentPage, itemsPerPage);
+  }, [currentPage]);
 
-  const fetchEmployees = () => {
-    axios.get('http://localhost:8088/dashboard')
-      .then(res => setEmployees(res.data))
-      .catch(err => console.log(err));
+  const fetchProducts = async (page, limit) => {
+    setProducts([]);
+    try {
+      const res = await axios.get(`http://localhost:8088/dashboard?page=${page}&limit=${limit}`);
+      setProducts(res.data.products);
+      setTotalPages(res.data.totalPages);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
   };
 
-  const handleAdd = (newEmployee) => {
-    axios.post('http://localhost:8088/addproduct', newEmployee)
-      .then(res => {
-        console.log(res);
-        fetchEmployees(); 
-      })
-      .catch(err => console.log(err));
+  const handleAdd = async (newProduct) => {
+    try {
+      await axios.post('http://localhost:8088/addproduct', newProduct);
+      fetchProducts(currentPage, itemsPerPage);
+    } catch (err) {
+      console.error('Error adding product:', err);
+    }
   };
 
-  const handleEdit = (updatedEmployee) => {
-    axios.put(`http://localhost:8088/updateproduct/${updatedEmployee.productid}`, updatedEmployee)
-      .then(res => {
-        console.log(res);
-        fetchEmployees(); // Refresh the list after updating
-      })
-      .catch(err => console.log(err));
+  const handleEdit = async (updatedProduct) => {
+    try {
+      await axios.put(`http://localhost:8088/updateproduct/${updatedProduct.productid}`, updatedProduct);
+      fetchProducts(currentPage, itemsPerPage);
+    } catch (err) {
+      console.error('Error updating product:', err);
+    }
   };
 
-  const handleDelete = () => {
-    if (selectedEmployee) {
-      axios.delete(`http://localhost:8088/deleteproduct/${selectedEmployee.productid}`)
-        .then(res => {
-          console.log(res);
-          fetchEmployees(); // Refresh the list after deleting
-          setShowDeleteModal(false);
-          setSelectedEmployee(null);
-        })
-        .catch(err => console.log(err));
+  const handleDelete = async () => {
+    if (selectedProduct) {
+      try {
+        await axios.delete(`http://localhost:8088/deleteproduct/${selectedProduct.productid}`);
+        fetchProducts(currentPage, itemsPerPage);
+        setShowDeleteModal(false);
+        setSelectedProduct(null);
+      } catch (err) {
+        console.error('Error deleting product:', err);
+      }
+    }
+  };
+
+  const handlePageChange = (direction) => {
+    if (direction === 'prev' && currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    } else if (direction === 'next' && currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
     }
   };
 
   return (
-    <div className="container-xl">
+    <>
+    <AppHeader/>
+    <div className="container" style={{position:"relative",top:'130px'}}>
       <div className="table-responsive">
         <div className="table-wrapper">
           <div className="table-title">
             <div className="row">
               <div className="col-sm-6">
-                <h2>Manage <b>Products</b></h2>
+                <h2>Quản lý <b>Sản phẩm</b></h2>
               </div>
               <div className="col-sm-6">
                 <Button className="btn btn-success" onClick={() => setShowAddModal(true)}>
-                  <PlusCircle size={18} /> <span>Add New Product</span>
+                  <PlusCircle size={18} /> <span>Thêm mới sản phẩm</span>
                 </Button>
               </div>
             </div>
@@ -70,25 +90,46 @@ const Dashboard = () => {
           <table className="table table-striped table-hover">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Amount</th>
-                <th>Category</th>
-                <th>Actions</th>
+                <th>Tên</th>
+                <th>Mã sản phẩm</th>
+                <th>Giá</th>
+                <th>Số lượng (cái)</th>
+                <th>Phân loại</th>
+                <th>Thương hiệu</th>
+                <th>Chất liệu</th>
+                <th>Tuổi vàng</th>
+                <th>Ảnh</th> 
+                <th>Kích cỡ</th>
+                <th>Chỉnh sửa</th>
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee) => (
-                <tr key={employee.productid}>
-                  <td>{employee.name}</td>
-                  <td>{employee.price}</td>
-                  <td>{employee.amount}</td>
-                  <td>{employee.category}</td>
+              {products.map((product) => (
+                <tr key={product.productid}>
+                  <td>{product.name}</td>
+                  <td>{product.code}</td>
+                  <td>{product.price.toLocaleString()} VND</td>
+                  <td>{product.amount}</td>
+                  <td>{product.categoryname}</td>
+                  <td>{product.brand}</td>
+                  <td>{product.material}</td>
+                  <td>{product.goldage}</td>
                   <td>
-                    <a href="#" className="edit" onClick={() => { setSelectedEmployee(employee); setShowEditModal(true); }}>
+                    {product.image && (
+                      <Image
+                        src={`images/${product.image}`} 
+                        alt={product.name}
+                        width={100} 
+                        height={100} 
+                      />
+                    )}
+                  </td>
+                  <td>{product.size}</td>
+                  <td>
+                    <a href="#" className="edit" onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
                       <Edit size={18} />
                     </a>
-                    <a href="#" className="delete" onClick={() => { setSelectedEmployee(employee); setShowDeleteModal(true); }}>
+                    <a href="#" className="delete" onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
                       <Trash size={18} />
                     </a>
                   </td>
@@ -97,75 +138,127 @@ const Dashboard = () => {
             </tbody>
           </table>
           <div className="clearfix">
-            <div className="hint-text">Showing <b>{employees.length}</b> entries</div>
+            <div className="hint-text">Biểu diễn <b>{products.length}</b> sản phẩm</div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="pagination">
+            <Button disabled={currentPage === 1} onClick={() => handlePageChange('prev')}>Trước</Button>
+            <span>Trang {currentPage} trong {totalPages}</span>
+            <Button disabled={currentPage === totalPages} onClick={() => handlePageChange('next')}>Sau</Button>
           </div>
         </div>
       </div>
 
-      <EmployeeModal
+      <ProductModal
         show={showAddModal}
         onHide={() => setShowAddModal(false)}
         onSubmit={handleAdd}
-        title="Add Product"
+        title="Thêm sản phẩm"
       />
 
-      <EmployeeModal
+      <ProductModal
         show={showEditModal}
         onHide={() => setShowEditModal(false)}
         onSubmit={handleEdit}
-        title="Edit Product"
-        employee={selectedEmployee}
+        title="Thay đổi sản phẩm"
+        product={selectedProduct}
       />
 
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Delete Product</Modal.Title>
+          <Modal.Title>Xoá sản phẩm</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Are you sure you want to delete this product?</p>
-          <p className="text-warning"><small>This action cannot be undone.</small></p>
+          <p>Bạn có muốn xoá sản phẩm không?</p>
+          <p className="text-warning"><small>Điều này sẽ không thể hoàn tác</small></p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-          <Button variant="danger" onClick={handleDelete}>Delete</Button>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Huỷ</Button>
+          <Button variant="danger" onClick={handleDelete}>Xoá</Button>
         </Modal.Footer>
       </Modal>
     </div>
+    </>
   );
 };
 
-const EmployeeModal = ({ show, onHide, onSubmit, title, employee = null }) => {
+const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
   const [formData, setFormData] = useState({
+    productid: '',
     name: '',
     price: '',
     amount: '',
-    category: '',
-    image: ''
+    categoryname: '',
+    brand: '',
+    material: '',
+    goldage: '',
+    gender: '',
+    size: '',
+    image: null  
+  });
+
+  const [filters, setFilters] = useState({
+    brands: [],
+    goldAges: [],
+    materials: [],
+    genders: [],
+    productTypes: [],
+    sizes: []
   });
 
   useEffect(() => {
-    if (employee) {
+    if (show) {
+      axios.get('http://localhost:8088/api/filterdashboard')
+        .then(res => {
+          setFilters(res.data);
+        })
+        .catch(err => {
+          console.error('Error fetching filters:', err);
+        });
+    }
+
+    if (product) {
       setFormData({
-        productid: employee.productid,
-        name: employee.name || '',
-        price: employee.price || '',
-        amount: employee.amount || '',
-        category: employee.category || '',
-        image: employee.image || ''
+        productid: product.productid,
+        name: product.name || '',
+        price: product.price || '',
+        amount: product.amount || '',
+        categoryname: product.categoryname || '',
+        brand: product.brand || '',
+        material: product.material || '',
+        goldage: product.goldage || '',
+        gender: product.gender || '',
+        size: product.size || '',
+        image: null 
       });
     } else {
       setFormData({
+        productid: '',
         name: '',
         price: '',
         amount: '',
-        category: '',
-        image: ''
+        categoryname: '',
+        brand: '',
+        material: '',
+        goldage: '',
+        gender: '',
+        size: '',
+        image: null // Empty when no product is selected
       });
     }
-  }, [employee]);
+  }, [product, show]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]; // Get the selected file
+    if (file) {
+      setFormData({ ...formData, image: file.name }); // Store the file itself
+    }
   };
 
   const handleSubmit = (e) => {
@@ -181,30 +274,135 @@ const EmployeeModal = ({ show, onHide, onSubmit, title, employee = null }) => {
           <Modal.Title>{title}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form.Group>
-            <Form.Label>Name</Form.Label>
-            <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required />
+          <Form.Group controlId="formProductName">
+            <Form.Label>Tên sản phẩm</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter product name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
           </Form.Group>
-          <Form.Group>
-            <Form.Label>Price</Form.Label>
-            <Form.Control type="text" name="price" value={formData.price} onChange={handleChange} required />
+          <Form.Group controlId="formProductPrice">
+            <Form.Label>Giá sản phẩm</Form.Label>
+            <Form.Control
+              type="number"
+              placeholder="Enter product price"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              required
+            />
           </Form.Group>
-          <Form.Group>
-            <Form.Label>Amount</Form.Label>
-            <Form.Control type='text' name="amount" value={formData.amount} onChange={handleChange} required />
+          <Form.Group controlId="formProductAmount">
+            <Form.Label>Số lượng(cái)</Form.Label>
+            <Form.Control
+              type="number"
+              placeholder="Enter product amount"
+              name="amount"
+              value={formData.amount}
+              onChange={handleChange}
+              required
+            />
           </Form.Group>
-          <Form.Group>
-            <Form.Label>Category</Form.Label>
-            <Form.Control type="text" name="category" value={formData.category} onChange={handleChange} required />
+          <Form.Group controlId="formProductCategory">
+            <Form.Label>Phân loại</Form.Label>
+            <Form.Control
+              as="select"
+              name="categoryname"
+              value={formData.categoryname}
+              onChange={handleChange}
+              required
+            >
+              {filters.productTypes.map((type, index) => (
+                <option key={index} value={type}>{type}</option>
+              ))}
+            </Form.Control>
           </Form.Group>
-          <Form.Group>
-            <Form.Label>Image</Form.Label>
-            <Form.Control type="text" name="image" value={formData.image} onChange={handleChange} required />
+          <Form.Group controlId="formProductBrand">
+            <Form.Label>Thương hiệu</Form.Label>
+            <Form.Control
+              as="select"
+              name="brand"
+              value={formData.brand}
+              onChange={handleChange}
+              required
+            >
+              {filters.brands.map((brand, index) => (
+                <option key={index} value={brand}>{brand}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formProductMaterial">
+            <Form.Label>Chất liệu</Form.Label>
+            <Form.Control
+              as="select"
+              name="material"
+              value={formData.material}
+              onChange={handleChange}
+              required
+            >
+              {filters.materials.map((material, index) => (
+                <option key={index} value={material}>{material}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formProductGoldage">
+            <Form.Label>Tuổi vàng</Form.Label>
+            <Form.Control
+              as="select"
+              name="goldage"
+              value={formData.goldage}
+              onChange={handleChange}
+              required
+            >
+              {filters.goldAges.map((goldage, index) => (
+                <option key={index} value={goldage}>{goldage}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formProductGender">
+            <Form.Label>Giới tính</Form.Label>
+            <Form.Control
+              as="select"
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              required
+            >
+              {filters.genders.map((gender, index) => (
+                <option key={index} value={gender}>{gender}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formProductSize">
+            <Form.Label>Size</Form.Label>
+            <Form.Control
+              as="select"
+              name="size"
+              value={formData.size}
+              onChange={handleChange}
+              required
+            >
+              {filters.sizes.map((size, index) => (
+                <option key={index} value={size}>{size}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="formProductImage">
+            <Form.Label>Hình ảnh</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>Cancel</Button>
-          <Button variant="primary" type="submit">Save</Button>
+          <Button variant="secondary" onClick={onHide}>Đóng</Button>
+          <Button variant="primary" type="submit">{title}</Button>
         </Modal.Footer>
       </Form>
     </Modal>
