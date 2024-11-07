@@ -1,0 +1,69 @@
+/* ProductSelectionPopup.css */
+
+.product-selection-popup {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-selection-popup .MuiTextField-root {
+  width: 300px;
+}
+
+.product-selection-popup .left-side, .right-side {
+  width: 45%;
+}
+
+.product-selection-popup .left-side h3, .right-side h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.product-selection-popup .product-item {
+  padding: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-selection-popup .product-item button {
+  background-color: #4caf50;
+  color: white;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border: none;
+}
+
+.product-selection-popup .product-item button:hover {
+  background-color: #45a049;
+}
+
+.product-selection-popup .selected-product-item button {
+  background-color: #f44336;
+}
+
+.product-selection-popup .selected-product-item button:hover {
+  background-color: #e53935;
+}
+
+.product-selection-popup .save-button {
+  margin-top: 20px;
+  background-color: #2196f3;
+  color: white;
+  font-size: 16px;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.product-selection-popup .save-button:hover {
+  background-color: #1976d2;
+}

@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/dashboard.scss';
-import '../styles/order.css';
+import '../styles/order.scss';
 import axios from 'axios';
 import Modal from 'react-modal';
 import AppHeader from './Header';
 
-const paymentStatusLabels = {
+const orderStatusLabels = {
   0: 'Hủy',
-  1: 'Chưa thanh toán',
-  2: 'Đã thanh toán',
-  3: 'Đang đóng hàng',
-  4: 'Đang vận chuyển',
-  5: 'Hoàn Thành',
+  1: 'Đã nhận đơn hàng',
+  2: 'Đang đóng hàng',
+  3: 'Đang vận chuyển',
+  4: 'Hoàn Thành',
 };
 
 const TrackingOrder = () => {
@@ -19,6 +18,7 @@ const TrackingOrder = () => {
   const [selectedOrderItems, setSelectedOrderItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(1); // Default status
+  const [orderStatus, setOrderStatus] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   const [modifiedItems, setModifiedItems] = useState([]);  // To track modified or deleted items
@@ -74,10 +74,33 @@ const fetchUserData = async (token) => {
     setTotalPages(response.data.totalPages);
   };
 
+  const [orderCounts, setOrderCounts] = useState({
+    not_paid: 0,
+    paid: 0,
+    received: 0,
+    packaging: 0,
+    shipping: 0,
+    done: 0,
+    cancel: 0,
+  });
+
+  const fetchOrderStatus = async () => {
+    const response = await axios.get('http://localhost:8088/order-status-counts', {
+      params: {
+        start_date: filters.startDate,
+        end_date: filters.startDate,
+      },
+    });
+    setOrderCounts(response.data);
+    console.log(response.data);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
+
     fetchUserData(token);
     fetchOrders();
+    fetchOrderStatus();
   }, [filters, currentPage, sortConfig]);
 
   // Toggle sort direction when clicking the column
@@ -137,12 +160,13 @@ const fetchUserData = async (token) => {
   //   fetchOrders();
   // }, []);
 
-  const handleRowClick = async (orderId, currentPaymentStatus, oldTotal) => {
+  const handleRowClick = async (orderId, currentPaymentStatus, oldTotal, currentOrderStatus) => {
     const response = await axios.get(`http://localhost:8088/orders/${orderId}/items`);
     setSelectedOrderItems(response.data);
     setNewListItem(response.data);
     setSelectedOrderId(orderId);
     setPaymentStatus(currentPaymentStatus);
+    setOrderStatus(currentOrderStatus);
     setOldTotal(oldTotal);
     setNewTotal(oldTotal);
     setIsModalOpen(true);
@@ -250,7 +274,7 @@ const fetchUserData = async (token) => {
       setModifiedItems([]); // Clear the modified items
       setOldTotal(newTotal);
       setNewTotal(0);
-      handleRowClick(selectedOrderId, paymentStatus, oldTotal); // Refresh order details
+      handleRowClick(selectedOrderId, paymentStatus, oldTotal, orderStatus); // Refresh order details
     } catch (error) {
       console.log('errrrrrrrr');
       console.log(error);
@@ -260,9 +284,9 @@ const fetchUserData = async (token) => {
 
   const updateOrderStatus = async (status) => {
     try {
-      const response = await axios.put('http://localhost:8088/order/payment-status', { orderId: selectedOrderId, status });
+      const response = await axios.put('http://localhost:8088/order/order-status', { orderId: selectedOrderId, status });
       alert(response.data.message);
-      setPaymentStatus(status);
+      setOrderStatus(status);
     } catch (error) {
       alert('Error updating payment status');
     }
@@ -348,6 +372,39 @@ const fetchUserData = async (token) => {
         </select>
       </div>
 
+      <div className="count-all-status">
+        <div className="status-row">
+          <div className="status-item">
+            <span className="status-label">Not Paid:</span>
+            <span className="status-count">{orderCounts.not_paid}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Paid:</span>
+            <span className="status-count">{orderCounts.paid}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Received:</span>
+            <span className="status-count">{orderCounts.received}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Packaging:</span>
+            <span className="status-count">{orderCounts.packaging}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Shipping:</span>
+            <span className="status-count">{orderCounts.shipping}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Done:</span>
+            <span className="status-count">{orderCounts.done}</span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Cancelled:</span>
+            <span className="status-count">{orderCounts.cancel}</span>
+          </div>
+        </div>
+      </div>
+
       <table className="table table-striped table-hover">
         <thead>
           <tr>
@@ -355,7 +412,8 @@ const fetchUserData = async (token) => {
             <th onClick={() => handleSort('username')}>Tên người đặt hàng</th>
             <th onClick={() => handleSort('total')}>Số tiền</th>
             <th onClick={() => handleSort('order_date')}>Ngày đặt hàng</th>
-            <th onClick={() => handleSort('payment_status')}>Trạng thái đơn hàng</th>
+            <th onClick={() => handleSort('payment_status')}>Thanh toán</th>
+            <th onClick={() => handleSort('order_status')}>Trạng thái đơn hàng</th>
             <th>SĐT người nhận</th>
             <th>Địa chỉ</th>
             <th>Email</th>
@@ -363,12 +421,13 @@ const fetchUserData = async (token) => {
         </thead>
         <tbody>
           {orders.map(order => (
-            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status, order.total)}>
+            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status, order.total, order.order_status)}>
               <td>{order.order_id}</td>
               <td>{order.username}</td>
               <td>{(order.total * 1).toLocaleString()} VND</td>
               <td>{new Date(order.order_date).toLocaleDateString()}</td>
-              <td className={getStatusClass(order.payment_status)}>{paymentStatusLabels[order.payment_status]}</td> {/* Display label */}
+              <td> {order.payment_status === 1 ? 'Đã thanh toán' : 'Chưa thanh toán'}</td>
+              <td className={getStatusClass(order.order_status)}>{orderStatusLabels[order.order_status]}</td> {/* Display label */}
               <td>{order.phone}</td>
               <td>{order.address}</td>
               <td>{order.email}</td>
@@ -415,7 +474,7 @@ const fetchUserData = async (token) => {
           
         <h2>Chi tiết đơn hàng</h2>
         <p>Giá trị đơn hàng: {oldTotal}</p>
-        { modifiedItems.length !==0 ? <p>Giá trị đơn hàng nếu cập nhật: {newTotal}</p> : null}
+        {/* { modifiedItems.length !==0 ? <p>Giá trị đơn hàng nếu cập nhật: {newTotal}</p> : null} */}
         <table className="table table-striped table-hover">
           <thead>
             <tr>
@@ -432,15 +491,7 @@ const fetchUserData = async (token) => {
                 <td>{item.name}</td>
                 <td><img src={item.image} alt={item.name} style={{ width: '100px' }} /></td>
                 <td>{item.size}</td>
-                <td>{paymentStatus === 1 ? (
-                  <input
-                  type="number"
-                  min='0'
-                  value={item.quantity}
-                  onChange={(e) => updateItemQuantity(item.order_item_id, parseInt(e.target.value))}
-                  max={item.amount}
-                />
-                ) : item.quantity}</td>
+                <td>{item.quantity}</td>
                 <td>{(item.price*1).toLocaleString()} VND</td>
               </tr>
             ))}
@@ -450,16 +501,16 @@ const fetchUserData = async (token) => {
         <div>
           {/* <h3>Total: {total}</h3> */}
           <label>
-            Trạng thái đơn hàng: {paymentStatusLabels[paymentStatus]}
-            {paymentStatus === 1 || paymentStatus === 2 ? (
+            Trạng thái đơn hàng: {orderStatusLabels[orderStatus]}
+            {orderStatus === 1 || orderStatus === 2 ? (
               <button onClick={() => updateOrderStatus(3)}>Đến bước đóng hàng</button>
-            ) : paymentStatus === 3 ? (
+            ) : orderStatus === 3 ? (
               <button onClick={() => updateOrderStatus(4)}>Đến bước vận chuyển</button>
-            ) : paymentStatus === 4 ? (
+            ) : orderStatus === 4 ? (
               <button onClick={() => updateOrderStatus(5)}>Hoàn thành đơn hàng</button>
             ) : null}
 
-            {paymentStatus !== 0 && paymentStatus !== 5&& (
+            {orderStatus !== 0 && orderStatus !== 5&& (
               <button onClick={() => updateOrderStatus(0)}>Hủy đơn hàng</button>
             )}
           </label>

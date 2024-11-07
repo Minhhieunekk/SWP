@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
 const bodyParser = require('body-parser');
-const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
+// const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { SqlDatabase} = require("langchain/sql_db")
 const { createSqlQueryChain }= require ("langchain/chains/sql_db");
 const { QuerySqlTool } = require('langchain/tools/sql');
@@ -22,7 +22,7 @@ const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const fs = require('fs');
-
+const moment = require('moment');
 
 require('dotenv').config();
 
@@ -63,7 +63,7 @@ const db = mysql.createConnection({
   port: 3306,
   user: "root",
   password: "abcd1234",
-  database: "swp1872"
+  database: "swp_final"
 })
 
 
@@ -1067,42 +1067,42 @@ app.post('/checkCurrentPassword', (req, res) => {
   });
 });
 //login via google
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "http://localhost:8088/auth/google/callback"
-},
-  function (accessToken, refreshToken, profile, done) {
-    const sql = "SELECT * FROM user WHERE email = ?";
-    db.query(sql, [profile.emails[0].value], (err, result) => {
-      if (err) return done(err);
-      if (result.length) {
-        // User exists, update username if it has changed and log them in
-        const user = result[0];
-        if (user.username !== profile.displayName) {
-          db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
-            if (err) return done(err);
-            user.username = profile.displayName;
-            return done(null, user);
-          });
-        } else {
-          return done(null, user);
-        }
-      } else {
-        // User doesn't exist, create new user
-        const newUser = {
-          username: profile.displayName,
-          email: profile.emails[0].value
-        };
-        db.query('INSERT INTO user SET ?', newUser, (err, res) => {
-          if (err) return done(err);
-          newUser.email = profile.emails[0].value; // Use email as identifier
-          return done(null, newUser);
-        });
-      }
-    });
-  }
-));
+// passport.use(new GoogleStrategy({
+//   clientID: process.env.GOOGLE_CLIENT_ID,
+//   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   callbackURL: "http://localhost:8088/auth/google/callback"
+// },
+//   function (accessToken, refreshToken, profile, done) {
+//     const sql = "SELECT * FROM user WHERE email = ?";
+//     db.query(sql, [profile.emails[0].value], (err, result) => {
+//       if (err) return done(err);
+//       if (result.length) {
+//         // User exists, update username if it has changed and log them in
+//         const user = result[0];
+//         if (user.username !== profile.displayName) {
+//           db.query('UPDATE user SET username = ? WHERE email = ?', [profile.displayName, user.email], (err) => {
+//             if (err) return done(err);
+//             user.username = profile.displayName;
+//             return done(null, user);
+//           });
+//         } else {
+//           return done(null, user);
+//         }
+//       } else {
+//         // User doesn't exist, create new user
+//         const newUser = {
+//           username: profile.displayName,
+//           email: profile.emails[0].value
+//         };
+//         db.query('INSERT INTO user SET ?', newUser, (err, res) => {
+//           if (err) return done(err);
+//           newUser.email = profile.emails[0].value; // Use email as identifier
+//           return done(null, newUser);
+//         });
+//       }
+//     });
+//   }
+// ));
 
 // passport.serializeUser((user, done) => {
 //   done(null, user.email); // Use email instead of id
@@ -1446,13 +1446,14 @@ app.post('/addtocart', (req, res) => {
       return res.status(500).json("error")
     }
     if (checkData.length > 0) {
-      const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?"
-      db.query(updateSql, values, (err, data) => {
-        if (err) {
-          return res.status(500).json("error")
-        }
-        return res.json(data);
-      })
+      // const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?"
+      // db.query(updateSql, values, (err, data) => {
+      //   if (err) {
+      //     return res.status(500).json("error")
+      //   }
+      //   return res.json(data);
+      // })
+      return res.json('Existed');
     } else {
       const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`,`size`) VALUES (?,?,?,?)"
       db.query(insertSql, values, (err, data) => {
@@ -1527,8 +1528,8 @@ app.post('/order', (req, res) => {
         const sql3 = "DELETE FROM cart WHERE product_id = ? and size = ?"
         db.execute(sql3,[item.productId, item.size]);
         //TODO update inventory
-        const sql4 = "UPDATE product SET amount = amount - ? where productid = ?"
-        db.execute(sql4,[item.quantity, item.productId]);
+        const sql4 = "UPDATE inventory SET amount = amount - ? where prd_id = ? and size = ?"
+        db.execute(sql4,[item.quantity, item.productId, item.size]);
         // return res.json(data);
       })
     });
@@ -1594,7 +1595,7 @@ app.get('/orders', (req, res) => {
   start.setHours(0, 0, 0, 0)
   end.setHours(23, 59, 59, 999);
 
-  const statusFilter = status === '-1' ? '' : `AND od.payment_status = ${status}`;
+  const statusFilter = status === '-1' ? '' : `AND od.order_status = ${status}`;
   const limit = parseInt(numberPerPage) || 10;
   const offset = (parseInt(page) - 1) * limit || 0;
   const column = sortColumn || 'order_date';
@@ -1649,10 +1650,11 @@ app.get('/orders/:orderId/items', async (req, res) => {
   // const [rows] = await connection.query(`
     
   // `, [orderId]);
-  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, p.amount 
+  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, i.amount 
     FROM order_item oi 
-    JOIN product p ON oi.product_id = p.productid 
-    WHERE oi.order_id = ?
+    JOIN product p ON oi.product_id = p.productid
+    JOIN inventory i on oi.product_id = i.prd_id
+    WHERE oi.order_id = ? AND i.size=oi.size
   `
   db.query(sql,[orderId],(err, data) => {
     if (err) {
@@ -1750,10 +1752,23 @@ app.delete('/order-item/:orderItemId', (req, res) => {
 
 // Update payment status of the order
 app.put('/order/payment-status', (req, res) => {
+
+  db.query(
+    'UPDATE order_detail SET payment_status = 1 WHERE order_id = ?',
+    [orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
+    }
+  );
+});
+
+// Update order status of the order
+app.put('/order/order-status', (req, res) => {
   const { orderId, status } = req.body;
 
   db.query(
-    'UPDATE order_detail SET payment_status = ? WHERE order_id = ?',
+    'UPDATE order_detail SET order_status = ? WHERE order_id = ?',
     [status, orderId],
     (err, result) => {
       if (err) return res.status(500).send({ error: 'Error updating payment status' });
@@ -2228,128 +2243,128 @@ function hashPass(content) {
     console.error('Error fetching user data:', err);
   }
 };
-//AI
-async function initializeQASystem() {
-  const model = new ChatGoogleGenerativeAI({
-    modelName: "gemini-1.5-pro",
-    temperature: 0,
-  });
+// //AI
+// async function initializeQASystem() {
+//   const model = new ChatGoogleGenerativeAI({
+//     modelName: "gemini-1.5-pro",
+//     temperature: 0,
+//   });
 
-  const datasource = new DataSource({
-    type: "mysql",
-    host: "localhost",
-    username: "root",
-    password: "",
-    database: "swpvip"
-  });
+//   const datasource = new DataSource({
+//     type: "mysql",
+//     host: "localhost",
+//     username: "root",
+//     password: "",
+//     database: "swpvip"
+//   });
 
-  const knowledge_base = await SqlDatabase.fromDataSourceParams({
-    appDataSource: datasource,
-  });
+//   const knowledge_base = await SqlDatabase.fromDataSourceParams({
+//     appDataSource: datasource,
+//   });
 
-  const executeQuery = new QuerySqlTool(knowledge_base);
-  const writeQuery = await createSqlQueryChain({
-    llm: model,
-    db: knowledge_base,
-    dialect: "mysql"
-  });
+//   const executeQuery = new QuerySqlTool(knowledge_base);
+//   const writeQuery = await createSqlQueryChain({
+//     llm: model,
+//     db: knowledge_base,
+//     dialect: "mysql"
+//   });
 
-  const answerPrompt = PromptTemplate.fromTemplate(`
-  Bạn là nhân viên tiệm trang sức. Bạn hãy dựa vào lịch sử hội thoại, câu hỏi để tạo nên query vào database SQL của bạn và đưa ra câu trả lời hữu ích.
+//   const answerPrompt = PromptTemplate.fromTemplate(`
+//   Bạn là nhân viên tiệm trang sức. Bạn hãy dựa vào lịch sử hội thoại, câu hỏi để tạo nên query vào database SQL của bạn và đưa ra câu trả lời hữu ích.
 
-  Lịch sử hội thoại:  {chat_history}
-  Câu hỏi: {question}
-  SQL Query: {query}
-  SQL Đầu ra: {result}
-  Câu trả lời: `);
+//   Lịch sử hội thoại:  {chat_history}
+//   Câu hỏi: {question}
+//   SQL Query: {query}
+//   SQL Đầu ra: {result}
+//   Câu trả lời: `);
 
-  const answerChain = answerPrompt.pipe(model).pipe(new StringOutputParser());
-  const chain = RunnableSequence.from([
-    RunnablePassthrough.assign({ query: writeQuery }).assign({
-      result: (i) => executeQuery.invoke(i.query),
-    }),
-    answerChain,
-  ]);
+//   const answerChain = answerPrompt.pipe(model).pipe(new StringOutputParser());
+//   const chain = RunnableSequence.from([
+//     RunnablePassthrough.assign({ query: writeQuery }).assign({
+//       result: (i) => executeQuery.invoke(i.query),
+//     }),
+//     answerChain,
+//   ]);
 
-  return { chain, knowledge_base };
-}
+//   return { chain, knowledge_base };
+// }
 
-function formatChatHistory(chatHistory) {
-  return chatHistory.map(entry => 
-    `User: ${entry.question}\nAssistant: ${entry.answer}`
-  ).join('\n\n');
-}
+// function formatChatHistory(chatHistory) {
+//   return chatHistory.map(entry => 
+//     `User: ${entry.question}\nAssistant: ${entry.answer}`
+//   ).join('\n\n');
+// }
 
-async function getChatHistory() {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT question, answer, timestamp 
-      FROM chat_history 
-      ORDER BY timestamp DESC 
-      LIMIT 5
-    `;
+// async function getChatHistory() {
+//   return new Promise((resolve, reject) => {
+//     const query = `
+//       SELECT question, answer, timestamp 
+//       FROM chat_history 
+//       ORDER BY timestamp DESC 
+//       LIMIT 5
+//     `;
     
-    db.query(query, (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(rows || []);
-    });
-  });
-}
+//     db.query(query, (err, rows) => {
+//       if (err) {
+//         reject(err);
+//         return;
+//       }
+//       resolve(rows || []);
+//     });
+//   });
+// }
 
-async function saveChatHistory(question, answer) {
-  return new Promise((resolve, reject) => {
-    const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
-    db.query(query, [question, answer], (err, result) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(result);
-    });
-  });
-}
+// async function saveChatHistory(question, answer) {
+//   return new Promise((resolve, reject) => {
+//     const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
+//     db.query(query, [question, answer], (err, result) => {
+//       if (err) {
+//         reject(err);
+//         return;
+//       }
+//       resolve(result);
+//     });
+//   });
+// }
 
-initializeQASystem().then(qaSystem => {
-  app.post('/api/chat', async (req, res) => {
-    const { message } = req.body;
+// initializeQASystem().then(qaSystem => {
+//   app.post('/api/chat', async (req, res) => {
+//     const { message } = req.body;
     
-    if (!message) {
-      return res.status(400).json({ response: 'Message is required' });
-    }
+//     if (!message) {
+//       return res.status(400).json({ response: 'Message is required' });
+//     }
 
-    try {
-      const chatHistory = await getChatHistory();
-      const result = await qaSystem.chain.invoke({ 
-        question: message,
-        chat_history: formatChatHistory(chatHistory)
-      });
-      await saveChatHistory(message, result);
-      res.json({ response: result });
-    } catch (error) {
-      console.error('Chat error:', error);
-      res.status(500).json({ response: 'An error occurred while processing your message' });
-    }
-  });
+//     try {
+//       const chatHistory = await getChatHistory();
+//       const result = await qaSystem.chain.invoke({ 
+//         question: message,
+//         chat_history: formatChatHistory(chatHistory)
+//       });
+//       await saveChatHistory(message, result);
+//       res.json({ response: result });
+//     } catch (error) {
+//       console.error('Chat error:', error);
+//       res.status(500).json({ response: 'An error occurred while processing your message' });
+//     }
+//   });
 
-  app.get('/api/chat-history', (req, res) => {
-    const query = `
-      SELECT question, answer, timestamp 
-      FROM chat_history 
-      ORDER BY timestamp DESC 
-      LIMIT 50
-    `;
+//   app.get('/api/chat-history', (req, res) => {
+//     const query = `
+//       SELECT question, answer, timestamp 
+//       FROM chat_history 
+//       ORDER BY timestamp DESC 
+//       LIMIT 50
+//     `;
     
-    db.query(query, (err, rows) => {
-      if (err) {
-        console.error('Error retrieving chat history:', err);
-        return res.status(500).json([]);
-      }
-      res.json(rows || []);
-    });
-  });
+//     db.query(query, (err, rows) => {
+//       if (err) {
+//         console.error('Error retrieving chat history:', err);
+//         return res.status(500).json([]);
+//       }
+//       res.json(rows || []);
+//     });
+//   });
 
 
   //Order info 
@@ -2358,7 +2373,7 @@ initializeQASystem().then(qaSystem => {
     const sql = `
         SELECT 
             od.total, od.payment_status, od.order_date, 
-            oi.size, oi.quantity,
+            oi.size, oi.quantity, order.order_status,
             p.name, p.image
         FROM order_detail od 
         LEFT JOIN order_item oi ON od.order_id = oi.order_id
@@ -2375,9 +2390,453 @@ initializeQASystem().then(qaSystem => {
     });
 });
 
+app.get('/order-status-counts', (req, res) => {
+  const { start_date, end_date } = req.query;
+  const start = new Date(start_date || new Date(new Date().setDate(new Date().getDate() - 30)));
+  const end = new Date(end_date || new Date());
 
+  // Set end time to 23:59:59
+  start.setHours(0, 0, 0, 0)
+  end.setHours(23, 59, 59, 999);
+  // Validate date format (YYYY-MM-DD)
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'Both start_date and end_date are required' });
+  }
+
+  const query = `
+    SELECT 
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 AND order_date BETWEEN ? AND ?) AS not_paid,
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 AND order_date BETWEEN ? AND ?) AS paid,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 AND order_date BETWEEN ? AND ?) AS received,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 AND order_date BETWEEN ? AND ?) AS packaging,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 AND order_date BETWEEN ? AND ?) AS shipping,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 AND order_date BETWEEN ? AND ?) AS done,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 AND order_date BETWEEN ? AND ?) AS cancel;
+  `;
+
+  // Execute the query with the date range parameters
+  db.query(query, [
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end
+  ], (err, results) => {
+    if (err) {
+      console.error('Error fetching counts:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Helper function to get date range for the last 6 months
+const getLastSixMonths = () => {
+  const months = [];
+  for (let i = 0; i < 6; i++) {
+    months.push(moment().subtract(i, 'months').format('YYYY-MM'));
+  }
+  return months.reverse(); // Order from oldest to most recent
+};
+
+// 1. Earnings Overview (Today, This Month, All Time)
+app.get('/earnings', (req, res) => {
+  const query = `
+    SELECT
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND DATE(order_date) = CURDATE()) AS today_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE())) AS this_month_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1) AS all_time_earn
+  `;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching earnings:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// 2. Product Sales by Category (Last 6 months)
+app.get('/sales-by-category', (req, res) => {
+  const months = getLastSixMonths(); // Get last 6 months
+  
+  // We will group by category and month, summing the quantity for each
+  const query = `
+    SELECT 
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      SUM(CASE WHEN product.category BETWEEN 1 AND 6 THEN order_item.quantity ELSE 0 END) AS khuyen_tai_sales,
+      SUM(CASE WHEN product.category BETWEEN 7 AND 12 THEN order_item.quantity ELSE 0 END) AS day_chuyen_sales,
+      SUM(CASE WHEN product.category BETWEEN 13 AND 18 THEN order_item.quantity ELSE 0 END) AS vong_tay_sales,
+      SUM(CASE WHEN product.category BETWEEN 19 AND 24 THEN order_item.quantity ELSE 0 END) AS nhan_sales
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1 AND CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+    ORDER BY month
+  `;
+  
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching sales by category:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 3. Order Status Overview (Last 6 months)
+app.get('/order-status-overview', (req, res) => {
+  const months = getLastSixMonths();
+  const query = `
+    SELECT
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      COUNT(CASE WHEN order_detail.order_status = 0 THEN 1 END) AS canceled_orders,
+      COUNT(*) AS total_orders
+    FROM order_detail
+    WHERE CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+  `;
+  
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching order status overview:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 4. Monthly Earnings (Last 6 months)
+app.get('/monthly-earnings', (req, res) => {
+  const months = getLastSixMonths();
+  const query = `
+    SELECT 
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      SUM(total) AS monthly_earnings
+    FROM order_detail
+    WHERE payment_status = 1 AND CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+  `;
+
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching monthly earnings:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 5. Top 10 Best Selling Products
+app.get('/top-products', (req, res) => {
+  const query = `
+    SELECT product.name, SUM(order_item.quantity) AS total_sold
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1
+    GROUP BY product.name
+    ORDER BY total_sold DESC
+    LIMIT 5
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching top products:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 6. Top 5 Best Selling Products (Last 30 days)
+app.get('/top-products-last-30-days', (req, res) => {
+  const query = `
+    SELECT product.name, SUM(order_item.quantity) AS total_sold
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1
+      AND order_detail.order_date > CURDATE() - INTERVAL 30 DAY
+    GROUP BY product.name
+    ORDER BY total_sold DESC
+    LIMIT 5
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching top products in the last 30 days:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/discount', (req, res) => {
+  const { 
+    discount_code, 
+    discount_name, 
+    discount_type, 
+    start_date, 
+    end_date, 
+    discount_condition, 
+    discount_value, 
+    discount_description, 
+    selectedProducts 
+  } = req.body;
+
+  // Basic validation
+  if (!discount_code || !discount_name || !start_date || !end_date || !discount_value) {
+    return res.status(400).json({ message: 'Please fill all required fields.' });
+  }
+
+  if (discount_type === 2 && !discount_condition) {
+    return res.status(400).json({ message: 'Discount condition is required for order-level discount.' });
+  }
+
+  const query = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_condition, discount_value, discount_description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(query, [discount_code, discount_name, discount_type, start_date, end_date, discount_type === 1 ?'0' : discount_condition, discount_value, discount_description || null], (err, result) => {
+    if (err) {
+      console.error('Error creating discount:', err);
+      return res.status(500).json({ message: 'Internal server error.' });
+    }
+
+    const discount_id = result.insertId;
+
+    // Case 1: If the discount type is for products (discount_type = 1), update the product.discount_id
+    if (discount_type === 1 && selectedProducts && selectedProducts.length > 0) {
+      const productDiscountQuery = 'UPDATE product SET discount_id = ? WHERE productid IN (?)';
+      const productIds = selectedProducts.map(product => product.productid);
+
+      db.query(productDiscountQuery, [discount_id, productIds], (err, result) => {
+        if (err) {
+          console.error('Error assigning products to discount:', err);
+          return res.status(500).json({ message: 'Internal server error.' });
+        }
+      });
+    }
+
+    res.json({ message: 'Discount created successfully.', discount_id });
+  });
+});
+
+// 2. Endpoint to fetch products with pagination and search
+app.get('/get-products', (req, res) => {
+  const { search = '' } = req.query; // default to page 1, limit 10
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const searchQuery = `%${search}%`;
+  
+  // Query to fetch paginated products
+  const query = `
+    SELECT productid, name, code 
+    FROM product
+    WHERE name LIKE ? OR code LIKE ?
+    LIMIT ? offset ?
+  `;
+
+  db.query(query, [searchQuery, searchQuery, limit, offset], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Get total count for pagination purposes
+    db.query('SELECT COUNT(*) AS total FROM product WHERE name LIKE ? OR code LIKE ?', [searchQuery, searchQuery], (err, countResult) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const totalItems = countResult[0].total;
+      const totalPages = Math.ceil(totalItems / limit);
+      
+      res.json({
+        products: results,
+        totalItems,
+        totalPages,
+        currentPage: parseInt(page),
+      });
+    });
+  });
+});
+
+// Backend code to handle pagination and filtering for the discount list
+
+app.get('/get-all-discounts', (req, res) => {
+  const {endDate, discountType, discountCode } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  // const offset = (page - 1) * limit;
+
+  let query = `SELECT * FROM discount WHERE 1=1`; // Base query
+
+  // Filter by discount_code
+  if (discountCode) {
+    query += ` AND discount_code LIKE ?`;
+  }
+
+  // Filter by discount_type
+  if (discountType) {
+    query += ` AND discount_type = ?`;
+  }
+
+  // Filter by end_date
+  if (endDate) {
+    query += ` AND end_date <= ?`;
+  }
+
+  query += ` LIMIT ? OFFSET ?`; // Pagination
+  const queryParams = [
+    discountCode ? `%${discountCode}%` : null,
+    discountType || null,
+    endDate || null,
+    limit,
+    offset
+  ].filter(param => param !== null); // Remove null values
+
+  // Execute the query for fetching discounts
+  db.query(query, queryParams, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Get the total count for pagination with filters applied
+    let countQuery = `SELECT COUNT(*) AS total FROM discount WHERE 1=1`; // Base count query
+
+    // Apply the same filters to the count query
+    if (discountCode) {
+      countQuery += ` AND discount_code LIKE ?`;
+    }
+    if (discountType) {
+      countQuery += ` AND discount_type = ?`;
+    }
+    if (endDate) {
+      countQuery += ` AND end_date <= ?`;
+    }
+
+    const countQueryParams = [
+      discountCode ? `%${discountCode}%` : null,
+      discountType || null,
+      endDate || null
+    ].filter(param => param !== null); // Remove null values from the params
+
+    // Execute the count query to get the total number of filtered records
+    db.query(countQuery, countQueryParams, (err, countResult) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      const totalItems = countResult[0].total;
+      const totalPages = Math.ceil(totalItems / limit);
+      
+      res.json({
+        discounts: results,
+        totalItems,
+        totalPages,
+        currentPage: parseInt(page),
+      });
+    });
+  });
+});
+
+app.put('/update-product-discount', (req, res) => {
+  const { productid, discount_id } = req.body;
+  const query = 'UPDATE product SET discount_id = ? WHERE productid = ?';
+  
+  db.query(query, [discount_id, productid], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Product discount updated successfully' });
+  });
+});
+
+app.get('/products-by-discount/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'SELECT productid, name, code FROM product WHERE discount_id = ?';
+  
+  db.query(query, [discountId], (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
+// Endpoint to update a discount (excluding discount_code and discount_type)
+app.put('/update-discount', (req, res) => {
+  const { discount_id, discount_name, discount_value, discount_condition, discount_description, start_date, end_date } = req.body;
+
+  const query = `
+    UPDATE discount 
+    SET discount_name = ?, discount_value = ?, discount_condition = ?, discount_description = ?, start_date = ?, end_date = ?
+    WHERE discount_id = ?
+  `;
+  
+  db.query(query, [discount_name, discount_value, discount_condition, discount_description, start_date, end_date, discount_id], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Discount updated successfully' });
+  });
+});
+
+// Endpoint to delete a discount
+app.delete('/discounts/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'DELETE FROM discount WHERE discount_id = ?';
+
+  db.query(query, [discountId], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Discount deleted successfully' });
+  });
+});
+
+app.post('/create-discount', (req, res) => {
+  const {
+    discount_code,
+    discount_name,
+    discount_type,
+    discount_value,
+    discount_condition,
+    discount_description,
+    start_date,
+    end_date
+  } = req.body;
+
+  const query = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  
+  db.query(query, [discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date], (err, result) => {
+    if (err) throw err;
+    res.json({ discount_id: result.insertId });
+  });
+});
+
+app.get('/discounts/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'SELECT * FROM discount WHERE discount_id = ?';
+  db.query(query, [discountId], (err, results) => {
+    if (err) throw err;
+    res.json(results[0]); // Return the first result (there should only be one)
+  });
+});
+
+app.get('/discounts', (req, res) => {
+  const query = 'SELECT * FROM discount';
+  db.query(query, (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
+// 3. Endpoint to assign products to a discount
 
   app.listen(8088, () => {
     console.log("Server running on port 8088");
   });
-});

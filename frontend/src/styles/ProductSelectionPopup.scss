@@ -1,0 +1,48 @@
+/* ProductSelectionPopup.css */
+
+.product-selection-popup .popup-content {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.product-selection-popup .left-side, .right-side {
+  width: 45%;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.product-selection-popup .product-item, .selected-product-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.product-selection-popup .product-item button, .selected-product-item button {
+  padding: 8px 12px;
+  border-radius: 5px;
+}
+
+.product-selection-popup .pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.product-selection-popup .pagination-controls button {
+  padding: 8px 16px;
+  background-color: #2196f3;
+  color: white;
+  border-radius: 4px;
+}
+
+.product-selection-popup .pagination-controls button:disabled {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+}

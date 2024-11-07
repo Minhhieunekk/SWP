@@ -150,9 +150,9 @@ const ManageDiscounts = () => {
 
       {/* Pagination */}
       <div style={{ marginTop: '20px' }}>
-        <Button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
-        <span>Page {page} of {totalPages}</span>
-        <Button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+        <Button disabled={page === 1} onClick={() => setPage(page - 1)}>Trang trước</Button>
+        <span>Trang {page}/{totalPages}</span>
+        <Button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Trang sau</Button>
       </div>
 
       {/* Detail Modal */}
@@ -162,16 +162,16 @@ const ManageDiscounts = () => {
         aria-labelledby="discount-detail-modal"
       >
         <Box sx={{ padding: 3, backgroundColor: 'white', borderRadius: '8px', width: '600px', margin: 'auto', marginTop: '100px' }}>
-          <h2>Discount Details</h2>
-          <div><strong>Discount Code:</strong> {selectedDiscount?.discount_code}</div>
-          <div><strong>Discount Name:</strong> {selectedDiscount?.discount_name}</div>
-          <div><strong>Discount Type:</strong> {selectedDiscount?.discount_type === 1 ? 'Product-based' : 'Order-based'}</div>
-          <div><strong>Start Date:</strong> {selectedDiscount?.start_date}</div>
-          <div><strong>End Date:</strong> {selectedDiscount?.end_date}</div>
-          <div><strong>Description:</strong> {selectedDiscount?.discount_description}</div>
+          <h2>Chi tiết khuyến mãi</h2>
+          <div><strong>Mã khuyến mãi:</strong> {selectedDiscount?.discount_code}</div>
+          <div><strong>Tên khuyến mãi:</strong> {selectedDiscount?.discount_name}</div>
+          <div><strong>Loại khuyến mãi:</strong> {selectedDiscount?.discount_type === 1 ? 'Áp dụng trực tiếp cho sản phẩm' : 'Dùng cho đặt hàng'}</div>
+          <div><strong>Ngày bắt đầu:</strong> {selectedDiscount?.start_date}</div>
+          <div><strong>Ngày kết thúc:</strong> {selectedDiscount?.end_date}</div>
+          <div><strong>Mô tả chi tiết::</strong> {selectedDiscount?.discount_description}</div>
           {selectedDiscount?.discount_type === 1 && (
             <>
-              <h3>Products Applied:</h3>
+              <h3>Sản phẩm được áp dụng:</h3>
               <List>
                 {products.map((product) => (
                   <ListItem key={product.productid}>
@@ -185,7 +185,7 @@ const ManageDiscounts = () => {
               </List>
             </>
           )}
-          <Button onClick={() => setOpenDetailModal(false)}>Close</Button>
+          <Button onClick={() => setOpenDetailModal(false)}>Đóng</Button>
         </Box>
       </Modal>
 

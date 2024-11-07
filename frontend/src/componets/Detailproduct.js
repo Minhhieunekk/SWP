@@ -17,7 +17,6 @@ const ProductCard = ({
     totalrate,
     peoplerate,
     description,
-    amount,
     discount_value,
     brand,
     goldage,
@@ -54,13 +53,19 @@ const ProductCard = ({
 
     const AddToCart = async () => {
         try {
-            await axios.post(`http://localhost:8088/addtocart`, {
+            const responseData = await axios.post(`http://localhost:8088/addtocart`, {
                 userid: userId,
                 productid,
                 quantity,
                 size: selectedSize
             });
-            setPopupVisible(true);
+            if (responseData.data === 'Existed') {
+                alert('Sản phẩm này đã có trong giỏ hàng');
+                return;
+            } else {
+                setPopupVisible(true);
+            };
+            
         } catch (error) {
             console.error('Error adding to cart', error);
         }
