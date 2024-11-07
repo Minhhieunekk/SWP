@@ -20,6 +20,7 @@ import { MaterialCategory } from './componets/MaterialCategory';
 import { GiftCategory } from './componets/GiftCategory';
 import ManageDiscounts from './componets/managedicount';
 import UserManagementComponent from './componets/manageruser';
+import OrderInfo from './componets/Orderinfo';
 function App() {
   return (
     <div className="App">
@@ -41,7 +42,7 @@ function App() {
           <Route path="/manageuser" element={<UserManagementComponent />} />
 
           <Route path="/chat" element={<Chatbot />} />
-
+          <Route path="/orderinfo" element={<OrderInfo />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/cart/:consumerid" element={<Cart />} />
           <Route path="/trackingorder" element={<TrackingOrder />} />

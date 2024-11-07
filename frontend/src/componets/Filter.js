@@ -71,14 +71,14 @@ const ProductFilter = () => {
 
     switch (sortOption) {
       case 'newest':
-        return sortedProducts.slice(-20); // Show last 20 products for "Sản phẩm mới nhất"
+        return sortedProducts.slice(-20); 
       case 'priceLowToHigh':
         return sortedProducts.sort((a, b) => a.price - b.price);
       case 'priceHighToLow':
         return sortedProducts.sort((a, b) => b.price - a.price);
       case 'all':
       default:
-        return sortedProducts; // Show all products
+        return sortedProducts; 
     }
   };
 
@@ -111,7 +111,15 @@ const ProductFilter = () => {
       <AppHeader/>
       <Container fluid className="py-4" style={{position:"relative",top:"200px"}}>
         <Row>
-          <Col xs={12} className="mb-4">
+        <Col xs={2}>
+            <Form.Select className="mb-4" size="sm" onChange={handleSortChange}>
+              <option value="all">Tất cả sản phẩm</option>
+              <option value="newest">Sản phẩm mới nhất</option>
+              <option value="priceLowToHigh">Giá từ thấp đến cao</option>
+              <option value="priceHighToLow">Giá từ cao đến thấp</option>
+            </Form.Select>
+          </Col>
+          <Col xs={10} className="mb-4">
             <Row>
               {filters.map(filter => (
                 <Col key={filter.id} xs={6} sm={4} md={3} lg={2} className="mb-2">
@@ -129,25 +137,12 @@ const ProductFilter = () => {
                   </Form.Select>
                 </Col>
               ))}
-              {/* <Col xs={6} sm={4} md={3} lg={2} className="mb-2">
-                <Form.Check 
-                  type="checkbox"
-                  id="promotion-checkbox"
-                  label="KHUYẾN MÃI"
-                />
-              </Col> */}
+             
             </Row>
           </Col>
         </Row>
         <Row>
-          <Col xs={12}>
-            <Form.Select className="mb-4" size="sm" onChange={handleSortChange}>
-              <option value="all">Tất cả sản phẩm</option>
-              <option value="newest">Sản phẩm mới nhất</option>
-              <option value="priceLowToHigh">Giá từ thấp đến cao</option>
-              <option value="priceHighToLow">Giá từ cao đến thấp</option>
-            </Form.Select>
-          </Col>
+          
         </Row>
         <Row xs={2} md={3} lg={4} className="g-4">
           {sortedProducts.map(product => (

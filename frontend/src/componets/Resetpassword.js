@@ -172,7 +172,7 @@ const PasswordChangeForm = () => {
                     <Alert variant={messageType}>
                       <ul className="mb-0">
                         {messages.map((msg, index) => (
-                          <span key={index}>{msg}</span>
+                          <div key={index}>{msg}</div>
                         ))}
                       </ul>
                     </Alert>
