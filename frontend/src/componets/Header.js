@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown } from "antd";
+import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown, Modal } from "antd";
 import {
   UserOutlined,
   ShoppingCartOutlined,
@@ -9,29 +9,47 @@ import {
   EditOutlined,
   LineChartOutlined,
 } from "@ant-design/icons";
-
 import SubMenu from "antd/es/menu/SubMenu";
 import { Link, useNavigate } from "react-router-dom";
 import { HomeFilled, SearchOutlined } from "@ant-design/icons";
 import CentralSearchModal from "./Search";
-// import Cart from './Cart';
-
+import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const { Header } = Layout;
 
-const AppHeader = ({ username, password, consumerid }) => {
+const AppHeader = () => {
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [user, setUser] = useState(null);
+  const username = user?.username;
+  const password = user?.password;
+  const consumerid = user?.consumerid;
   const navigate = useNavigate();
+  const [selectedKey, setSelectedKey] = useState("1");
+  const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+
   if (consumerid) {
     localStorage.setItem('userId', consumerid);
   }
-  
-  // Thêm state để quản lý mục được chọn
-  const [selectedKey, setSelectedKey] = useState("1");
-  
-  const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
-  // Hàm xử lý khi người dùng chọn mục khác
+
+  const showMapModal = () => {
+    setIsMapModalVisible(true);
+  };
+
+  const handleMapModalCancel = () => {
+    setIsMapModalVisible(false);
+  };
+
+  const openGoogleMaps = () => {
+    // Mở Google Maps trong tab mới
+    window.open(
+      'https://www.google.com/maps/place/1988+BBQ/@21.0173888,105.5170942,17z/data=!3m1!4b1!4m6!3m5!1s0x31345b40fe069629:0xa8a839ddef069b6a!8m2!3d21.0173838!4d105.5196691',
+      '_blank'
+    );
+  };
+
   const handleMenuClick = (e) => {
-    setSelectedKey(e.key); // Cập nhật mục được chọn
+    setSelectedKey(e.key);
   };
 
   const handleLogout = () => {
@@ -44,7 +62,35 @@ const AppHeader = ({ username, password, consumerid }) => {
     backgroundColor: "#3988D7",
     color: "#fff",
   };
-
+  const fetchUserData = async (token) => {
+    try {
+      
+      const res = await axios.get('http://localhost:8088/api/user/details', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUser(res.data);
+         
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+     
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+        
+      }
+    }
+  };
+  const location=useLocation();
+  useEffect(()=>{
+    const token = localStorage.getItem('token');
+        const queryParams = new URLSearchParams(location.search);
+        const tokenFromUrl = queryParams.get('token');
+        if (!token && tokenFromUrl) {
+          localStorage.setItem('token', tokenFromUrl);
+          fetchUserData(tokenFromUrl);
+      } else if (token) {
+          fetchUserData(token);
+      }
+  },[location.search])
   const userMenu = (
     <Menu >
       {consumerid && <Menu.Item key="1" icon={<UserOutlined />} onClick={()=>navigate("/detailuser")}>
@@ -76,12 +122,16 @@ const AppHeader = ({ username, password, consumerid }) => {
           Quản lý đơn hàng
         </Menu.Item>)
       }
+      {
+        (consumerid===11) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
+          Quản lý người dùng
+        </Menu.Item>)
+      }
     </Menu>
   );
 
   return (
     <Layout style={{position: "fixed", width: "100%", zIndex: "2"}}>
-      {/* Phần trên của header */}
       <Header
         style={{
           backgroundColor: "#fff",
@@ -93,10 +143,17 @@ const AppHeader = ({ username, password, consumerid }) => {
           <Col>
             <Row gutter={16} align="middle">
               <Col>
-                <EnvironmentOutlined style={{ fontSize: "16px" }} /> Cửa Hàng
+                <div 
+                  style={{ cursor: 'pointer' }} 
+                  onClick={showMapModal}
+                >
+                  <EnvironmentOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
+                  Cửa Hàng
+                </div>
               </Col>
               <Col>
-                <PhoneOutlined style={{ fontSize: "16px" }} /> 094 808 6971
+                <PhoneOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
+                094 808 6971
               </Col>
             </Row>
           </Col>
@@ -119,7 +176,32 @@ const AppHeader = ({ username, password, consumerid }) => {
           </Col>
         </Row>
       </Header>
-
+      <Modal
+        title="Vị trí cửa hàng"
+        open={isMapModalVisible}
+        onCancel={handleMapModalCancel}
+        footer={[
+          <Button key="openMaps" type="primary" onClick={openGoogleMaps}>
+            Mở trong Google Maps
+          </Button>,
+          <Button key="close" onClick={handleMapModalCancel}>
+            Đóng
+          </Button>
+        ]}
+        width={800}
+      >
+        <div style={{ width: '100%', height: '400px' }}>
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3725.5!2d105.5196691!3d21.0173838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31345b40fe069629%3A0xa8a839ddef069b6a!2s1988%20BBQ!5e0!3m2!1sen!2s!4v1"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen=""
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      </Modal>
       {/* Phần dưới của header */}
       <Header style={{ backgroundColor: "#fff", padding: "0 50px" }}>
         <Row justify="space-between" align="middle">

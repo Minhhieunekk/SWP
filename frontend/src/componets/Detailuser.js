@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
-import { FaShoppingBag, FaUser, FaTag } from 'react-icons/fa';
 import AppHeader from "./Header";
 import axios from "axios";
 
@@ -13,6 +12,7 @@ const Detailuser = () => {
         image: ''
     });
     const [file, setFile] = useState(null);
+    const [loadingLocation, setLoadingLocation] = useState(false);
 
     const handleInput = (e) => {
         setFormdata(prev => ({
@@ -61,6 +61,36 @@ const Detailuser = () => {
             });
     };
 
+    const getLocation = () => {
+        setLoadingLocation(true);
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(handlePositionSuccess, handlePositionError);
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    };
+
+    const handlePositionSuccess = async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+            // Reverse geocoding (you can use Google's API or OpenStreetMap's Nominatim API)
+            const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+            setFormdata(prev => ({
+                ...prev,
+                address: res.data.display_name // Set address from geocoding result
+            }));
+        } catch (error) {
+            console.error("Error fetching address:", error);
+        } finally {
+            setLoadingLocation(false);
+        }
+    };
+
+    const handlePositionError = (error) => {
+        console.error("Error getting geolocation:", error);
+        setLoadingLocation(false);
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         axios.get('http://localhost:8088/api/user/details', {
@@ -92,7 +122,6 @@ const Detailuser = () => {
             });
     }, []);
 
-    
     useLayoutEffect(() => {
         if (file) {
             handleFileUpload(file); 
@@ -128,29 +157,11 @@ const Detailuser = () => {
                                         type="button"
                                         onClick={() => document.getElementById('fileInput').click()}
                                     >
-                                        Choose & Upload new image
+                                        Cập nhật ảnh đại diện
                                     </button>
                                 </div>
-                                <div className="wizard">
-                                    <nav className="list-group list-group-flush">
-                                        <a className="list-group-item list-group-item-action d-flex align-items-center p-4" href="/detailuser">
-                                            <FaUser className="me-3" size={24} />
-                                            <span className="fs-5">Profile Settings</span>
-                                        </a>
-                                        <a className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-4" href="/">
-                                            <div>
-                                                <FaShoppingBag className="me-3 text-muted" size={24} />
-                                                <span className="font-weight-medium fs-5">Orders List</span>
-                                            </div>
-                                        </a>
-                                        <a className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-4" href="/">
-                                            <div>
-                                                <FaTag className="me-3 text-muted" size={24} />
-                                                <span className="font-weight-medium fs-5">My Vouchers</span>
-                                            </div>
-                                        </a>
-                                    </nav>
-                                </div>
+                                
+
                             </div>
                         </div>
                     </div>
@@ -158,10 +169,10 @@ const Detailuser = () => {
                     <div className="col-lg-7">
                         <div className="card shadow h-100">
                             <div className="card-body p-5">
-                                <h2 className="card-title mb-5">Profile Settings</h2>
+                                <h2 className="card-title mb-5">Thông tin người dùng</h2>
                                 <form onSubmit={handleSubmit}>
                                     <div className="mb-4">
-                                        <label htmlFor="account-fn" className="form-label fs-5">Username</label>
+                                        <label htmlFor="account-fn" className="form-label fs-5">Tên người dùng</label>
                                         <input name="username" value={formdata.username}
                                             className="form-control form-control-lg"
                                             type="text"
@@ -169,14 +180,14 @@ const Detailuser = () => {
                                             onChange={handleInput} />
                                     </div>
                                     <div className="mb-4">
-                                        <label htmlFor="account-email" className="form-label fs-5">Email</label>
+                                        <label htmlFor="account-email" className="form-label fs-5">Địa chỉ email</label>
                                         <input value={formdata.email}
                                             className="form-control form-control-lg"
                                             type="email"
                                             id="account-email" disabled />
                                     </div>
                                     <div className="mb-4">
-                                        <label htmlFor="account-phone" className="form-label fs-5">Phone Number</label>
+                                        <label htmlFor="account-phone" className="form-label fs-5">Số điện thoại</label>
                                         <input name="phone" value={formdata.phone}
                                             className="form-control form-control-lg"
                                             type="text"
@@ -184,17 +195,25 @@ const Detailuser = () => {
                                             onChange={handleInput} />
                                     </div>
                                     <div className="mb-4">
-                                        <label htmlFor="account-address" className="form-label fs-5">Address</label>
+                                        <label htmlFor="account-address" className="form-label fs-5">Địa chỉ</label>
                                         <input name="address" value={formdata.address}
                                             className="form-control form-control-lg"
                                             type="text"
                                             id="account-address" required
                                             onChange={handleInput} />
+                                        <button
+                                            type="button"
+                                            onClick={getLocation}
+                                            className="btn btn-outline-primary mt-2"
+                                            disabled={loadingLocation}
+                                        >
+                                            {loadingLocation ? "Đang lấy vị trí..." : "Lấy địa chỉ từ vị trí"}
+                                        </button>
                                     </div>
                                     <hr className="my-5" />
                                     <div className="text-end">
                                         <button className="btn btn-outline-info btn-lg px-5 py-3 fs-5" type="submit">
-                                            Update Profile
+                                            Cập nhật thông tin 
                                         </button>
                                     </div>
                                 </form>

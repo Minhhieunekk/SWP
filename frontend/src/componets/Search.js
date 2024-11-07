@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Modal, Input, List, Spin, Typography, Descriptions, Image, Rate, Button, message } from 'antd';
 import { SearchOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-
+import { useNavigate } from 'react-router';
 const { Text } = Typography;
 
 const CentralSearchModal = ({ visible, onClose }) => {
@@ -43,11 +43,9 @@ const CentralSearchModal = ({ visible, onClose }) => {
       console.error('Error fetching product details:', error);
     }
   };
-
-  const handleAddToCart = (product) => {
-    // Implement add to cart logic here
-    console.log('Adding to cart:', product);
-    message.success(`Đã thêm ${product.name} vào giỏ hàng`);
+ const navigate=useNavigate();
+  const handleview = (productid) => {
+   navigate(`/productdetail/${productid}`)
   };
 
   return (
@@ -116,12 +114,12 @@ const CentralSearchModal = ({ visible, onClose }) => {
             </Descriptions.Item>
           </Descriptions>
           <Button 
-            type="primary" 
-            icon={<ShoppingCartOutlined />} 
-            onClick={() => handleAddToCart(selectedProduct)}
+            type="default" 
+           
+            onClick={() => handleview(selectedProduct.productid)}
             style={{ marginTop: 16 }}
           >
-            Thêm vào giỏ hàng
+            Xem chi tiết
           </Button>
         </Modal>
       )}
