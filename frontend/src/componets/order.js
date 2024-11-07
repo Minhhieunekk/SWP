@@ -354,11 +354,10 @@ const fetchUserData = async (token) => {
         >
           <option value="-1">Tất cả</option>
           <option value="0">Hủy</option>
-          <option value="1">Chưa thanh toán</option>
-          <option value="2">Đã thanh toán</option>
-          <option value="3">Đang đóng hàng</option>
-          <option value="4">Đang vận chuyển</option>
-          <option value="5">Hoàn Thành</option>
+          <option value="1">Đã nhận đợn</option>
+          <option value="2">Đang đóng hàng</option>
+          <option value="3">Đang vận chuyển</option>
+          <option value="4">Hoàn Thành</option>
         </select>
         <label>Số lượng đơn hàng 1 trang:</label>
         <select
@@ -374,31 +373,31 @@ const fetchUserData = async (token) => {
 
       <div className="count-all-status">
         <div className="status-row">
-          <div className="status-item">
-            <span className="status-label">Not Paid:</span>
+          <div className="status-item-notpaid">
+            <span className="status-label-notpaid">Chưa thanh toán:</span>
             <span className="status-count">{orderCounts.not_paid}</span>
           </div>
-          <div className="status-item">
-            <span className="status-label">Paid:</span>
+          <div className="status-item-paid">
+            <span className="status-label-paid">Đã thanh toán:</span>
             <span className="status-count">{orderCounts.paid}</span>
           </div>
-          <div className="status-item">
-            <span className="status-label">Received:</span>
+          <div className="status-item-1">
+            <span className="status-label">Đã nhận đơn:</span>
             <span className="status-count">{orderCounts.received}</span>
           </div>
-          <div className="status-item">
-            <span className="status-label">Packaging:</span>
+          <div className="status-item-2">
+            <span className="status-label">Đang đóng hàng:</span>
             <span className="status-count">{orderCounts.packaging}</span>
           </div>
-          <div className="status-item">
-            <span className="status-label">Shipping:</span>
+          <div className="status-item-3">
+            <span className="status-label">Đang vận chuyển:</span>
             <span className="status-count">{orderCounts.shipping}</span>
           </div>
-          <div className="status-item">
-            <span className="status-label">Done:</span>
+          <div className="status-item-4">
+            <span className="status-label">Hoàn thành:</span>
             <span className="status-count">{orderCounts.done}</span>
           </div>
-          <div className="status-item">
+          <div className="status-item-0">
             <span className="status-label">Cancelled:</span>
             <span className="status-count">{orderCounts.cancel}</span>
           </div>

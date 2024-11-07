@@ -2403,17 +2403,27 @@ app.get('/order-status-counts', (req, res) => {
     return res.status(400).json({ error: 'Both start_date and end_date are required' });
   }
 
+  // const query = `
+  //   SELECT 
+  //     (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 AND order_date BETWEEN ? AND ?) AS not_paid,
+  //     (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 AND order_date BETWEEN ? AND ?) AS paid,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 AND order_date BETWEEN ? AND ?) AS received,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 AND order_date BETWEEN ? AND ?) AS packaging,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 AND order_date BETWEEN ? AND ?) AS shipping,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 AND order_date BETWEEN ? AND ?) AS done,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 AND order_date BETWEEN ? AND ?) AS cancel;
+  // `;
+
   const query = `
     SELECT 
-      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 AND order_date BETWEEN ? AND ?) AS not_paid,
-      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 AND order_date BETWEEN ? AND ?) AS paid,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 AND order_date BETWEEN ? AND ?) AS received,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 AND order_date BETWEEN ? AND ?) AS packaging,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 AND order_date BETWEEN ? AND ?) AS shipping,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 AND order_date BETWEEN ? AND ?) AS done,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 AND order_date BETWEEN ? AND ?) AS cancel;
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 ) AS not_paid,
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 ) AS paid,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 ) AS received,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 ) AS packaging,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 ) AS shipping,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 ) AS done,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 ) AS cancel;
   `;
-
   // Execute the query with the date range parameters
   db.query(query, [
     start, end,
