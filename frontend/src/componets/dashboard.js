@@ -278,7 +278,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
             <Form.Label>Tên sản phẩm</Form.Label>
             <Form.Control
               type="text"
-              placeholder="Enter product name"
+              placeholder="Nhập tên sản phẩm"
               name="name"
               value={formData.name}
               onChange={handleChange}
@@ -289,7 +289,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
             <Form.Label>Giá sản phẩm</Form.Label>
             <Form.Control
               type="number"
-              placeholder="Enter product price"
+              placeholder="Nhập giá sản phẩm"
               name="price"
               value={formData.price}
               onChange={handleChange}
@@ -300,7 +300,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
             <Form.Label>Số lượng(cái)</Form.Label>
             <Form.Control
               type="number"
-              placeholder="Enter product amount"
+              placeholder="Chọn số lượng"
               name="amount"
               value={formData.amount}
               onChange={handleChange}

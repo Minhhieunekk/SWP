@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import AppHeader from "./Header";
 import axios from "axios";
-
+import { Button } from "react-bootstrap";
+import { CarryOutOutlined } from '@ant-design/icons'
+import { useNavigate } from "react-router";
 const Detailuser = () => {
     const [user, setuser] = useState(null);
     const [formdata, setFormdata] = useState({
@@ -20,7 +22,7 @@ const Detailuser = () => {
             [e.target.name]: e.target.value
         }));
     };
-
+    const navigate = useNavigate();
     // Function to handle file selection
     const handleFile = (e) => {
         const selectedFile = e.target.files[0];
@@ -55,6 +57,7 @@ const Detailuser = () => {
         axios.post('http://localhost:8088/updateuser', formdata)
             .then(res => {
                 console.log("Profile updated successfully:", res.data);
+                alert("Cập nhật thông tin người dùng thành công")
             })
             .catch(err => {
                 console.error("Error updating profile:", err);
@@ -124,7 +127,7 @@ const Detailuser = () => {
 
     useLayoutEffect(() => {
         if (file) {
-            handleFileUpload(file); 
+            handleFileUpload(file);
         }
     }, [file]);
 
@@ -134,8 +137,8 @@ const Detailuser = () => {
 
     return (
         <>
-             <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
-            <div className="container-fluid py-5" style={{ maxWidth: "1400px",position:"relative",top:"100px" }}>
+            <AppHeader />
+            <div className="container-fluid py-5" style={{ maxWidth: "1400px", position: "relative", top: "100px" }}>
                 <div className="row gx-5">
                     <div className="col-lg-5 mb-5">
                         <div className="card shadow h-100">
@@ -160,7 +163,12 @@ const Detailuser = () => {
                                         Cập nhật ảnh đại diện
                                     </button>
                                 </div>
-                                
+                                <Button
+                                    variant="outline-info"
+                                    onClick={() => navigate('/orderinfo', { state: { consumerid: user.consumerid } })}
+                                >
+                                    <CarryOutOutlined />Thông tin đơn hàng
+                                </Button>
 
                             </div>
                         </div>
@@ -213,7 +221,7 @@ const Detailuser = () => {
                                     <hr className="my-5" />
                                     <div className="text-end">
                                         <button className="btn btn-outline-info btn-lg px-5 py-3 fs-5" type="submit">
-                                            Cập nhật thông tin 
+                                            Cập nhật thông tin
                                         </button>
                                     </div>
                                 </form>
@@ -221,7 +229,7 @@ const Detailuser = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
         </>
     );
 };

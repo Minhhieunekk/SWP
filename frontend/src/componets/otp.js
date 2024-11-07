@@ -38,7 +38,7 @@ const OTP = () => {
         <Col xs={12} md={6} lg={4} className="mx-auto">
           <Card>
             <Card.Header className="bg-info text-white text-center">
-              <h3 className="mb-0">{step === 1 ? 'Forgot Password' : 'Reset Password'}</h3>
+              <h3 className="mb-0">{step === 1 ? 'Quên mật khẩu' : 'Đặt lại mật khẩu'}</h3>
             </Card.Header>
             <Card.Body>
               {message && <Alert variant="info">{message}</Alert>}
@@ -48,7 +48,7 @@ const OTP = () => {
                     <Form.Label>Địa chỉ email</Form.Label>
                     <Form.Control
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="Nhập email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required

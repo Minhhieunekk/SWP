@@ -196,7 +196,7 @@ app.post('/addproduct', (req, res) => {
                       `;
                       const insertProductParams = [
                           newProduct.name,
-                          newProduct.price,
+                          newProduct.price*1.1,
                           categoryId,
                           newProduct.brand,
                           goldageValue,
@@ -1718,7 +1718,41 @@ initializeQASystem().then(qaSystem => {
     });
   });
 
+
+  //Order info 
+  app.get('/orderinfo/:consumerid', (req, res) => {
+    const consumerId = req.params.consumerid;
+    const sql = `
+        SELECT 
+            od.total, od.payment_status, od.order_date, 
+            oi.size, oi.quantity,
+            p.name, p.image
+        FROM order_detail od 
+        LEFT JOIN order_item oi ON od.order_id = oi.order_id
+        LEFT JOIN product p ON oi.product_id = p.productid
+        WHERE od.user_id = ?
+    `;
+    db.query(sql, [consumerId], (err, result) => {
+        if (err) {
+            console.error("Error fetching order info:", err);
+            res.status(500).send("Error fetching order info");
+        } else {
+            res.json(result);
+        }
+    });
+});
+
+
+
   app.listen(8088, () => {
     console.log("Server running on port 8088");
   });
 });
+
+
+function hashPass(content) {
+  if (typeof content !== 'string') {
+    content = JSON.stringify(content);
+  }
+  return createHash('sha256').update(content).digest('hex');
+}
