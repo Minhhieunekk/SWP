@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Modal, Box, TextField, Grid, Checkbox, ListItemText, List, ListItem } from '@mui/material';
 import { Link } from 'react-router-dom';
+import AppHeader from './Header';
 
 const ManageDiscounts = () => {
   const [discounts, setDiscounts] = useState([]);
@@ -36,7 +37,7 @@ const ManageDiscounts = () => {
   // Open detail modal
   const handleDetailClick = (discount) => {
     setSelectedDiscount(discount);
-    fetchProductDetails(discount.id); // Get products for discount type 1
+    fetchProductDetails(discount.discount_id); // Get products for discount type 1
     setOpenDetailModal(true);
   };
 
@@ -44,7 +45,7 @@ const ManageDiscounts = () => {
   const handleUpdateClick = (discount) => {
     setSelectedDiscount(discount);
     setOpenUpdateModal(true);
-    fetchProductDetails(discount.id);
+    fetchProductDetails(discount.discount_id);
   };
 
   // Handle update discount
@@ -61,7 +62,7 @@ const ManageDiscounts = () => {
     };
 
     try {
-      await axios.put(`http://localhost:8088/api/discounts/${selectedDiscount.id}`, updatedData);
+      await axios.put(`http://localhost:8088/api/discounts/${selectedDiscount.discount_id}`, updatedData);
       setOpenUpdateModal(false);
       fetchDiscounts(); // Refresh the discount list
     } catch (error) {
@@ -101,35 +102,45 @@ const ManageDiscounts = () => {
   };
 
   return (
+    <>
+    <AppHeader/>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <Button variant="contained" color="primary" component={Link} to="/create-discount">Create Discount</Button>
+        <Button variant="contained" color="primary" component={Link} to="/create-discount">Tạo khuyến mãi mới</Button>
       </div>
 
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Discount Code</TableCell>
-              <TableCell>Discount Name</TableCell>
-              <TableCell>Discount Type</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>End Date</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>Mã khuyến mại</TableCell>
+              <TableCell>Tên khuyến mại</TableCell>
+              <TableCell>Loại khuyến mại</TableCell>
+              <TableCell>Ngày bắt đầu</TableCell>
+              <TableCell>Ngày kết thúc</TableCell>
+              <TableCell></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {discounts.map((discount) => (
-              <TableRow key={discount.id}>
+              <TableRow key={discount.discount_id}>
                 <TableCell>{discount.discount_code}</TableCell>
                 <TableCell>{discount.discount_name}</TableCell>
-                <TableCell>{discount.discount_type === 1 ? 'Product-based' : 'Order-based'}</TableCell>
+                <TableCell>{discount.discount_type === 1 ? 'Áp dụng trực tiếp cho sản phẩm' : 'Dùng khi đặt hàng'}</TableCell>
                 <TableCell>{discount.start_date}</TableCell>
                 <TableCell>{discount.end_date}</TableCell>
                 <TableCell>
-                  <Button onClick={() => handleDetailClick(discount)}>View</Button>
-                  <Button onClick={() => handleUpdateClick(discount)}>Update</Button>
-                  <Button onClick={() => handleDeleteDiscount(discount.id)}>Delete</Button>
+                  <Button onClick={() => handleDetailClick(discount)}>Chi tiết</Button>
+                  <Button onClick={() => handleUpdateClick(discount)}>Cập nhật</Button>
+                  <Button onClick={() => handleDeleteDiscount(discount.discount_id)}>Xóa</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -163,10 +174,10 @@ const ManageDiscounts = () => {
               <h3>Products Applied:</h3>
               <List>
                 {products.map((product) => (
-                  <ListItem key={product.id}>
+                  <ListItem key={product.productid}>
                     <Checkbox
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => handleProductSelect(product.id)}
+                      checked={selectedProducts.includes(product.productid)}
+                      onChange={() => handleProductSelect(product.productid)}
                     />
                     <ListItemText primary={product.name} />
                   </ListItem>
@@ -249,10 +260,10 @@ const ManageDiscounts = () => {
                 <h3>Products Applied:</h3>
                 <List>
                   {products.map((product) => (
-                    <ListItem key={product.id}>
+                    <ListItem key={product.productid}>
                       <Checkbox
-                        checked={selectedProducts.includes(product.id)}
-                        onChange={() => handleProductSelect(product.id)}
+                        checked={selectedProducts.includes(product.productid)}
+                        onChange={() => handleProductSelect(product.productid)}
                       />
                       <ListItemText primary={product.name} />
                     </ListItem>
@@ -266,6 +277,7 @@ const ManageDiscounts = () => {
         </Box>
       </Modal>
     </div>
+    </>
   );
 };
 

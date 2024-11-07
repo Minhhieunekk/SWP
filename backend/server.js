@@ -9,7 +9,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const multer=require('multer');
 const path=require('path');
-// const { stat } = require('fs');
+const fs = require('fs');
 // const bodyParser = require('body-parser');
 // const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -49,9 +49,9 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
-app.use(bodyParser.json());
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(bodyParser.json());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -242,11 +242,13 @@ app.get('/productdetail', (req, res) => {
       p.*,
       c.categoryname,
       c.material,
-      c.gender
+      c.gender,
+      d.discount_value
     FROM 
       product p
     JOIN 
       category c ON p.category = c.categoryid
+    LEFT JOIN discount d ON d.discount_id = p.discount_id
     WHERE 
       p.productid = ?
   `;
@@ -270,9 +272,10 @@ app.get("/home", (req, res) => {
 
   // Step 1: Get the last 10 products by productid
   const last10ProductsQuery = `
-    SELECT * 
+    SELECT product.*, discount.discount_value 
     FROM product 
-    JOIN category ON product.category = category.categoryid 
+    JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON discount_id = product.discount_id
     ORDER BY productid DESC 
     LIMIT 10
   `;
@@ -315,7 +318,7 @@ app.get("/home/bongtai", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT product.*, category.*, discount.discount_value FROM product LEFT JOIN discount ON discount.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -346,7 +349,7 @@ app.get("/home/daychuyen", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -377,7 +380,7 @@ app.get("/home/vongtay", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -408,7 +411,7 @@ app.get("/home/nhan", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -774,6 +777,7 @@ app.get('/api/products', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -781,6 +785,7 @@ app.get('/api/products', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
   `;
 
   db.query(sql, (err, data) => {
@@ -840,6 +845,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -847,6 +853,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.categoryname = ?
   `;
 
@@ -867,6 +874,7 @@ app.get('/api/materials/:material', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -874,6 +882,7 @@ app.get('/api/materials/:material', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.material = ?
   `;
 
@@ -895,6 +904,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -902,6 +912,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.gender = ?
   `;
 
@@ -996,8 +1007,10 @@ app.post('/order', (req, res) => {
       return res.json("Error")
     }
     const orderDetailId = result.insertId;
+    let textToMail = "";
     items.forEach(item => {
       const sql2 = "INSERT INTO order_item(order_id, product_id, size, quantity) VALUES (?,?,?,?)";
+      textToMail = textToMail + item.name + " - Size: " + item.size + " x " +  item.quantity + "\n";
       db.query(sql2,[orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
         if(err2) {
           return res.json("Error 2");
@@ -1008,15 +1021,18 @@ app.post('/order', (req, res) => {
         //TODO update inventory
         const sql4 = "UPDATE product SET amount = amount - ? where productid = ?"
         db.execute(sql4,[item.quantity, item.productId]);
-        if (paymentStatus === 1) {
-          return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
-        } else {
-          const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
-          return res.json({ imageUrl });
-        }
         // return res.json(data);
       })
     });
+    if (paymentStatus === 1) {
+      //(email, template, phone, address, listItem, total)
+      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
+    } else {
+      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
+      return res.json({ imageUrl });
+    }
   })
 });
 
@@ -1142,7 +1158,7 @@ app.put('/orders/:orderId', async (req, res) => {
   const { orderId } = req.params;
   const { paymentStatus } = req.body;
   // const connection = await mysql.createConnection(dbConfig);
-  const sql = 'UPDATE order_detail SET payment_status = ? WHERE order_id = ?';
+  const sql = 'UPDATE order_detail SET status = ? WHERE order_id = ?';
   
   db.query(sql,[paymentStatus, orderId],(err, data) => {
     if (err) {
@@ -1194,7 +1210,7 @@ app.put('/order-item/quantity', (req, res) => {
         // Update product stock
         db.query('UPDATE product SET amount = amount - ? WHERE productid = (SELECT product_id FROM order_item WHERE order_item_id = ?)', [newQuantity, orderItemId], (err, result) => {
           if (err) return res.status(500).send({ error: 'Error updating product stock' });
-          res.send({ message: 'Item quantity updated successfully' });
+          res.send({ message: 'Cập nhật đơn hàng thành công.' });
         });
       }
     );
@@ -1218,7 +1234,7 @@ app.delete('/order-item/:orderItemId', (req, res) => {
       // Restore product stock
       db.query('UPDATE product SET amount = amount + ? WHERE productid = ?', [quantity, product_id], (err, result) => {
         if (err) return res.status(500).send({ error: 'Error restoring product stock' });
-        res.send({ message: 'Item deleted successfully and stock updated' });
+        res.send({ message: 'Cập nhật đơn hàng thành công.' });
       });
     });
   });
@@ -1233,9 +1249,241 @@ app.put('/order/payment-status', (req, res) => {
     [status, orderId],
     (err, result) => {
       if (err) return res.status(500).send({ error: 'Error updating payment status' });
-      res.send({ message: 'Payment status updated successfully' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
     }
   );
+});
+
+app.put('/orders/updateTotal', (req, res) => {
+  const { orderId, newTotal } = req.body;
+
+  db.query(
+    'UPDATE order_detail SET total = ? WHERE order_id = ?',
+    [newTotal, orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
+    }
+  );
+});
+
+// Get all products (for discount type 1)
+app.get('/api/product', (req, res) => {
+  db.query('SELECT * FROM product limit 5', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to fetch products' });
+    }
+    res.json(results);
+  });
+});
+
+// Create a new discount
+app.post('/api/discounts', (req, res) => {
+  const {
+    discount_code,
+    discount_name,
+    discount_type,
+    start_date,
+    end_date,
+    discount_value,
+    discount_condition,
+    selected_products,
+    discount_description,  // New field
+  } = req.body;
+
+  // Check if required fields are provided and not null
+  if (!discount_code || !discount_name || !start_date || !end_date || !discount_value || !discount_description) {
+    return res.status(400).json({
+      error: 'All fields are required: discount_code, discount_name, start_date, end_date, discount_value, and discount_description',
+    });
+  }
+
+  // Check if discount_value is a valid number
+  if (isNaN(discount_value)) {
+    return res.status(400).json({ error: 'Discount value must be a valid number' });
+  }
+
+  const discountQuery = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  db.query(
+    discountQuery,
+    [
+      discount_code,
+      discount_name,
+      discount_type,
+      start_date,
+      end_date,
+      discount_value,
+      discount_condition || null, // Allow null for condition in product-based discount
+      discount_description, // Save description
+    ],
+    (err, result) => {
+      if (err) {
+        console.error('Error saving discount:', err);
+        return res.status(500).json({ error: 'Failed to create discount' });
+      }
+
+      const discountId = result.insertId;
+
+      if (discount_type === 1 && selected_products.length > 0) {
+        // Apply discount to products
+        selected_products.forEach((productId) => {
+          db.query('UPDATE product SET discount_id = ? WHERE productid = ?', [discountId, productId], (err) => {
+            if (err) {
+              console.error(`Error applying discount to product ${productId}:`, err);
+            }
+          });
+        });
+      }
+
+      res.status(201).json({ message: 'Discount created successfully', discountId });
+    }
+  );
+});
+
+// Route: Get all discounts with pagination
+app.get('/api/discounts', (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
+
+  const sql = `SELECT * FROM discount LIMIT ${limit} OFFSET ${offset}`;
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error fetching discounts' });
+    }
+    const countSql = `SELECT COUNT(*) AS total FROM discount`;
+    db.query(countSql, (countErr, countResults) => {
+      if (countErr) {
+        return res.status(500).json({ error: 'Error fetching total count' });
+      }
+      const totalPages = Math.ceil(countResults[0].total / limit);
+      res.json({
+        discounts: results,
+        totalPages
+      });
+    });
+  });
+});
+
+// Route: Get discount details by ID (with product list if discount_type = 1)
+app.get('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = `SELECT * FROM discount WHERE discount_id = ?`;
+  
+  db.query(sql, [id], (err, discountResults) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error fetching discount' });
+    }
+    if (discountResults.length === 0) {
+      return res.status(404).json({ error: 'Discount not found' });
+    }
+    
+    const discount = discountResults[0];
+    
+    // If discount type is 1, get the associated products
+    if (discount.discount_type === 1) {
+      const productSql = `SELECT * FROM product WHERE discount_id = ?`;
+      db.query(productSql, [id], (productErr, productResults) => {
+        if (productErr) {
+          return res.status(500).json({ error: 'Error fetching products' });
+        }
+        res.json({
+          discount,
+          products: productResults
+        });
+      });
+    } else {
+      res.json({ discount });
+    }
+  });
+});
+
+// Route: Create a new discount
+app.post('/api/discounts', (req, res) => {
+  const { discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
+  const sql = `INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  
+  db.query(sql, [discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error creating discount' });
+    }
+    res.status(201).json({ message: 'Discount created successfully', discount_id: results.insertId });
+  });
+});
+
+// Route: Update an existing discount
+app.put('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  const { discount_name, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
+  
+  const sql = `UPDATE discount SET discount_name = ?, start_date = ?, end_date = ?, discount_value = ?, discount_condition = ?, discount_description = ? WHERE discount_id = ?`;
+  
+  db.query(sql, [discount_name, start_date, end_date, discount_value, discount_condition, discount_description, id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error updating discount' });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Discount not found' });
+    }
+    res.json({ message: 'Discount updated successfully' });
+  });
+});
+
+// Route: Delete a discount
+app.delete('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  
+  // First, remove the association with products for discount type 1
+  const removeProductsSql = `UPDATE product SET discount_id = NULL WHERE discount_id = ?`;
+  db.query(removeProductsSql, [id], (err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error removing product associations' });
+    }
+    
+    // Now delete the discount
+    const deleteSql = `DELETE FROM discount WHERE discount_id = ?`;
+    db.query(deleteSql, [id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error deleting discount' });
+      }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Discount not found' });
+      }
+      res.json({ message: 'Discount deleted successfully' });
+    });
+  });
+});
+
+// Route: Assign products to a discount (for product-based discounts)
+app.post('/api/discounts/:id/products', (req, res) => {
+  const { id } = req.params;
+  const { productIds } = req.body;  // Array of product IDs
+  
+  const sql = `UPDATE product SET discount_id = ? WHERE productid IN (?)`;
+  
+  db.query(sql, [id, productIds], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error assigning products to discount' });
+    }
+    res.json({ message: 'Products assigned to discount successfully' });
+  });
+});
+
+// Route: Remove product from discount
+app.post('/api/discounts/:id/remove-product', (req, res) => {
+  const { id } = req.params;
+  const { productIds } = req.body;  // Array of product IDs
+  
+  const sql = `UPDATE product SET discount_id = NULL WHERE productid IN (?) AND discount_id = ?`;
+  
+  db.query(sql, [productIds, id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error removing products from discount' });
+    }
+    res.json({ message: 'Products removed from discount successfully' });
+  });
 });
 
 
@@ -1422,4 +1670,58 @@ function hashPass(content) {
     content = JSON.stringify(content);
   }
   return createHash('sha256').update(content).digest('hex');
-}
+};
+
+ // Function to send email
+ const sendEmail = async (email, fileTemplate, phone, address, listItem, total) => {
+  try {
+    // Fetch user data from database
+    // const user = await getUserData(userId);
+
+    // Read the .txt template file
+    fs.readFile(fileTemplate, 'utf8', (err, template) => {
+      if (err) {
+        console.log('Error reading the file:', err);
+        return;
+      }
+
+      // Replace variables in the template with values from the database
+      let emailContent = template;
+      emailContent = emailContent.replace('{{listItem}}', listItem);
+      emailContent = emailContent.replace('{{total}}', total);
+      emailContent = emailContent.replace('{{address}}', address);
+      emailContent = emailContent.replace('{{phone}}', phone);
+      // Add more replacements as needed
+
+      // Create a transporter using SMTP (example with Gmail)
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'chidechoinum1@gmail.com',  // Using email from .env file
+          pass: 'rmpakmoqvcreiwli',  // Using App Password from .env file
+        },
+      });
+
+      // Email options
+      const mailOptions = {
+        from: 'chidechoinum1@gmail.com',  // Sender address (also from .env)
+        to: email,                // Recipient's email
+        subject: 'Đặt hàng thành công',
+        text: emailContent,            // The text content for the email
+      };
+
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log('Error sending email:', error);
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+  }
+};

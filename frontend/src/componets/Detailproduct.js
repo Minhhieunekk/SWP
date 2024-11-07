@@ -17,7 +17,8 @@ const ProductCard = ({
     totalrate,
     peoplerate,
     description,
-    amount
+    amount,
+    discount_value
 }) => {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(5);

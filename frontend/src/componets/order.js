@@ -3,6 +3,7 @@ import '../styles/dashboard.scss';
 import '../styles/order.css';
 import axios from 'axios';
 import Modal from 'react-modal';
+import AppHeader from './Header';
 
 const paymentStatusLabels = {
   0: 'Hủy',
@@ -22,6 +23,9 @@ const TrackingOrder = () => {
 
   const [modifiedItems, setModifiedItems] = useState([]);  // To track modified or deleted items
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [newTotal, setNewTotal] = useState(0);
+  const [oldTotal, setOldTotal] = useState(0);
+  const [newListItem, setNewListItem] = useState(null);
 
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,6 +33,26 @@ const TrackingOrder = () => {
     column: 'order_date',    // Column to sort by (e.g., 'order_id', 'username', etc.)
     direction: 'DESC', // 'ASC' or 'DESC'
   });
+
+  const [user, setUser] = useState(null);
+
+const fetchUserData = async (token) => {
+  try {
+    
+    const res = await axios.get('http://localhost:8088/api/user/details', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    setUser(res.data);
+       
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+   
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem('token');
+      
+    }
+  }
+};
 
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
@@ -51,6 +75,8 @@ const TrackingOrder = () => {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetchUserData(token);
     fetchOrders();
   }, [filters, currentPage, sortConfig]);
 
@@ -111,11 +137,14 @@ const TrackingOrder = () => {
   //   fetchOrders();
   // }, []);
 
-  const handleRowClick = async (orderId, currentPaymentStatus) => {
+  const handleRowClick = async (orderId, currentPaymentStatus, oldTotal) => {
     const response = await axios.get(`http://localhost:8088/orders/${orderId}/items`);
     setSelectedOrderItems(response.data);
+    setNewListItem(response.data);
     setSelectedOrderId(orderId);
     setPaymentStatus(currentPaymentStatus);
+    setOldTotal(oldTotal);
+    setNewTotal(oldTotal);
     setIsModalOpen(true);
   };
 
@@ -131,11 +160,56 @@ const TrackingOrder = () => {
   ////////////////
   // Update item quantity in local state (track changes)
   const updateItemQuantity = (orderItemId, newQuantity) => {
-    setModifiedItems(prevItems => {
-      const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
-      updatedItems.push({ order_item_id: orderItemId, newQuantity });
-      return updatedItems;
-    });
+    if (newQuantity === 0) {
+      const confirmDelete = window.confirm("Bạn có muốn xóa món đồ này không?");
+      if (confirmDelete) {
+        setModifiedItems(prevItems => {
+          const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
+          updatedItems.push({ order_item_id: orderItemId, deleted: true });
+          return updatedItems;
+        });
+        console.log ('updatedItemsupdatedItems');
+        console.log (modifiedItems);
+        selectedOrderItems.forEach(element => {
+          if(element.order_item_id === orderItemId) element.quantity = newQuantity;
+        });
+        let updatedItems1 = selectedOrderItems.filter(element => element.order_item_id !== orderItemId);
+        setSelectedOrderItems(updatedItems1);
+        console.log('ggggggggggggggggggggggg')
+        console.log(updatedItems1);
+        const newprice = calculateTotalPrice();
+        setNewTotal(newprice);
+      } else {
+        // selectedOrderItems.forEach(element => {
+        //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
+        // });
+      }
+    } else {
+      setModifiedItems(prevItems => {
+        const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
+        updatedItems.push({ order_item_id: orderItemId, newQuantity });
+        return updatedItems;
+      });
+      selectedOrderItems.forEach(element => {
+        if(element.order_item_id === orderItemId) element.quantity = newQuantity;
+      });
+      const newprice = calculateTotalPrice();
+      setNewTotal(newprice);
+    }
+    
+    // const newCartItems = selectedOrderItems.map(i => 
+    //   i.order_item_id === orderItemId ? { ...i, quantity: newQuantity } : i.quantity
+    // );
+    // selectedOrderItems.forEach(element => {
+    //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
+    // });
+    // newListItem.forEach(element => {
+    //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
+    // });
+    // if (newQuantity === 0) {
+
+    // }
+    
   };
 
   // Mark item for deletion (do not delete immediately)
@@ -145,6 +219,12 @@ const TrackingOrder = () => {
       updatedItems.push({ order_item_id: orderItemId, deleted: true });
       return updatedItems;
     });
+    const tempList2 = selectedOrderItems.filter(element => element.order_item_id !== orderItemId);
+    setSelectedOrderItems(tempList2);
+    const newprice = calculateTotalPrice();
+    setNewTotal(newprice);
+    console.log(modifiedItems);
+    
   };
 
   // Save changes (commit the changes to the database)
@@ -160,10 +240,20 @@ const TrackingOrder = () => {
           await axios.delete(`http://localhost:8088/order-item/${modifiedItem.order_item_id}`);
         }
       }
-      alert('Changes saved successfully!');
+      const abcde = await axios.put('http://localhost:8088/orders/updateTotal', { orderId:selectedOrderId, newTotal: newTotal });
+      console.log('updateeeeeeeeeeeeeeeeeeeeeeeee');
+      console.log(abcde.data);  
+      console.log(abcde);
+      console.log(selectedOrderId);
+      console.log(newTotal);
+      alert('Đã lưu thay đổi!');
       setModifiedItems([]); // Clear the modified items
-      handleRowClick(selectedOrderId); // Refresh order details
+      setOldTotal(newTotal);
+      setNewTotal(0);
+      handleRowClick(selectedOrderId, paymentStatus, oldTotal); // Refresh order details
     } catch (error) {
+      console.log('errrrrrrrr');
+      console.log(error);
       alert('Error saving changes');
     }
   };
@@ -177,16 +267,38 @@ const TrackingOrder = () => {
       alert('Error updating payment status');
     }
   };
+
+  const calculateTotalPrice = () => {
+    let total = 0;
+    console.log('listttttttt');
+    console.log(selectedOrderItems);
+    console.log(newListItem);
+    selectedOrderItems.forEach(item => {
+        if (item) {
+            total += item.price * item.quantity;
+        }
+    });
+    return total;
+};
   ////////////////
   ////////////////
 
 
   const handleClose = () => {
     setIsModalOpen(false);
+    setModifiedItems([]);
+    setNewTotal(0);
     fetchOrders();
   };
 
   return (
+    <>
+    <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
+    <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
     <div className="container-xl">
     <div className="table-responsive">
     <div className="table-wrapper">
@@ -251,10 +363,10 @@ const TrackingOrder = () => {
         </thead>
         <tbody>
           {orders.map(order => (
-            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status)}>
+            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status, order.total)}>
               <td>{order.order_id}</td>
               <td>{order.username}</td>
-              <td>{(order.total * 1).toLocaleString()}</td>
+              <td>{(order.total * 1).toLocaleString()} VND</td>
               <td>{new Date(order.order_date).toLocaleDateString()}</td>
               <td className={getStatusClass(order.payment_status)}>{paymentStatusLabels[order.payment_status]}</td> {/* Display label */}
               <td>{order.phone}</td>
@@ -270,26 +382,40 @@ const TrackingOrder = () => {
           onClick={() => handlePagination('prev')}
           disabled={currentPage === 1}
         >
-          Previous
+          Trang trước
         </button>
         <span>
-          Page {currentPage} of {totalPages}
+          Trang {currentPage} trên {totalPages}
         </span>
         <button
           onClick={() => handlePagination('next')}
           disabled={currentPage === totalPages}
         >
-          Next
+          Trang sau
         </button>
       </div>
+      </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
 
       <Modal isOpen={isModalOpen} onRequestClose={handleClose} ariaHideApp={false}>
+      <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
+          <br></br>
         <div className="container-xl">
         <div className="table-responsive">
         <div className="table-wrapper">
         <div className="table-title">
         <div className="row">
+          
         <h2>Chi tiết đơn hàng</h2>
+        <p>Giá trị đơn hàng: {oldTotal}</p>
+        { modifiedItems.length !==0 ? <p>Giá trị đơn hàng nếu cập nhật: {newTotal}</p> : null}
         <table className="table table-striped table-hover">
           <thead>
             <tr>
@@ -297,8 +423,7 @@ const TrackingOrder = () => {
               <th>Ảnh</th>
               <th>Kích thước</th>
               <th>Số lượng</th>
-              <th>Price</th>
-              <th>Actions</th>
+              <th>Đơn giá</th>
             </tr>
           </thead>
           <tbody>
@@ -307,11 +432,16 @@ const TrackingOrder = () => {
                 <td>{item.name}</td>
                 <td><img src={item.image} alt={item.name} style={{ width: '100px' }} /></td>
                 <td>{item.size}</td>
-                <td>{item.quantity}</td>
-                <td>{item.price}</td>
-                <td>
-                  <button onClick={() => markItemForDeletion(item.order_item_id)}>Delete</button>
-                </td>
+                <td>{paymentStatus === 1 ? (
+                  <input
+                  type="number"
+                  min='0'
+                  value={item.quantity}
+                  onChange={(e) => updateItemQuantity(item.order_item_id, parseInt(e.target.value))}
+                  max={item.amount}
+                />
+                ) : item.quantity}</td>
+                <td>{(item.price*1).toLocaleString()} VND</td>
               </tr>
             ))}
           </tbody>
@@ -330,23 +460,18 @@ const TrackingOrder = () => {
             ) : null}
 
             {paymentStatus !== 0 && paymentStatus !== 5&& (
-              <button onClick={() => updateOrderStatus(0)}>Hủy</button>
+              <button onClick={() => updateOrderStatus(0)}>Hủy đơn hàng</button>
             )}
           </label>
         </div>
-        <button onClick={handleSave}>Save</button>
-        <button onClick={handleClose}>Close</button>
+        <button onClick={saveChanges}>Lưu</button>
+        <button onClick={handleClose}>Đóng</button>
         </div>
         </div>
         </div>
         </div>
       </Modal>
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    // </div>
+    </>
   );
 };
 

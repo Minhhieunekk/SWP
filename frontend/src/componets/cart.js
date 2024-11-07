@@ -4,12 +4,13 @@ import { Edit, Trash, PlusCircle } from 'react-feather';
 import "../styles/signup.scss";
 import '../styles/dashboard.scss'; 
 import axios from "axios";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ImageAlertModal from "./ImageAlertModal";
 import AppHeader from './Header';
 
 
 const Cart = () => {
+    const navigate = useNavigate();
     const consumerId = localStorage.getItem('userId');
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +32,26 @@ const Cart = () => {
         district: '',
         ward: ''
     });
+
+    const [user, setUser] = useState(null);
+
+    const fetchUserData = async (token) => {
+    try {
+        
+        const res = await axios.get('http://localhost:8088/api/user/details', {
+        headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setUser(res.data);
+        
+    } catch (err) {
+        console.error('Error fetching user data:', err);
+    
+        if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+        
+        }
+    }
+    };
 
     const handleChangeTypeAddress = (e) => {
         if(e === true) {
@@ -55,13 +76,14 @@ const Cart = () => {
 
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
         const fetchCart = async () => {
             try {
                 const response = await axios.post(`http://localhost:8088/cart`,{userId : consumerId});
                 console.log(response.data);
                 if (response.data === "No item in cart") {
                     setCartItems([]);
-                    setErrorMessage("No items in cart");
+                    setErrorMessage("Hiện tại không có sản phẩm nào trong giỏ hàng");
                 } else {
                     setCartItems(response.data);
                     setErrorMessage('');
@@ -76,6 +98,7 @@ const Cart = () => {
         };
 
         fetchCart();
+        fetchUserData(token);
     }, [consumerId]);
 
     const handleCheckboxChange = (item) => {
@@ -88,6 +111,9 @@ const Cart = () => {
             }
         });
     };
+    const handleClickItem = (id) => {
+        navigate(`/productdetail/${id}`);
+    }
 
     useEffect(() => {
         const fetchUserInfo = async () => {
@@ -201,7 +227,8 @@ const Cart = () => {
             items: selectedItemsData.map(item => ({
                 productId: item.productid,
                 quantity: item.quantity,
-                size: item.size // Assuming size is part of the cart item
+                size: item.size, // Assuming size is part of the cart item
+                name: item.name
             }))
         };
          axios.post('http://localhost:8088/order', orderData)
@@ -470,7 +497,7 @@ const Cart = () => {
 
     return (
         <>
-        <AppHeader/>
+        <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
         <div style={{position:'relative',top:'150px'}}>
             <h1>Giỏ hàng của bạn</h1>
             <div className="container-xl">
@@ -519,7 +546,7 @@ const Cart = () => {
                                         onChange={() => handleCheckboxChange(item)}
                                     />
                             </td>
-                            <td>
+                            <td onClick={() => handleClickItem(item.productid)}>
                                 {item.name} <br></br>
                                 Size: {item.size}
                                 
