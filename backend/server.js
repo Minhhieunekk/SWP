@@ -539,12 +539,12 @@ app.get("/home", (req, res) => {
 
   // Step 1: Get the last 10 products by productid
   const last10ProductsQuery = `
-    SELECT product.*, discount.discount_value 
-    FROM product 
-    JOIN category ON product.category = category.categoryid
-    LEFT JOIN discount ON discount_id = product.discount_id
-    ORDER BY productid DESC 
-    LIMIT 10
+      SELECT product.*, discount.discount_value 
+      FROM product 
+      JOIN category ON product.category = category.categoryid
+      LEFT JOIN discount ON discount.discount_id = product.discount_id
+      ORDER BY product.productid DESC 
+      LIMIT 10;
   `;
 
   db.query(last10ProductsQuery, (err, last10ProductsResult) => {
@@ -1519,9 +1519,9 @@ app.post('/order', (req, res) => {
     let textToMail = "";
     items.forEach(item => {
       const sql2 = "INSERT INTO order_item(order_id, product_id, size, quantity) VALUES (?,?,?,?)";
-      textToMail = textToMail + item.name + " - Size: " + item.size + " x " +  item.quantity + "\n";
-      db.query(sql2,[orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
-        if(err2) {
+      textToMail = textToMail + item.name + " - Size: " + item.size + " x " + item.quantity + "\n";
+      db.query(sql2, [orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
+        if (err2) {
           return res.json("Error 2");
         }
         //https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>
@@ -1529,16 +1529,16 @@ app.post('/order', (req, res) => {
         db.execute(sql3, [item.productId, item.size]);
         //TODO update inventory
         const sql4 = "UPDATE inventory SET amount = amount - ? where prd_id = ? and size = ?"
-        db.execute(sql4,[item.quantity, item.productId, item.size]);
+        db.execute(sql4, [item.quantity, item.productId, item.size]);
         // return res.json(data);
       })
     });
     if (paymentStatus === 1) {
       //(email, template, phone, address, listItem, total)
-      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      sendEmail(req.body.email, 'templates/mail_order_template1.txt', req.body.phone, req.body.address, textToMail, req.body.total);
       return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
     } else {
-      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      sendEmail(req.body.email, 'templates/mail_order_template1.txt', req.body.phone, req.body.address, textToMail, req.body.total);
       const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
       return res.json({ imageUrl });
     }
@@ -1689,7 +1689,7 @@ app.get('/order-details/:orderId', (req, res) => {
     JOIN product p ON oi.product_id = p.productid
     WHERE oi.order_id = ?;
   `;
-  
+
   db.query(query, [orderId], (err, rows) => {
     if (err) return res.status(500).send({ error: 'Error fetching order items' });
     res.json({ items: rows });
@@ -1705,7 +1705,7 @@ app.put('/order-item/quantity', (req, res) => {
     if (err) return res.status(500).send({ error: 'Error fetching product data' });
 
     const availableAmount = result[0].amount;
-    
+
     if (newQuantity > availableAmount) {
       return res.status(400).send({ error: 'Quantity exceeds available stock' });
     }
@@ -1894,7 +1894,7 @@ app.get('/api/discounts', (req, res) => {
 app.get('/api/discounts/:id', (req, res) => {
   const { id } = req.params;
   const sql = `SELECT * FROM discount WHERE discount_id = ?`;
-  
+
   db.query(sql, [id], (err, discountResults) => {
     if (err) {
       return res.status(500).json({ error: 'Error fetching discount' });
@@ -1902,9 +1902,9 @@ app.get('/api/discounts/:id', (req, res) => {
     if (discountResults.length === 0) {
       return res.status(404).json({ error: 'Discount not found' });
     }
-    
+
     const discount = discountResults[0];
-    
+
     // If discount type is 1, get the associated products
     if (discount.discount_type === 1) {
       const productSql = `SELECT * FROM product WHERE discount_id = ?`;
@@ -1927,7 +1927,7 @@ app.get('/api/discounts/:id', (req, res) => {
 app.post('/api/discounts', (req, res) => {
   const { discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
   const sql = `INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  
+
   db.query(sql, [discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Error creating discount' });
@@ -1940,9 +1940,9 @@ app.post('/api/discounts', (req, res) => {
 app.put('/api/discounts/:id', (req, res) => {
   const { id } = req.params;
   const { discount_name, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
-  
+
   const sql = `UPDATE discount SET discount_name = ?, start_date = ?, end_date = ?, discount_value = ?, discount_condition = ?, discount_description = ? WHERE discount_id = ?`;
-  
+
   db.query(sql, [discount_name, start_date, end_date, discount_value, discount_condition, discount_description, id], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Error updating discount' });
@@ -1957,14 +1957,14 @@ app.put('/api/discounts/:id', (req, res) => {
 // Route: Delete a discount
 app.delete('/api/discounts/:id', (req, res) => {
   const { id } = req.params;
-  
+
   // First, remove the association with products for discount type 1
   const removeProductsSql = `UPDATE product SET discount_id = NULL WHERE discount_id = ?`;
   db.query(removeProductsSql, [id], (err) => {
     if (err) {
       return res.status(500).json({ error: 'Error removing product associations' });
     }
-    
+
     // Now delete the discount
     const deleteSql = `DELETE FROM discount WHERE discount_id = ?`;
     db.query(deleteSql, [id], (err, results) => {
@@ -1983,9 +1983,9 @@ app.delete('/api/discounts/:id', (req, res) => {
 app.post('/api/discounts/:id/products', (req, res) => {
   const { id } = req.params;
   const { productIds } = req.body;  // Array of product IDs
-  
+
   const sql = `UPDATE product SET discount_id = ? WHERE productid IN (?)`;
-  
+
   db.query(sql, [id, productIds], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Error assigning products to discount' });
@@ -1998,9 +1998,9 @@ app.post('/api/discounts/:id/products', (req, res) => {
 app.post('/api/discounts/:id/remove-product', (req, res) => {
   const { id } = req.params;
   const { productIds } = req.body;  // Array of product IDs
-  
+
   const sql = `UPDATE product SET discount_id = NULL WHERE productid IN (?) AND discount_id = ?`;
-  
+
   db.query(sql, [productIds, id], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Error removing products from discount' });
@@ -2019,8 +2019,8 @@ function hashPass(content) {
   return createHash('sha256').update(content).digest('hex');
 };
 
- // Function to send email
- const sendEmail = async (email, fileTemplate, phone, address, listItem, total) => {
+// Function to send email
+const sendEmail = async (email, fileTemplate, phone, address, listItem, total) => {
   try {
     // Fetch user data from database
     // const user = await getUserData(userId);
@@ -2144,7 +2144,7 @@ app.get('/earnings', (req, res) => {
       (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE())) AS this_month_earn,
       (SELECT SUM(total) FROM order_detail WHERE payment_status = 1) AS all_time_earn
   `;
-  
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching earnings:', err);
@@ -2157,7 +2157,7 @@ app.get('/earnings', (req, res) => {
 // 2. Product Sales by Category (Last 6 months)
 app.get('/sales-by-category', (req, res) => {
   const months = getLastSixMonths(); // Get last 6 months
-  
+
   // We will group by category and month, summing the quantity for each
   const query = `
     SELECT 
@@ -2173,7 +2173,7 @@ app.get('/sales-by-category', (req, res) => {
     GROUP BY month
     ORDER BY month
   `;
-  
+
   db.query(query, [months], (err, results) => {
     if (err) {
       console.error('Error fetching sales by category:', err);
@@ -2195,7 +2195,7 @@ app.get('/order-status-overview', (req, res) => {
     WHERE CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
     GROUP BY month
   `;
-  
+
   db.query(query, [months], (err, results) => {
     if (err) {
       console.error('Error fetching order status overview:', err);
@@ -2272,16 +2272,16 @@ app.get('/top-products-last-30-days', (req, res) => {
 });
 
 app.post('/discount', (req, res) => {
-  const { 
-    discount_code, 
-    discount_name, 
-    discount_type, 
-    start_date, 
-    end_date, 
-    discount_condition, 
-    discount_value, 
-    discount_description, 
-    selectedProducts 
+  const {
+    discount_code,
+    discount_name,
+    discount_type,
+    start_date,
+    end_date,
+    discount_condition,
+    discount_value,
+    discount_description,
+    selectedProducts
   } = req.body;
 
   // Basic validation
@@ -2298,7 +2298,7 @@ app.post('/discount', (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(query, [discount_code, discount_name, discount_type, start_date, end_date, discount_type === 1 ?'0' : discount_condition, discount_value, discount_description || null], (err, result) => {
+  db.query(query, [discount_code, discount_name, discount_type, start_date, end_date, discount_type === 1 ? '0' : discount_condition, discount_value, discount_description || null], (err, result) => {
     if (err) {
       console.error('Error creating discount:', err);
       return res.status(500).json({ message: 'Internal server error.' });
@@ -2331,7 +2331,7 @@ app.get('/get-products', (req, res) => {
   const offset = (page - 1) * limit;
 
   const searchQuery = `%${search}%`;
-  
+
   // Query to fetch paginated products
   const query = `
     SELECT productid, name, code 
@@ -2352,7 +2352,7 @@ app.get('/get-products', (req, res) => {
       }
       const totalItems = countResult[0].total;
       const totalPages = Math.ceil(totalItems / limit);
-      
+
       res.json({
         products: results,
         totalItems,
@@ -2366,7 +2366,7 @@ app.get('/get-products', (req, res) => {
 // Backend code to handle pagination and filtering for the discount list
 
 app.get('/get-all-discounts', (req, res) => {
-  const {endDate, discountType, discountCode } = req.query;
+  const { endDate, discountType, discountCode } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
@@ -2432,7 +2432,7 @@ app.get('/get-all-discounts', (req, res) => {
 
       const totalItems = countResult[0].total;
       const totalPages = Math.ceil(totalItems / limit);
-      
+
       res.json({
         discounts: results,
         totalItems,
@@ -2446,7 +2446,7 @@ app.get('/get-all-discounts', (req, res) => {
 app.put('/update-product-discount', (req, res) => {
   const { productid, discount_id } = req.body;
   const query = 'UPDATE product SET discount_id = ? WHERE productid = ?';
-  
+
   db.query(query, [discount_id, productid], (err, result) => {
     if (err) throw err;
     res.json({ message: 'Product discount updated successfully' });
@@ -2456,7 +2456,7 @@ app.put('/update-product-discount', (req, res) => {
 app.get('/products-by-discount/:discountId', (req, res) => {
   const { discountId } = req.params;
   const query = 'SELECT productid, name, code FROM product WHERE discount_id = ?';
-  
+
   db.query(query, [discountId], (err, results) => {
     if (err) throw err;
     res.json(results);
@@ -2472,7 +2472,7 @@ app.put('/update-discount', (req, res) => {
     SET discount_name = ?, discount_value = ?, discount_condition = ?, discount_description = ?, start_date = ?, end_date = ?
     WHERE discount_id = ?
   `;
-  
+
   db.query(query, [discount_name, discount_value, discount_condition, discount_description, start_date, end_date, discount_id], (err, result) => {
     if (err) throw err;
     res.json({ message: 'Discount updated successfully' });
@@ -2506,7 +2506,7 @@ app.post('/create-discount', (req, res) => {
     INSERT INTO discount (discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  
+
   db.query(query, [discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date], (err, result) => {
     if (err) throw err;
     res.json({ discount_id: result.insertId });
@@ -2740,7 +2740,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 
-  
+
 
 
 
@@ -2764,7 +2764,7 @@ app.post('/api/chat', async (req, res) => {
 
 
 app.listen(8088, () => {
-    console.log("Server running on port 8088");
-  });
+  console.log("Server running on port 8088");
+});
 
 
