@@ -14,11 +14,14 @@ import ProductFilter from './componets/Filter';
 import Chart from './componets/chart';
 import Chatbot from './componets/chatbot';
 import Contact from './componets/Contact';
+import CreateDiscount from './componets/discount';
 import { JewelryCategory } from './componets/JewelryCategory';
 import { MaterialCategory } from './componets/MaterialCategory';
 import { GiftCategory } from './componets/GiftCategory';
+import ManageDiscounts from './componets/managedicount';
 import UserManagementComponent from './componets/manageruser';
 import OrderInfo from './componets/Orderinfo';
+import Statistic from './componets/statistic';
 function App() {
   return (
     <div className="App">
@@ -44,6 +47,9 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/cart/:consumerid" element={<Cart />} />
           <Route path="/trackingorder" element={<TrackingOrder />} />
+          <Route path="/create-discount" element={<CreateDiscount />} /> 
+          <Route path="/manage-discount" element={<ManageDiscounts />} /> 
+          <Route path="/statistic" element={<Statistic />} /> 
         </Routes>
       </BrowserRouter>
 
