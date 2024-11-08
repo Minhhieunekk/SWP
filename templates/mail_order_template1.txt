@@ -1,0 +1,8 @@
+Xin chào,
+Cảm ơn bạn đã tin tưởng và mua hàng tại cửa hàng chúng tôi.
+Đơn hàng của bạn bao gồm:
+{{listItem}}
+Tổng số tiền bạn cần thanh toán là {{total}} VND
+Đơn hàng sẽ được giao đến địa chỉ {{address}} - Số điện thoại {{phone}}
+Chúc bạn một ngày tốt lành
+Thân ái!

@@ -9,7 +9,7 @@ import Footer from "./Footer";
 
 import { useLocation, useNavigate } from "react-router";
 
-const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate, isNew }) => {
+const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate, isNew, discount_value }) => {
     const navigate = useNavigate();
     const rate = Math.round(totalrate / peoplerate);
 
@@ -26,7 +26,8 @@ const ProductCard = ({ productid, image, name, categoryname, material, price, to
             <div className="product-info">
                 <h3 className="product-title">{name}</h3>
                 <p className="product-category">{categoryname} {material}</p>
-                <p className="product-price">{parseInt(price).toLocaleString()} VND</p>
+                {discount_value?<p className="product-old-price"> {parseInt(price).toLocaleString()} VND</p>:<p></p>}
+                {discount_value?<p className="product-price"> {parseInt(price*(100-discount_value)/100).toLocaleString()} VND</p>:<p className="product-price">{parseInt(price).toLocaleString()} VND</p>}
                
                 <div className="rating">
                     {[...Array(5)].map((_, i) => (
@@ -61,6 +62,18 @@ const Home = () => {
     
 
     useEffect(() => {
+        // const token = localStorage.getItem('token');
+        // const queryParams = new URLSearchParams(location.search);
+        // const tokenFromUrl = queryParams.get('token');
+    
+        // // Save token from URL if it exists
+        // if (!token && tokenFromUrl) {
+        //     localStorage.setItem('token', tokenFromUrl);
+        //     fetchUserData(tokenFromUrl);
+        // } else if (token) {
+        //     localStorage.setItem('token', token);
+        //     fetchUserData(token);
+        // }
        
 
         
@@ -102,6 +115,23 @@ const Home = () => {
             console.error(err);
         }
     };
+    // const fetchUserData = async (token) => {
+    //     try {
+          
+    //       const res = await axios.get('http://localhost:8088/api/user/details', {
+    //         headers: { 'Authorization': `Bearer ${token}` }
+    //       });
+    //       setUser(res.data);
+             
+    //     } catch (err) {
+    //       console.error('Error fetching user data:', err);
+         
+    //       if (err.response?.status === 401 || err.response?.status === 403) {
+    //         // localStorage.removeItem('token');
+            
+    //       }
+    //     }
+    //   };
     
 
    

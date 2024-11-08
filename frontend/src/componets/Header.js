@@ -114,12 +114,12 @@ const AppHeader = () => {
       
 
       {
-        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===8) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (consumerid===8) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }

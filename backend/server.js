@@ -21,7 +21,8 @@ const { DataSource } = require('typeorm')
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
-
+const fs = require('fs');
+const moment = require('moment');
 
 require('dotenv').config();
 
@@ -53,9 +54,9 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
-app.use(bodyParser.json());
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(bodyParser.json());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -504,6 +505,7 @@ app.get('/productdetail', (req, res) => {
       c.categoryname,
       c.material,
       c.gender,
+      d.discount_value,
       i.size,
       i.amount
     FROM 
@@ -512,6 +514,7 @@ app.get('/productdetail', (req, res) => {
       category c ON p.category = c.categoryid
     JOIN 
       inventory i ON p.productid = i.prd_id
+    LEFT JOIN discount d ON d.discount_id = p.discount_id
     WHERE 
       p.productid = ?
   `;
@@ -536,9 +539,10 @@ app.get("/home", (req, res) => {
 
   // Step 1: Get the last 10 products by productid
   const last10ProductsQuery = `
-    SELECT * 
+    SELECT product.*, discount.discount_value 
     FROM product 
-    JOIN category ON product.category = category.categoryid 
+    JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON discount_id = product.discount_id
     ORDER BY productid DESC 
     LIMIT 10
   `;
@@ -581,7 +585,7 @@ app.get("/home/bongtai", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT product.*, category.*, discount.discount_value FROM product LEFT JOIN discount ON discount.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -612,7 +616,7 @@ app.get("/home/daychuyen", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -643,7 +647,7 @@ app.get("/home/vongtay", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -674,7 +678,7 @@ app.get("/home/nhan", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -1247,6 +1251,7 @@ app.get('/api/products', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1254,6 +1259,7 @@ app.get('/api/products', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
   `;
 
   db.query(sql, (err, data) => {
@@ -1347,6 +1353,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1354,6 +1361,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.categoryname = ?
   `;
 
@@ -1374,6 +1382,7 @@ app.get('/api/materials/:material', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1381,6 +1390,7 @@ app.get('/api/materials/:material', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.material = ?
   `;
 
@@ -1402,6 +1412,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       product.*, 
       category.categoryname, 
       category.material,
+      discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1409,6 +1420,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
+    LEFT JOIN discount ON product.discount_id = discount.discount_id
     WHERE category.gender = ?
   `;
 
@@ -1434,13 +1446,14 @@ app.post('/addtocart', (req, res) => {
       return res.status(500).json("error")
     }
     if (checkData.length > 0) {
-      const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?"
-      db.query(updateSql, values, (err, data) => {
-        if (err) {
-          return res.status(500).json("error")
-        }
-        return res.json(data);
-      })
+      // const updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?"
+      // db.query(updateSql, values, (err, data) => {
+      //   if (err) {
+      //     return res.status(500).json("error")
+      //   }
+      //   return res.json(data);
+      // })
+      return res.json('Existed');
     } else {
       const insertSql = "INSERT INTO `cart`(`quantity`,`user_id`,`product_id`,`size`) VALUES (?,?,?,?)"
       db.query(insertSql, values, (err, data) => {
@@ -1503,27 +1516,32 @@ app.post('/order', (req, res) => {
       return res.json("Error")
     }
     const orderDetailId = result.insertId;
+    let textToMail = "";
     items.forEach(item => {
       const sql2 = "INSERT INTO order_item(order_id, product_id, size, quantity) VALUES (?,?,?,?)";
-      db.query(sql2, [orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
-        if (err2) {
+      textToMail = textToMail + item.name + " - Size: " + item.size + " x " +  item.quantity + "\n";
+      db.query(sql2,[orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
+        if(err2) {
           return res.json("Error 2");
         }
         //https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>
         const sql3 = "DELETE FROM cart WHERE product_id = ? and size = ?"
         db.execute(sql3, [item.productId, item.size]);
         //TODO update inventory
-        const sql4 = "UPDATE product SET amount = amount - ? where productid = ?"
-        db.execute(sql4, [item.quantity, item.productId]);
-        if (paymentStatus === 1) {
-          return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
-        } else {
-          const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
-          return res.json({ imageUrl });
-        }
+        const sql4 = "UPDATE inventory SET amount = amount - ? where prd_id = ? and size = ?"
+        db.execute(sql4,[item.quantity, item.productId, item.size]);
         // return res.json(data);
       })
     });
+    if (paymentStatus === 1) {
+      //(email, template, phone, address, listItem, total)
+      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
+    } else {
+      sendEmail(req.body.email,'templates/mail_order_template1.txt', req.body.phone,req.body.address, textToMail, req.body.total);
+      const imageUrl = `https://img.vietqr.io/image/970415-105001062900-print.png?amount=${total}&addInfo=DONHANG%20${orderDetailId}`;
+      return res.json({ imageUrl });
+    }
   })
 });
 
@@ -1545,22 +1563,86 @@ app.post('/userInfomation', (req, res) => {
   })
 });
 
+// app.get('/orders', (req, res) => {
+//   const sql = "select od.*, u.username from order_detail od join `user` u on u.consumerid = od.user_id order by order_date desc";
+//   // const values = [
+//   //   req.body.userid,
+//   // ]
+//   db.query(sql,(err, data) => {
+//     if (err) {
+//       return res.json("Error")
+//     }
+//     if (data.length > 0) {
+//       return res.json(data)
+//     } else {
+//       return res.json("No order till now")
+//     }
+//   })
+// });
+
+const formatDate = (date) => {
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+};
+
+// API to fetch orders
 app.get('/orders', (req, res) => {
-  const sql = "select od.*, u.username from order_detail od join `user` u on u.consumerid = od.user_id order by order_date desc";
-  // const values = [
-  //   req.body.userid,
-  // ]
-  db.query(sql, (err, data) => {
+  const { startDate, endDate, status, numberPerPage, page, sortColumn, sortDirection } = req.query;
+
+  const start = new Date(startDate || new Date(new Date().setDate(new Date().getDate() - 7)));
+  const end = new Date(endDate || new Date());
+
+  // Set end time to 23:59:59
+  start.setHours(0, 0, 0, 0)
+  end.setHours(23, 59, 59, 999);
+
+  const statusFilter = status === '-1' ? '' : `AND od.order_status = ${status}`;
+  const limit = parseInt(numberPerPage) || 10;
+  const offset = (parseInt(page) - 1) * limit || 0;
+  const column = sortColumn || 'order_date';
+  const direction = sortDirection || 'DESC';
+
+  const query = `
+    SELECT od.*, u.username 
+    FROM order_detail od
+    JOIN user u ON u.consumerid = od.user_id
+    WHERE od.order_date BETWEEN ? AND ?
+    ${statusFilter}
+    ORDER BY od.${column} ${direction}
+    LIMIT ? OFFSET ?
+  `;
+
+  db.query(query, [start, end, limit, offset], (err, results) => {
     if (err) {
-      return res.json("Error")
+      console.error(err);
+      return res.status(500).send('Database query error');
     }
-    if (data.length > 0) {
-      return res.json(data)
-    } else {
-      return res.json("No order till now")
-    }
-  })
+
+    const countQuery = `
+      SELECT COUNT(*) AS total 
+      FROM order_detail od
+      JOIN user u ON u.consumerid = od.user_id
+      WHERE od.order_date BETWEEN ? AND ?
+      ${statusFilter}
+    `;
+
+    db.query(countQuery, [start, end], (err, countResults) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database query error');
+      }
+
+      const total = countResults[0].total;
+      res.json({
+        orders: results,
+        total,
+        totalPages: Math.ceil(total / limit),
+      });
+    });
+  });
 });
+
+
+
 
 app.get('/orders/:orderId/items', async (req, res) => {
   const { orderId } = req.params;
@@ -1568,10 +1650,11 @@ app.get('/orders/:orderId/items', async (req, res) => {
   // const [rows] = await connection.query(`
 
   // `, [orderId]);
-  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image 
+  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, i.amount 
     FROM order_item oi 
-    JOIN product p ON oi.product_id = p.productid 
-    WHERE oi.order_id = ?
+    JOIN product p ON oi.product_id = p.productid
+    JOIN inventory i on oi.product_id = i.prd_id
+    WHERE oi.order_id = ? AND i.size=oi.size
   `
   db.query(sql, [orderId], (err, data) => {
     if (err) {
@@ -1596,7 +1679,856 @@ app.put('/orders/:orderId', async (req, res) => {
   // res.status(204).send();
 });
 
+// Fetch order details
+app.get('/order-details/:orderId', (req, res) => {
+  const { orderId } = req.params;
 
+  const query = `
+    SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, p.amount
+    FROM order_item oi
+    JOIN product p ON oi.product_id = p.productid
+    WHERE oi.order_id = ?;
+  `;
+  
+  db.query(query, [orderId], (err, rows) => {
+    if (err) return res.status(500).send({ error: 'Error fetching order items' });
+    res.json({ items: rows });
+  });
+});
+
+// Update quantity of an order item
+app.put('/order-item/quantity', (req, res) => {
+  const { orderItemId, newQuantity } = req.body;
+
+  // First, get the current product's amount to check if the new quantity is valid
+  db.query('SELECT p.amount FROM order_item oi JOIN product p ON oi.product_id = p.productid WHERE oi.order_item_id = ?', [orderItemId], (err, result) => {
+    if (err) return res.status(500).send({ error: 'Error fetching product data' });
+
+    const availableAmount = result[0].amount;
+    
+    if (newQuantity > availableAmount) {
+      return res.status(400).send({ error: 'Quantity exceeds available stock' });
+    }
+
+    // Update order item
+    db.query(
+      'UPDATE order_item SET quantity = ? WHERE order_item_id = ?',
+      [newQuantity, orderItemId],
+      (err, result) => {
+        if (err) return res.status(500).send({ error: 'Error updating item quantity' });
+
+        // Update product stock
+        db.query('UPDATE product SET amount = amount - ? WHERE productid = (SELECT product_id FROM order_item WHERE order_item_id = ?)', [newQuantity, orderItemId], (err, result) => {
+          if (err) return res.status(500).send({ error: 'Error updating product stock' });
+          res.send({ message: 'Cập nhật đơn hàng thành công.' });
+        });
+      }
+    );
+  });
+});
+
+// Delete order item and update product stock
+app.delete('/order-item/:orderItemId', (req, res) => {
+  const { orderItemId } = req.params;
+
+  // First, get the quantity to restore product stock
+  db.query('SELECT quantity, product_id FROM order_item WHERE order_item_id = ?', [orderItemId], (err, result) => {
+    if (err) return res.status(500).send({ error: 'Error fetching item data' });
+
+    const { quantity, product_id } = result[0];
+
+    // Delete order item
+    db.query('DELETE FROM order_item WHERE order_item_id = ?', [orderItemId], (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error deleting order item' });
+
+      // Restore product stock
+      db.query('UPDATE product SET amount = amount + ? WHERE productid = ?', [quantity, product_id], (err, result) => {
+        if (err) return res.status(500).send({ error: 'Error restoring product stock' });
+        res.send({ message: 'Cập nhật đơn hàng thành công.' });
+      });
+    });
+  });
+});
+
+// Update payment status of the order
+app.put('/order/payment-status', (req, res) => {
+
+  db.query(
+    'UPDATE order_detail SET payment_status = 1 WHERE order_id = ?',
+    [orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
+    }
+  );
+});
+
+// Update order status of the order
+app.put('/order/order-status', (req, res) => {
+  const { orderId, status } = req.body;
+
+  db.query(
+    'UPDATE order_detail SET order_status = ? WHERE order_id = ?',
+    [status, orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
+    }
+  );
+});
+
+app.put('/orders/updateTotal', (req, res) => {
+  const { orderId, newTotal } = req.body;
+
+  db.query(
+    'UPDATE order_detail SET total = ? WHERE order_id = ?',
+    [newTotal, orderId],
+    (err, result) => {
+      if (err) return res.status(500).send({ error: 'Error updating payment status' });
+      res.send({ message: 'Cập nhật trạng thái thành công.' });
+    }
+  );
+});
+
+// Get all products (for discount type 1)
+app.get('/api/product', (req, res) => {
+  db.query('SELECT * FROM product limit 5', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to fetch products' });
+    }
+    res.json(results);
+  });
+});
+
+// Create a new discount
+app.post('/api/discounts', (req, res) => {
+  const {
+    discount_code,
+    discount_name,
+    discount_type,
+    start_date,
+    end_date,
+    discount_value,
+    discount_condition,
+    selected_products,
+    discount_description,  // New field
+  } = req.body;
+
+  // Check if required fields are provided and not null
+  if (!discount_code || !discount_name || !start_date || !end_date || !discount_value || !discount_description) {
+    return res.status(400).json({
+      error: 'All fields are required: discount_code, discount_name, start_date, end_date, discount_value, and discount_description',
+    });
+  }
+
+  // Check if discount_value is a valid number
+  if (isNaN(discount_value)) {
+    return res.status(400).json({ error: 'Discount value must be a valid number' });
+  }
+
+  const discountQuery = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  db.query(
+    discountQuery,
+    [
+      discount_code,
+      discount_name,
+      discount_type,
+      start_date,
+      end_date,
+      discount_value,
+      discount_condition || null, // Allow null for condition in product-based discount
+      discount_description, // Save description
+    ],
+    (err, result) => {
+      if (err) {
+        console.error('Error saving discount:', err);
+        return res.status(500).json({ error: 'Failed to create discount' });
+      }
+
+      const discountId = result.insertId;
+
+      if (discount_type === 1 && selected_products.length > 0) {
+        // Apply discount to products
+        selected_products.forEach((productId) => {
+          db.query('UPDATE product SET discount_id = ? WHERE productid = ?', [discountId, productId], (err) => {
+            if (err) {
+              console.error(`Error applying discount to product ${productId}:`, err);
+            }
+          });
+        });
+      }
+
+      res.status(201).json({ message: 'Discount created successfully', discountId });
+    }
+  );
+});
+
+// Route: Get all discounts with pagination
+app.get('/api/discounts', (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
+
+  const sql = `SELECT * FROM discount LIMIT ${limit} OFFSET ${offset}`;
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error fetching discounts' });
+    }
+    const countSql = `SELECT COUNT(*) AS total FROM discount`;
+    db.query(countSql, (countErr, countResults) => {
+      if (countErr) {
+        return res.status(500).json({ error: 'Error fetching total count' });
+      }
+      const totalPages = Math.ceil(countResults[0].total / limit);
+      res.json({
+        discounts: results,
+        totalPages
+      });
+    });
+  });
+});
+
+// Route: Get discount details by ID (with product list if discount_type = 1)
+app.get('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = `SELECT * FROM discount WHERE discount_id = ?`;
+  
+  db.query(sql, [id], (err, discountResults) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error fetching discount' });
+    }
+    if (discountResults.length === 0) {
+      return res.status(404).json({ error: 'Discount not found' });
+    }
+    
+    const discount = discountResults[0];
+    
+    // If discount type is 1, get the associated products
+    if (discount.discount_type === 1) {
+      const productSql = `SELECT * FROM product WHERE discount_id = ?`;
+      db.query(productSql, [id], (productErr, productResults) => {
+        if (productErr) {
+          return res.status(500).json({ error: 'Error fetching products' });
+        }
+        res.json({
+          discount,
+          products: productResults
+        });
+      });
+    } else {
+      res.json({ discount });
+    }
+  });
+});
+
+// Route: Create a new discount
+app.post('/api/discounts', (req, res) => {
+  const { discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
+  const sql = `INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  
+  db.query(sql, [discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error creating discount' });
+    }
+    res.status(201).json({ message: 'Discount created successfully', discount_id: results.insertId });
+  });
+});
+
+// Route: Update an existing discount
+app.put('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  const { discount_name, start_date, end_date, discount_value, discount_condition, discount_description } = req.body;
+  
+  const sql = `UPDATE discount SET discount_name = ?, start_date = ?, end_date = ?, discount_value = ?, discount_condition = ?, discount_description = ? WHERE discount_id = ?`;
+  
+  db.query(sql, [discount_name, start_date, end_date, discount_value, discount_condition, discount_description, id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error updating discount' });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Discount not found' });
+    }
+    res.json({ message: 'Discount updated successfully' });
+  });
+});
+
+// Route: Delete a discount
+app.delete('/api/discounts/:id', (req, res) => {
+  const { id } = req.params;
+  
+  // First, remove the association with products for discount type 1
+  const removeProductsSql = `UPDATE product SET discount_id = NULL WHERE discount_id = ?`;
+  db.query(removeProductsSql, [id], (err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error removing product associations' });
+    }
+    
+    // Now delete the discount
+    const deleteSql = `DELETE FROM discount WHERE discount_id = ?`;
+    db.query(deleteSql, [id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error deleting discount' });
+      }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'Discount not found' });
+      }
+      res.json({ message: 'Discount deleted successfully' });
+    });
+  });
+});
+
+// Route: Assign products to a discount (for product-based discounts)
+app.post('/api/discounts/:id/products', (req, res) => {
+  const { id } = req.params;
+  const { productIds } = req.body;  // Array of product IDs
+  
+  const sql = `UPDATE product SET discount_id = ? WHERE productid IN (?)`;
+  
+  db.query(sql, [id, productIds], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error assigning products to discount' });
+    }
+    res.json({ message: 'Products assigned to discount successfully' });
+  });
+});
+
+// Route: Remove product from discount
+app.post('/api/discounts/:id/remove-product', (req, res) => {
+  const { id } = req.params;
+  const { productIds } = req.body;  // Array of product IDs
+  
+  const sql = `UPDATE product SET discount_id = NULL WHERE productid IN (?) AND discount_id = ?`;
+  
+  db.query(sql, [productIds, id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error removing products from discount' });
+    }
+    res.json({ message: 'Products removed from discount successfully' });
+  });
+});
+
+
+
+
+function hashPass(content) {
+  if (typeof content !== 'string') {
+    content = JSON.stringify(content);
+  }
+  return createHash('sha256').update(content).digest('hex');
+};
+
+ // Function to send email
+ const sendEmail = async (email, fileTemplate, phone, address, listItem, total) => {
+  try {
+    // Fetch user data from database
+    // const user = await getUserData(userId);
+
+    // Read the .txt template file
+    fs.readFile(fileTemplate, 'utf8', (err, template) => {
+      if (err) {
+        console.log('Error reading the file:', err);
+        return;
+      }
+
+      // Replace variables in the template with values from the database
+      let emailContent = template;
+      emailContent = emailContent.replace('{{listItem}}', listItem);
+      emailContent = emailContent.replace('{{total}}', total);
+      emailContent = emailContent.replace('{{address}}', address);
+      emailContent = emailContent.replace('{{phone}}', phone);
+      // Add more replacements as needed
+
+      // Create a transporter using SMTP (example with Gmail)
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'chidechoinum1@gmail.com',  // Using email from .env file
+          pass: 'rmpakmoqvcreiwli',  // Using App Password from .env file
+        },
+      });
+
+      // Email options
+      const mailOptions = {
+        from: 'chidechoinum1@gmail.com',  // Sender address (also from .env)
+        to: email,                // Recipient's email
+        subject: 'Đặt hàng thành công',
+        text: emailContent,            // The text content for the email
+      };
+
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log('Error sending email:', error);
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+  }
+};
+
+
+
+app.get('/order-status-counts', (req, res) => {
+  const { start_date, end_date } = req.query;
+  const start = new Date(start_date || new Date(new Date().setDate(new Date().getDate() - 30)));
+  const end = new Date(end_date || new Date());
+
+  // Set end time to 23:59:59
+  start.setHours(0, 0, 0, 0)
+  end.setHours(23, 59, 59, 999);
+  // Validate date format (YYYY-MM-DD)
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'Both start_date and end_date are required' });
+  }
+
+  // const query = `
+  //   SELECT 
+  //     (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 AND order_date BETWEEN ? AND ?) AS not_paid,
+  //     (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 AND order_date BETWEEN ? AND ?) AS paid,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 AND order_date BETWEEN ? AND ?) AS received,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 AND order_date BETWEEN ? AND ?) AS packaging,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 AND order_date BETWEEN ? AND ?) AS shipping,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 AND order_date BETWEEN ? AND ?) AS done,
+  //     (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 AND order_date BETWEEN ? AND ?) AS cancel;
+  // `;
+
+  const query = `
+    SELECT 
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 ) AS not_paid,
+      (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 ) AS paid,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 ) AS received,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 ) AS packaging,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 ) AS shipping,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 ) AS done,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 ) AS cancel;
+  `;
+  // Execute the query with the date range parameters
+  db.query(query, [
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end,
+    start, end
+  ], (err, results) => {
+    if (err) {
+      console.error('Error fetching counts:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Helper function to get date range for the last 6 months
+const getLastSixMonths = () => {
+  const months = [];
+  for (let i = 0; i < 6; i++) {
+    months.push(moment().subtract(i, 'months').format('YYYY-MM'));
+  }
+  return months.reverse(); // Order from oldest to most recent
+};
+
+// 1. Earnings Overview (Today, This Month, All Time)
+app.get('/earnings', (req, res) => {
+  const query = `
+    SELECT
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND DATE(order_date) = CURDATE()) AS today_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE())) AS this_month_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1) AS all_time_earn
+  `;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching earnings:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// 2. Product Sales by Category (Last 6 months)
+app.get('/sales-by-category', (req, res) => {
+  const months = getLastSixMonths(); // Get last 6 months
+  
+  // We will group by category and month, summing the quantity for each
+  const query = `
+    SELECT 
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      SUM(CASE WHEN product.category BETWEEN 1 AND 6 THEN order_item.quantity ELSE 0 END) AS khuyen_tai_sales,
+      SUM(CASE WHEN product.category BETWEEN 7 AND 12 THEN order_item.quantity ELSE 0 END) AS day_chuyen_sales,
+      SUM(CASE WHEN product.category BETWEEN 13 AND 18 THEN order_item.quantity ELSE 0 END) AS vong_tay_sales,
+      SUM(CASE WHEN product.category BETWEEN 19 AND 24 THEN order_item.quantity ELSE 0 END) AS nhan_sales
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1 AND CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+    ORDER BY month
+  `;
+  
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching sales by category:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 3. Order Status Overview (Last 6 months)
+app.get('/order-status-overview', (req, res) => {
+  const months = getLastSixMonths();
+  const query = `
+    SELECT
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      COUNT(CASE WHEN order_detail.order_status = 0 THEN 1 END) AS canceled_orders,
+      COUNT(*) AS total_orders
+    FROM order_detail
+    WHERE CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+  `;
+  
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching order status overview:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 4. Monthly Earnings (Last 6 months)
+app.get('/monthly-earnings', (req, res) => {
+  const months = getLastSixMonths();
+  const query = `
+    SELECT 
+      CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) AS month,
+      SUM(total) AS monthly_earnings
+    FROM order_detail
+    WHERE payment_status = 1 AND CONCAT(YEAR(order_detail.order_date),'-',MONTH(order_detail.order_date)) IN (?)
+    GROUP BY month
+  `;
+
+  db.query(query, [months], (err, results) => {
+    if (err) {
+      console.error('Error fetching monthly earnings:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 5. Top 10 Best Selling Products
+app.get('/top-products', (req, res) => {
+  const query = `
+    SELECT product.name, SUM(order_item.quantity) AS total_sold
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1
+    GROUP BY product.name
+    ORDER BY total_sold DESC
+    LIMIT 5
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching top products:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+// 6. Top 5 Best Selling Products (Last 30 days)
+app.get('/top-products-last-30-days', (req, res) => {
+  const query = `
+    SELECT product.name, SUM(order_item.quantity) AS total_sold
+    FROM order_item
+    JOIN product ON order_item.product_id = product.productid
+    JOIN order_detail ON order_item.order_id = order_detail.order_id
+    WHERE order_detail.payment_status = 1
+      AND order_detail.order_date > CURDATE() - INTERVAL 30 DAY
+    GROUP BY product.name
+    ORDER BY total_sold DESC
+    LIMIT 5
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching top products in the last 30 days:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/discount', (req, res) => {
+  const { 
+    discount_code, 
+    discount_name, 
+    discount_type, 
+    start_date, 
+    end_date, 
+    discount_condition, 
+    discount_value, 
+    discount_description, 
+    selectedProducts 
+  } = req.body;
+
+  // Basic validation
+  if (!discount_code || !discount_name || !start_date || !end_date || !discount_value) {
+    return res.status(400).json({ message: 'Please fill all required fields.' });
+  }
+
+  if (discount_type === 2 && !discount_condition) {
+    return res.status(400).json({ message: 'Discount condition is required for order-level discount.' });
+  }
+
+  const query = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_condition, discount_value, discount_description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(query, [discount_code, discount_name, discount_type, start_date, end_date, discount_type === 1 ?'0' : discount_condition, discount_value, discount_description || null], (err, result) => {
+    if (err) {
+      console.error('Error creating discount:', err);
+      return res.status(500).json({ message: 'Internal server error.' });
+    }
+
+    const discount_id = result.insertId;
+
+    // Case 1: If the discount type is for products (discount_type = 1), update the product.discount_id
+    if (discount_type === 1 && selectedProducts && selectedProducts.length > 0) {
+      const productDiscountQuery = 'UPDATE product SET discount_id = ? WHERE productid IN (?)';
+      const productIds = selectedProducts.map(product => product.productid);
+
+      db.query(productDiscountQuery, [discount_id, productIds], (err, result) => {
+        if (err) {
+          console.error('Error assigning products to discount:', err);
+          return res.status(500).json({ message: 'Internal server error.' });
+        }
+      });
+    }
+
+    res.json({ message: 'Discount created successfully.', discount_id });
+  });
+});
+
+// 2. Endpoint to fetch products with pagination and search
+app.get('/get-products', (req, res) => {
+  const { search = '' } = req.query; // default to page 1, limit 10
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const searchQuery = `%${search}%`;
+  
+  // Query to fetch paginated products
+  const query = `
+    SELECT productid, name, code 
+    FROM product
+    WHERE name LIKE ? OR code LIKE ?
+    LIMIT ? offset ?
+  `;
+
+  db.query(query, [searchQuery, searchQuery, limit, offset], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Get total count for pagination purposes
+    db.query('SELECT COUNT(*) AS total FROM product WHERE name LIKE ? OR code LIKE ?', [searchQuery, searchQuery], (err, countResult) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const totalItems = countResult[0].total;
+      const totalPages = Math.ceil(totalItems / limit);
+      
+      res.json({
+        products: results,
+        totalItems,
+        totalPages,
+        currentPage: parseInt(page),
+      });
+    });
+  });
+});
+
+// Backend code to handle pagination and filtering for the discount list
+
+app.get('/get-all-discounts', (req, res) => {
+  const {endDate, discountType, discountCode } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  // const offset = (page - 1) * limit;
+
+  let query = `SELECT * FROM discount WHERE 1=1`; // Base query
+
+  // Filter by discount_code
+  if (discountCode) {
+    query += ` AND discount_code LIKE ?`;
+  }
+
+  // Filter by discount_type
+  if (discountType) {
+    query += ` AND discount_type = ?`;
+  }
+
+  // Filter by end_date
+  if (endDate) {
+    query += ` AND end_date <= ?`;
+  }
+
+  query += ` LIMIT ? OFFSET ?`; // Pagination
+  const queryParams = [
+    discountCode ? `%${discountCode}%` : null,
+    discountType || null,
+    endDate || null,
+    limit,
+    offset
+  ].filter(param => param !== null); // Remove null values
+
+  // Execute the query for fetching discounts
+  db.query(query, queryParams, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Get the total count for pagination with filters applied
+    let countQuery = `SELECT COUNT(*) AS total FROM discount WHERE 1=1`; // Base count query
+
+    // Apply the same filters to the count query
+    if (discountCode) {
+      countQuery += ` AND discount_code LIKE ?`;
+    }
+    if (discountType) {
+      countQuery += ` AND discount_type = ?`;
+    }
+    if (endDate) {
+      countQuery += ` AND end_date <= ?`;
+    }
+
+    const countQueryParams = [
+      discountCode ? `%${discountCode}%` : null,
+      discountType || null,
+      endDate || null
+    ].filter(param => param !== null); // Remove null values from the params
+
+    // Execute the count query to get the total number of filtered records
+    db.query(countQuery, countQueryParams, (err, countResult) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      const totalItems = countResult[0].total;
+      const totalPages = Math.ceil(totalItems / limit);
+      
+      res.json({
+        discounts: results,
+        totalItems,
+        totalPages,
+        currentPage: parseInt(page),
+      });
+    });
+  });
+});
+
+app.put('/update-product-discount', (req, res) => {
+  const { productid, discount_id } = req.body;
+  const query = 'UPDATE product SET discount_id = ? WHERE productid = ?';
+  
+  db.query(query, [discount_id, productid], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Product discount updated successfully' });
+  });
+});
+
+app.get('/products-by-discount/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'SELECT productid, name, code FROM product WHERE discount_id = ?';
+  
+  db.query(query, [discountId], (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
+// Endpoint to update a discount (excluding discount_code and discount_type)
+app.put('/update-discount', (req, res) => {
+  const { discount_id, discount_name, discount_value, discount_condition, discount_description, start_date, end_date } = req.body;
+
+  const query = `
+    UPDATE discount 
+    SET discount_name = ?, discount_value = ?, discount_condition = ?, discount_description = ?, start_date = ?, end_date = ?
+    WHERE discount_id = ?
+  `;
+  
+  db.query(query, [discount_name, discount_value, discount_condition, discount_description, start_date, end_date, discount_id], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Discount updated successfully' });
+  });
+});
+
+// Endpoint to delete a discount
+app.delete('/discounts/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'DELETE FROM discount WHERE discount_id = ?';
+
+  db.query(query, [discountId], (err, result) => {
+    if (err) throw err;
+    res.json({ message: 'Discount deleted successfully' });
+  });
+});
+
+app.post('/create-discount', (req, res) => {
+  const {
+    discount_code,
+    discount_name,
+    discount_type,
+    discount_value,
+    discount_condition,
+    discount_description,
+    start_date,
+    end_date
+  } = req.body;
+
+  const query = `
+    INSERT INTO discount (discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  
+  db.query(query, [discount_code, discount_name, discount_type, discount_value, discount_condition, discount_description, start_date, end_date], (err, result) => {
+    if (err) throw err;
+    res.json({ discount_id: result.insertId });
+  });
+});
+
+app.get('/discounts/:discountId', (req, res) => {
+  const { discountId } = req.params;
+  const query = 'SELECT * FROM discount WHERE discount_id = ?';
+  db.query(query, [discountId], (err, results) => {
+    if (err) throw err;
+    res.json(results[0]); // Return the first result (there should only be one)
+  });
+});
+
+app.get('/discounts', (req, res) => {
+  const query = 'SELECT * FROM discount';
+  db.query(query, (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
 
 //feedback product
 app.post('/submitFeedback', (req, res) => {
@@ -1650,21 +2582,6 @@ app.get('/orderinfo/:consumerid', (req, res) => {
     }
   });
 });
-
-app.listen(8088, () => {
-  console.log("Server running on port 8088");
-});
-
-
-
-function hashPass(content) {
-  if (typeof content !== 'string') {
-    content = JSON.stringify(content);
-  }
-  return createHash('sha256').update(content).digest('hex');
-}
-
-
 
 // Tạo một DataSource mới cho TypeORM
 const typeormDataSource = new DataSource({
@@ -1821,5 +2738,33 @@ app.post('/api/chat', async (req, res) => {
     res.status(500).json({ response: 'Đã xảy ra lỗi khi xử lý tin nhắn của bạn.' });
   }
 });
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.listen(8088, () => {
+    console.log("Server running on port 8088");
+  });
 
 
