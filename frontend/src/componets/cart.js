@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Modal, Button, Form } from 'react-bootstrap';
 import { Edit, Trash, PlusCircle } from 'react-feather';
 import "../styles/signup.scss";
-import '../styles/dashboard.scss'; 
+import '../styles/cart.scss'; 
 import axios from "axios";
 import { useParams, useNavigate } from 'react-router-dom';
 import ImageAlertModal from "./ImageAlertModal";
@@ -521,6 +521,7 @@ const Cart = () => {
                                         setSelectedItems(cartItems.map(item => item.cartid));
                                     }
                                 }} 
+                                className="custom-checkbox"
                             />
                         </th>
                         <th>Sản phẩm</th>
@@ -544,13 +545,12 @@ const Cart = () => {
                                         type="checkbox"
                                         checked={selectedItems.includes(item.cartid)}
                                         onChange={() => handleCheckboxChange(item)}
+                                        className="custom-checkbox"
                                     />
                             </td>
-                            <td onClick={() => handleClickItem(item.productid)}>
+                            <td onClick={() => handleClickItem(item.productid)} className="product-name">
                                 {item.name} <br></br>
                                 Size: {item.size}
-                                
-
                             </td>
                             <td>
                                 {/* <img src={item.image} alt={item.name} style={{ width: '50px' }} /> */}
@@ -564,7 +564,7 @@ const Cart = () => {
                                     onError={() => console.log("Image URL:", item.image)}
                                 />
                             </td>
-                            <td>
+                            <td className="price">
                                 {item.price.toLocaleString()}
                             </td>
                             <td>
@@ -581,11 +581,12 @@ const Cart = () => {
                                         );
                                         setCartItems(newCartItems); // Update state with new cartItems array
                                     }}
+                                    className="quantity-input"
                                 />
                             </td>
-                            <td>{(item.price * item.quantity).toLocaleString()} VND</td>
+                            <td className="total">{(item.price * item.quantity).toLocaleString()} VND</td>
                             <td>
-                                <button onClick={() => handleDeleteItem(item.cartid)}>Bỏ khỏi giỏ hàng</button>
+                                <button onClick={() => handleDeleteItem(item.cartid)} className="delete-btn">Bỏ khỏi giỏ hàng</button>
                             </td>
                         </tr>
                     ))}

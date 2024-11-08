@@ -1,0 +1,100 @@
+/* Table Styling */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+}
+
+.custom-table th, .custom-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.custom-table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+}
+
+.custom-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Product Name Styling */
+.product-name {
+    font-weight: 500;
+    cursor: pointer;
+    color: #007bff;
+}
+
+.product-name:hover {
+    text-decoration: underline;
+}
+
+/* Image Styling */
+.product-image {
+    width: 70px;
+    height: auto;
+    border-radius: 5px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.product-image:hover {
+    transform: scale(1.1);
+}
+
+/* Price and Total Styling */
+.price, .total {
+    font-weight: 500;
+    color: #28a745;
+}
+
+/* Quantity Input Styling */
+.quantity-input {
+    width: 60px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.quantity-input:focus {
+    outline: none;
+    border-color: #80bdff;
+}
+
+/* Checkbox Styling */
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Button Styling */
+.delete-btn {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.delete-btn:focus {
+    outline: none;
+}
+
+/* Hover Effect for Table Rows */
+.custom-table tbody tr:hover {
+    background-color: #f8f9fa;
+}

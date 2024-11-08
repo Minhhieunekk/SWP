@@ -1480,7 +1480,7 @@ app.delete('/removefromcart/:cartid', (req, res) => {
 });
 
 app.post('/cart', (req, res) => {
-  const sql = "select c.quantity , c.size, c.cart_id as cartid, p.* from cart c join product p on c.product_id = p.productid where c.user_id = ?";
+  const sql = "select c.quantity , c.size, c.cart_id as cartid, p.*, i.amount from cart c join product p on c.product_id = p.productid join inventory i on i.prd_id = p.productid where c.size = i.size and c.user_id = ?";
   // const values = [
   //   req.body.userid,
   // ]
