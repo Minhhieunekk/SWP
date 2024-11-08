@@ -16,10 +16,10 @@ const Footer = () => {
             <div className="footer-column">
                 <h3>Bạn cần hỗ trợ</h3>
                 <ul>
-                    <li>Liên hệ Hotline: <Link href="tel:0948086971" style={{color:'white'}}>0948086971</Link></li>
+                    <li>Hotline: <Link href="tel:0948086971" style={{color:'white'}}>0948086971</Link></li>
                     <li><a href="/https://zalo.me/g/gcrgqq630">Liên hệ</a></li> 
                     <li><a href="/chat">Tư vấn</a></li>                  
-                    <li><a href="/">Hướng dẫn sử dụng</a></li>
+                    
                 </ul>
             </div>
 

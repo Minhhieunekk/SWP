@@ -54,9 +54,9 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
-// app.use(bodyParser.json());
-// app.use(passport.initialize());
-// app.use(passport.session());
+app.use(bodyParser.json());
+app.use(passport.initialize());
+app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -293,13 +293,21 @@ app.post('/addproduct', (req, res) => {
 //quản lý người dùng 
 app.get('/manageruser', (req, res) => {
   const sql = `
-    SELECT 
-      u.consumerid, u.username, u.phone, u.email, u.address, u.image_url,
-      SUM(od.total) AS total_spent, 
-      COUNT(od.order_id) AS total_products
-    FROM user u
-    LEFT JOIN order_detail od ON u.consumerid = od.user_id
-    GROUP BY u.consumerid
+          SELECT 
+          u.consumerid, 
+          u.username, 
+          u.phone, 
+          u.email, 
+          u.address, 
+          u.image_url,
+          COALESCE(SUM(od.total), 0) AS total_spent, 
+          COALESCE(COUNT(od.order_id), 0) AS total_products
+        FROM user u
+        LEFT JOIN order_detail od ON u.consumerid = od.user_id 
+        AND od.payment_status = 1 
+        AND od.order_status = 5
+        GROUP BY u.consumerid;
+
   `;
 
   db.query(sql, (err, results) => {
@@ -943,8 +951,22 @@ async function sendOTP(email, otp) {
   let mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Password Reset OTP',
-    text: `Your OTP for password reset is: ${otp}`
+    subject: 'Mã OTP để Đặt Lại Mật Khẩu - Jewelry Store',
+    text: `
+      Kính gửi Quý khách,
+  
+      Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn trên hệ thống trang sức Jewelry. 
+      Để hoàn tất quá trình, vui lòng nhập mã OTP dưới đây:
+      
+      Mã OTP: ${otp}
+  
+      Nếu bạn không yêu cầu thay đổi mật khẩu, vui lòng bỏ qua email này. 
+  
+      Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi. Chúng tôi luôn sẵn sàng hỗ trợ bạn.
+  
+      Trân trọng,
+      Đội ngũ Hỗ trợ Khách hàng - Jewelry Store
+    `
   };
 
   try {
@@ -1006,7 +1028,7 @@ app.post('/reset-password', (req, res) => {
     }
 
     const updateSql = "UPDATE user SET password = ?, otp = NULL, otp_expiry = NULL WHERE email = ?";
-    db.query(updateSql, [newPassword, email], (updateErr, updateResult) => {
+    db.query(updateSql, [hashPass(newPassword), email], (updateErr, updateResult) => {
       if (updateErr) {
         return res.status(500).json("Error resetting password");
       }
@@ -2738,28 +2760,6 @@ app.post('/api/chat', async (req, res) => {
     res.status(500).json({ response: 'Đã xảy ra lỗi khi xử lý tin nhắn của bạn.' });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

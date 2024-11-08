@@ -124,9 +124,10 @@ const ProductCard = ({
                                     className="text-center"
                                 />
                             </Form.Group>
-                            <div className="d-grid gap-2">
-                                <Button variant="primary" size="lg" disabled={amount === 0}>Mua ngay</Button>
-                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
+                            {userId !=='11' &&
+                                <div className="d-grid gap-2">
+                                <Button variant="outline-success" size="lg" disabled={amount === 0} onClick={handleGoToCart}>Mua ngay</Button>
+                                <Button variant="outline-info" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
                                 {popupVisible && (
                                     <div className="popup">
                                         <p>Đã thêm sản phẩm vào giỏ hàng</p>
@@ -135,6 +136,8 @@ const ProductCard = ({
                                     </div>
                                 )}
                             </div>
+                             }
+                            
                         </Card.Body>
                     </Col>
                 </Row>

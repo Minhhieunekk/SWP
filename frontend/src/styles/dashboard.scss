@@ -152,10 +152,17 @@ body {
   }
 }
 
-// Modal Styles
+// // Modal Styles
 .modal {
+  background: none!important;
+  position: absolute!important;
+  top:50%!important;
+  left:50%!important;
+  border:none!important;
   .modal-dialog {
-    max-width: 400px;
+     margin: auto;
+     padding: auto;
+    max-width: 800px;
   }
 
   .modal-header, .modal-body, .modal-footer {
@@ -196,6 +203,11 @@ body {
   }
 }
 
+
+// Đảm bảo modal content hiển thị đúng
+.modal-content {
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+}
 // Hint text
 .hint-text {
   float: left;

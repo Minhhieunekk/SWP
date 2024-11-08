@@ -22,6 +22,7 @@ import ManageDiscounts from './componets/managedicount';
 import UserManagementComponent from './componets/manageruser';
 import OrderInfo from './componets/Orderinfo';
 import Statistic from './componets/statistic';
+
 function App() {
   return (
     <div className="App">

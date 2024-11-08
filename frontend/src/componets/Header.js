@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown, Modal, Typography } from "antd";
+import { Layout, Menu, Row, Col, Badge, Button, Image, Dropdown, Modal, Typography } from "antd";
 import {
   UserOutlined,
   ShoppingCartOutlined,
@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 import SubMenu from "antd/es/menu/SubMenu";
 import {  useNavigate } from "react-router-dom";
-import { HomeFilled, SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 import CentralSearchModal from "./Search";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
@@ -114,12 +114,12 @@ const AppHeader = () => {
       
 
       {
-        (consumerid===8) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }
@@ -171,11 +171,13 @@ const AppHeader = () => {
                   </div>
                 </Dropdown>
               </Col>
+              {consumerid && consumerid !==11 && 
               <Col>
                 <Badge count={0} offset={[9, 0]}>
                   <div onClick={() => navigate(`/cart/${consumerid}`)}><ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng </div>
                 </Badge>
-              </Col>
+              </Col>}
+              
             </Row>
           </Col>
         </Row>

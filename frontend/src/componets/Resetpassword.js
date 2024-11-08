@@ -72,7 +72,7 @@ const PasswordChangeForm = () => {
     }
     
     if (newPassword.length < 8) {
-      errors.push("Mật khẩu mới phải có ít nhất 6 ký tự");
+      errors.push("Mật khẩu mới phải có ít nhất 8 ký tự");
     }
 
     return errors;

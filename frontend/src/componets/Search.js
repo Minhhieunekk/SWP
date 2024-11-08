@@ -106,8 +106,8 @@ const CentralSearchModal = ({ visible, onClose }) => {
             <Descriptions.Item label="Giá" span={3}>
               {parseFloat(selectedProduct.price).toLocaleString('vi-VN')} ₫
             </Descriptions.Item>
-            <Descriptions.Item label="Số lượng" span={3}>{selectedProduct.amount}</Descriptions.Item>
-            <Descriptions.Item label="Danh mục" span={3}>{selectedProduct.category}</Descriptions.Item>
+            <Descriptions.Item label="Thương hiệu" span={3}>{selectedProduct.brand}</Descriptions.Item>
+            <Descriptions.Item label="Mã sản phẩm" span={3}>{selectedProduct.code}</Descriptions.Item>
             <Descriptions.Item label="Đánh giá" span={3}>
               <Rate disabled defaultValue={(selectedProduct.totalrate/selectedProduct.peoplerate) || 0} />
               ({selectedProduct.peoplerate || 0} đánh giá)
