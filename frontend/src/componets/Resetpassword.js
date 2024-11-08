@@ -54,23 +54,23 @@ const PasswordChangeForm = () => {
 
   const validateForm = () => {
     const errors = [];
-    
+
     if (!currentPassword) {
       errors.push("Vui lòng nhập mật khẩu hiện tại");
     }
-    
+
     if (currentPasswordError) {
       errors.push(currentPasswordError);
     }
-    
+
     if (!newPassword) {
       errors.push("Vui lòng nhập mật khẩu mới");
     }
-    
+
     if (newPassword !== confirmPassword) {
       errors.push("Mật khẩu mới không khớp");
     }
-    
+
     if (newPassword.length < 8) {
       errors.push("Mật khẩu mới phải có ít nhất 8 ký tự");
     }
@@ -81,7 +81,7 @@ const PasswordChangeForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessages([]);
-    
+
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
       setMessages(validationErrors);
@@ -98,12 +98,14 @@ const PasswordChangeForm = () => {
 
       if (response.data.success) {
         setMessageType('success');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
         handleReset();
       } else {
         setMessageType('danger');
       }
       setMessages(response.data.messages);
-      
+
     } catch (error) {
       setMessageType('danger');
       setMessages(['Lỗi kết nối đến máy chủ']);
@@ -117,14 +119,13 @@ const PasswordChangeForm = () => {
     setConfirmPassword('');
     setCurrentPasswordError('');
     setMessages([]);
-    localStorage.removeItem('userId');
-    localStorage.removeItem('token');
-    
+
+
   };
 
   return (
     <>
-      <AppHeader/>
+      <AppHeader />
       <Container fluid className="vh-100 d-flex justify-content-center align-items-center">
         <Row className="w-100">
           <Col xs={12} md={6} lg={4} className="mx-auto">
@@ -182,9 +183,9 @@ const PasswordChangeForm = () => {
                   )}
 
                   <div className="d-grid gap-2">
-                    <Button 
-                      variant="success" 
-                      size="lg" 
+                    <Button
+                      variant="success"
+                      size="lg"
                       type="submit"
                       disabled={isCheckingPassword || !!currentPasswordError}
                     >
