@@ -117,6 +117,9 @@ const PasswordChangeForm = () => {
     setConfirmPassword('');
     setCurrentPasswordError('');
     setMessages([]);
+    localStorage.removeItem('userId');
+    localStorage.removeItem('token');
+    
   };
 
   return (
