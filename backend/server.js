@@ -7,17 +7,17 @@ const passport = require('passport');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const multer=require('multer');
-const path=require('path');
+const multer = require('multer');
+const path = require('path');
 const bodyParser = require('body-parser');
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
-const { SqlDatabase} = require("langchain/sql_db")
-const { createSqlQueryChain }= require ("langchain/chains/sql_db");
+const { SqlDatabase } = require("langchain/sql_db")
+const { createSqlQueryChain } = require("langchain/chains/sql_db");
 const { QuerySqlTool } = require('langchain/tools/sql');
-const { PromptTemplate } = require('@langchain/core/prompts');
+const { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } = require('@langchain/core/prompts');
 const { StringOutputParser } = require('@langchain/core/output_parsers');
 const { RunnablePassthrough, RunnableSequence } = require('@langchain/core/runnables');
-const {DataSource} = require('typeorm')
+const { DataSource } = require('typeorm')
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
@@ -28,16 +28,16 @@ require('dotenv').config();
 
 const app = express();
 app.use('/avatar', express.static('public/avatar'));
-const storage=multer.diskStorage({
-  destination: (req,file,cb) => {
-    cb(null,'public/avatar')
-   },
-   filename: (req,file,cb) =>{
-    cb(null,file.fieldname + "_" + Date.now() + path.extname(file.originalname));
-   }
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/avatar')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + "_" + Date.now() + path.extname(file.originalname));
+  }
 })
 
-const upload= multer ({
+const upload = multer({
   storage: storage
 })
 
@@ -95,95 +95,95 @@ app.post('/signup', (req, res) => {
 app.post('/addproduct', (req, res) => {
   const newProduct = req.body;
   console.log('Received new product data:', newProduct);
-  
+
   // Convert gender to binary
   const genderBinary = newProduct.gender.toLowerCase() === 'nam' ? 0 : 1;
   console.log('Converted gender to binary:', {
-      originalGender: newProduct.gender,
-      genderBinary: genderBinary
+    originalGender: newProduct.gender,
+    genderBinary: genderBinary
   });
-  
+
   // Convert goldage to null if "Không có"
   const goldageValue = newProduct.goldage === 'Không có' ? null : newProduct.goldage;
   console.log('Processed goldage:', {
-      originalGoldage: newProduct.goldage,
-      processedGoldage: goldageValue
+    originalGoldage: newProduct.goldage,
+    processedGoldage: goldageValue
   });
-  
+
   // Begin transaction
   db.beginTransaction(err => {
-      if (err) {
-          console.error('Error starting transaction:', err);
-          return res.status(500).json({
-              error: 'Failed to start transaction',
-              details: err.message
-          });
-      }
-      console.log('Transaction started successfully');
-
-      // Get categoryId
-      const categoryQuery = 'SELECT categoryid FROM category WHERE categoryname = ? AND material = ? AND gender = ?';
-      const categoryParams = [newProduct.categoryname, newProduct.material, genderBinary];
-      console.log('Executing category query:', {
-          query: categoryQuery,
-          params: categoryParams
+    if (err) {
+      console.error('Error starting transaction:', err);
+      return res.status(500).json({
+        error: 'Failed to start transaction',
+        details: err.message
       });
+    }
+    console.log('Transaction started successfully');
 
-      db.query(
-          categoryQuery,
-          categoryParams,
-          (err, categoryResults) => {
-              if (err) {
-                  console.error('Error getting category:', err);
-                  return db.rollback(() => {
-                      res.status(500).json({
-                          error: 'Failed to get category',
-                          details: err.message
-                      });
-                  });
-              }
-              console.log('Category query results:', categoryResults);
+    // Get categoryId
+    const categoryQuery = 'SELECT categoryid FROM category WHERE categoryname = ? AND material = ? AND gender = ?';
+    const categoryParams = [newProduct.categoryname, newProduct.material, genderBinary];
+    console.log('Executing category query:', {
+      query: categoryQuery,
+      params: categoryParams
+    });
 
-              if (categoryResults.length === 0) {
-                  console.log('No category found for the given parameters');
-                  return db.rollback(() => {
-                      res.status(404).json({
-                          error: 'Category not found'
-                      });
-                  });
-              }
+    db.query(
+      categoryQuery,
+      categoryParams,
+      (err, categoryResults) => {
+        if (err) {
+          console.error('Error getting category:', err);
+          return db.rollback(() => {
+            res.status(500).json({
+              error: 'Failed to get category',
+              details: err.message
+            });
+          });
+        }
+        console.log('Category query results:', categoryResults);
 
-              const categoryId = categoryResults[0].categoryid;
-              console.log('Found categoryId:', categoryId);
+        if (categoryResults.length === 0) {
+          console.log('No category found for the given parameters');
+          return db.rollback(() => {
+            res.status(404).json({
+              error: 'Category not found'
+            });
+          });
+        }
 
-              // Get last productid
-              const lastProductQuery = 'SELECT productid FROM product ORDER BY productid DESC LIMIT 1';
-              console.log('Executing last product query:', lastProductQuery);
+        const categoryId = categoryResults[0].categoryid;
+        console.log('Found categoryId:', categoryId);
 
-              db.query(
-                  lastProductQuery,
-                  (err, lastProductResults) => {
-                      if (err) {
-                          console.error('Error getting last product ID:', err);
-                          return db.rollback(() => {
-                              res.status(500).json({
-                                  error: 'Failed to get last product ID',
-                                  details: err.message
-                              });
-                          });
-                      }
-                      console.log('Last product query results:', lastProductResults);
+        // Get last productid
+        const lastProductQuery = 'SELECT productid FROM product ORDER BY productid DESC LIMIT 1';
+        console.log('Executing last product query:', lastProductQuery);
 
-                      const nextProductId = lastProductResults.length > 0 ? 
-                          lastProductResults[0].productid + 1 : 1;
-                      console.log('Next product ID:', nextProductId);
-                      
-                      // Generate product code
-                      const productCode = `VNJOS${String(nextProductId).padStart(4, '0')}`;
-                      console.log('Generated product code:', productCode);
+        db.query(
+          lastProductQuery,
+          (err, lastProductResults) => {
+            if (err) {
+              console.error('Error getting last product ID:', err);
+              return db.rollback(() => {
+                res.status(500).json({
+                  error: 'Failed to get last product ID',
+                  details: err.message
+                });
+              });
+            }
+            console.log('Last product query results:', lastProductResults);
 
-                      // Insert new product
-                      const insertProductQuery = `
+            const nextProductId = lastProductResults.length > 0 ?
+              lastProductResults[0].productid + 1 : 1;
+            console.log('Next product ID:', nextProductId);
+
+            // Generate product code
+            const productCode = `VNJOS${String(nextProductId).padStart(4, '0')}`;
+            console.log('Generated product code:', productCode);
+
+            // Insert new product
+            const insertProductQuery = `
                           INSERT INTO product (
                               name, 
                               price, 
@@ -194,98 +194,98 @@ app.post('/addproduct', (req, res) => {
                               code
                           ) VALUES (?, ?, ?, ?, ?,?, ?)
                       `;
-                      const insertProductParams = [
-                          newProduct.name,
-                          newProduct.price*1.1,
-                          categoryId,
-                          newProduct.brand,
-                          goldageValue,
-                          newProduct.image,
-                          productCode
-                      ];
-                      console.log('Executing insert product query:', {
-                          query: insertProductQuery,
-                          params: insertProductParams
-                      });
+            const insertProductParams = [
+              newProduct.name,
+              newProduct.price * 1.1,
+              categoryId,
+              newProduct.brand,
+              goldageValue,
+              newProduct.image,
+              productCode
+            ];
+            console.log('Executing insert product query:', {
+              query: insertProductQuery,
+              params: insertProductParams
+            });
 
-                      db.query(
-                          insertProductQuery,
-                          insertProductParams,
-                          (err, productResult) => {
-                              if (err) {
-                                  console.error('Error inserting product:', err);
-                                  return db.rollback(() => {
-                                      res.status(500).json({
-                                          error: 'Failed to insert product',
-                                          details: err.message
-                                      });
-                                  });
-                              }
-                              console.log('Product insert result:', productResult);
+            db.query(
+              insertProductQuery,
+              insertProductParams,
+              (err, productResult) => {
+                if (err) {
+                  console.error('Error inserting product:', err);
+                  return db.rollback(() => {
+                    res.status(500).json({
+                      error: 'Failed to insert product',
+                      details: err.message
+                    });
+                  });
+                }
+                console.log('Product insert result:', productResult);
 
-                              const newProductId = productResult.insertId;
-                              console.log('New product ID:', newProductId);
+                const newProductId = productResult.insertId;
+                console.log('New product ID:', newProductId);
 
-                              // Insert into inventory
-                              const insertInventoryQuery = `
+                // Insert into inventory
+                const insertInventoryQuery = `
                                   INSERT INTO inventory (
                                       prd_id,
                                       size,
                                       amount
                                   ) VALUES (?, ?, ?)
                               `;
-                              const insertInventoryParams = [
-                                  newProductId, 
-                                  newProduct.size, 
-                                  newProduct.amount
-                              ];
-                              console.log('Executing insert inventory query:', {
-                                  query: insertInventoryQuery,
-                                  params: insertInventoryParams
-                              });
+                const insertInventoryParams = [
+                  newProductId,
+                  newProduct.size,
+                  newProduct.amount
+                ];
+                console.log('Executing insert inventory query:', {
+                  query: insertInventoryQuery,
+                  params: insertInventoryParams
+                });
 
-                              db.query(
-                                  insertInventoryQuery,
-                                  insertInventoryParams,
-                                  (err) => {
-                                      if (err) {
-                                          console.error('Error inserting inventory:', err);
-                                          return db.rollback(() => {
-                                              res.status(500).json({
-                                                  error: 'Failed to insert inventory',
-                                                  details: err.message
-                                              });
-                                          });
-                                      }
-                                      console.log('Inventory inserted successfully');
+                db.query(
+                  insertInventoryQuery,
+                  insertInventoryParams,
+                  (err) => {
+                    if (err) {
+                      console.error('Error inserting inventory:', err);
+                      return db.rollback(() => {
+                        res.status(500).json({
+                          error: 'Failed to insert inventory',
+                          details: err.message
+                        });
+                      });
+                    }
+                    console.log('Inventory inserted successfully');
 
-                                      // Commit transaction
-                                      db.commit(err => {
-                                          if (err) {
-                                              console.error('Error committing transaction:', err);
-                                              return db.rollback(() => {
-                                                  res.status(500).json({
-                                                      error: 'Failed to commit transaction',
-                                                      details: err.message
-                                                  });
-                                              });
-                                          }
-                                          console.log('Transaction committed successfully');
+                    // Commit transaction
+                    db.commit(err => {
+                      if (err) {
+                        console.error('Error committing transaction:', err);
+                        return db.rollback(() => {
+                          res.status(500).json({
+                            error: 'Failed to commit transaction',
+                            details: err.message
+                          });
+                        });
+                      }
+                      console.log('Transaction committed successfully');
 
-                                          res.status(201).json({
-                                              message: 'Product added successfully',
-                                              productId: newProductId,
-                                              productCode: productCode
-                                          });
-                                      });
-                                  }
-                              );
-                          }
-                      );
+                      res.status(201).json({
+                        message: 'Product added successfully',
+                        productId: newProductId,
+                        productCode: productCode
+                      });
+                    });
                   }
-              );
+                );
+              }
+            );
           }
-      );
+        );
+      }
+    );
   });
 });
 
@@ -343,7 +343,7 @@ app.post('/login', (req, res) => {
 // New lazy endpoint for getting user details when needed
 app.get('/api/user/details', (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
-  
+
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
@@ -351,7 +351,7 @@ app.get('/api/user/details', (req, res) => {
   try {
     const decoded = jwt.verify(token, "22112004");
     const sql = "SELECT username, consumerid, password FROM user WHERE consumerid = ?";
-    
+
     db.query(sql, [decoded.consumerid], (err, data) => {
       if (err) {
         return res.status(500).json({ message: "Database error" });
@@ -378,16 +378,16 @@ app.post('/checkuser', (req, res) => {
     if (err) {
       return res.status(500).json({ error: "Database error" });
     }
-    if (data.length > 0) {    
+    if (data.length > 0) {
       const user = data[0];
       // delete user.password;
-      return res.json({ 
-        exists: true, 
-        message: "Username already exists", 
-        user: user 
+      return res.json({
+        exists: true,
+        message: "Tên đăng nhập đã tồn tại",
+        user: user
       });
     } else {
-      return res.json({ exists: false, message: "Username is available" });
+      return res.json({ exists: false });
     }
   });
 });
@@ -400,9 +400,9 @@ app.post('/checkemail', (req, res) => {
       return res.status(500).json({ error: "Database error" });
     }
     if (data.length > 0) {
-      return res.json({ exists: true, message: "Email already exists" });
+      return res.json({ exists: true, message: "Email đã tồn tại" });
     } else {
-      return res.json({ exists: false, message: "Email is available" });
+      return res.json({ exists: false });
     }
   });
 });
@@ -415,9 +415,9 @@ app.post('/checkphone', (req, res) => {
       return res.status(500).json({ error: "Database error" });
     }
     if (data.length > 0) {
-      return res.json({ exists: true, message: "Phone already exists" });
+      return res.json({ exists: true, message: "Số điện thoại đã tồn tại" });
     } else {
-      return res.json({ exists: false, message: "Phone is available" });
+      return res.json({ exists: false });
     }
   });
 });
@@ -488,7 +488,7 @@ app.get("/dashboard", (req, res) => {
 
 // lấy sản phẩm bằng productid
 app.get('/productdetail', (req, res) => {
-  const { productid } = req.query; 
+  const { productid } = req.query;
   const sql = `
     SELECT 
       p.productid,
@@ -548,11 +548,11 @@ app.get("/home", (req, res) => {
       return res.status(500).json("Error fetching the last 10 products");
     }
 
-    
+
     const totalProducts = last10ProductsResult.length;
     const totalPages = Math.ceil(totalProducts / limit);
 
-    
+
     const paginatedProducts = last10ProductsResult.slice(offset, offset + limit);
 
     return res.json({
@@ -733,45 +733,45 @@ app.put('/updateproduct/:id', (req, res) => {
 
   // Begin transaction
   db.beginTransaction(err => {
+    if (err) {
+      console.error('Error starting transaction:', err);
+      return res.status(500).json({
+        error: 'Failed to start transaction',
+        details: err.message
+      });
+    }
+    console.log('Transaction started for update');
+
+    // Get categoryId
+    const categoryQuery = 'SELECT categoryid FROM category WHERE categoryname = ? AND material = ? AND gender = ?';
+    const categoryParams = [updatedProduct.categoryname, updatedProduct.material, genderBinary];
+    console.log('Getting category:', { query: categoryQuery, params: categoryParams });
+
+    db.query(categoryQuery, categoryParams, (err, categoryResults) => {
       if (err) {
-          console.error('Error starting transaction:', err);
-          return res.status(500).json({
-              error: 'Failed to start transaction',
-              details: err.message
+        console.error('Error getting category:', err);
+        return db.rollback(() => {
+          res.status(500).json({
+            error: 'Failed to get category',
+            details: err.message
           });
+        });
       }
-      console.log('Transaction started for update');
 
-      // Get categoryId
-      const categoryQuery = 'SELECT categoryid FROM category WHERE categoryname = ? AND material = ? AND gender = ?';
-      const categoryParams = [updatedProduct.categoryname, updatedProduct.material, genderBinary];
-      console.log('Getting category:', { query: categoryQuery, params: categoryParams });
+      if (categoryResults.length === 0) {
+        console.log('Category not found');
+        return db.rollback(() => {
+          res.status(404).json({
+            error: 'Category not found'
+          });
+        });
+      }
 
-      db.query(categoryQuery, categoryParams, (err, categoryResults) => {
-          if (err) {
-              console.error('Error getting category:', err);
-              return db.rollback(() => {
-                  res.status(500).json({
-                      error: 'Failed to get category',
-                      details: err.message
-                  });
-              });
-          }
+      const categoryId = categoryResults[0].categoryid;
+      console.log('Found categoryId:', categoryId);
 
-          if (categoryResults.length === 0) {
-              console.log('Category not found');
-              return db.rollback(() => {
-                  res.status(404).json({
-                      error: 'Category not found'
-                  });
-              });
-          }
-
-          const categoryId = categoryResults[0].categoryid;
-          console.log('Found categoryId:', categoryId);
-
-          // Update product
-          const updateProductQuery = `
+      // Update product
+      const updateProductQuery = `
               UPDATE product 
               SET name = ?,
                   price = ?,
@@ -781,70 +781,70 @@ app.put('/updateproduct/:id', (req, res) => {
                   image = ?
               WHERE productid = ?
           `;
-          const updateProductParams = [
-              updatedProduct.name,
-              updatedProduct.price,
-              categoryId,
-              updatedProduct.brand,
-              goldageValue,
-              updatedProduct.image,
-              productId
-          ];
-          console.log('Updating product:', { query: updateProductQuery, params: updateProductParams });
+      const updateProductParams = [
+        updatedProduct.name,
+        updatedProduct.price,
+        categoryId,
+        updatedProduct.brand,
+        goldageValue,
+        updatedProduct.image,
+        productId
+      ];
+      console.log('Updating product:', { query: updateProductQuery, params: updateProductParams });
 
-          db.query(updateProductQuery, updateProductParams, (err, productResult) => {
-              if (err) {
-                  console.error('Error updating product:', err);
-                  return db.rollback(() => {
-                      res.status(500).json({
-                          error: 'Failed to update product',
-                          details: err.message
-                      });
-                  });
-              }
+      db.query(updateProductQuery, updateProductParams, (err, productResult) => {
+        if (err) {
+          console.error('Error updating product:', err);
+          return db.rollback(() => {
+            res.status(500).json({
+              error: 'Failed to update product',
+              details: err.message
+            });
+          });
+        }
 
-              // Update inventory
-              const updateInventoryQuery = `
+        // Update inventory
+        const updateInventoryQuery = `
                   UPDATE inventory 
                   SET size = ?,
                       amount = ?
                   WHERE prd_id = ?
               `;
-              const updateInventoryParams = [updatedProduct.size, updatedProduct.amount, productId];
-              console.log('Updating inventory:', { query: updateInventoryQuery, params: updateInventoryParams });
+        const updateInventoryParams = [updatedProduct.size, updatedProduct.amount, productId];
+        console.log('Updating inventory:', { query: updateInventoryQuery, params: updateInventoryParams });
 
-              db.query(updateInventoryQuery, updateInventoryParams, (err) => {
-                  if (err) {
-                      console.error('Error updating inventory:', err);
-                      return db.rollback(() => {
-                          res.status(500).json({
-                              error: 'Failed to update inventory',
-                              details: err.message
-                          });
-                      });
-                  }
-
-                  // Commit transaction
-                  db.commit(err => {
-                      if (err) {
-                          console.error('Error committing update transaction:', err);
-                          return db.rollback(() => {
-                              res.status(500).json({
-                                  error: 'Failed to commit update transaction',
-                                  details: err.message
-                              });
-                          });
-                      }
-                      console.log('Update transaction committed successfully');
-
-                      res.status(200).json({
-                          message: 'Product updated successfully',
-                          productId: productId
-                      });
-                  });
+        db.query(updateInventoryQuery, updateInventoryParams, (err) => {
+          if (err) {
+            console.error('Error updating inventory:', err);
+            return db.rollback(() => {
+              res.status(500).json({
+                error: 'Failed to update inventory',
+                details: err.message
               });
+            });
+          }
+
+          // Commit transaction
+          db.commit(err => {
+            if (err) {
+              console.error('Error committing update transaction:', err);
+              return db.rollback(() => {
+                res.status(500).json({
+                  error: 'Failed to commit update transaction',
+                  details: err.message
+                });
+              });
+            }
+            console.log('Update transaction committed successfully');
+
+            res.status(200).json({
+              message: 'Product updated successfully',
+              productId: productId
+            });
           });
+        });
       });
+    });
   });
 });
 
@@ -855,65 +855,65 @@ app.delete('/deleteproduct/:id', (req, res) => {
 
   // Begin transaction
   db.beginTransaction(err => {
-      if (err) {
-          console.error('Error starting delete transaction:', err);
-          return res.status(500).json({
-              error: 'Failed to start delete transaction',
-              details: err.message
-          });
-      }
-      console.log('Delete transaction started');
-
-      // Delete from inventory first (due to foreign key constraint)
-      const deleteInventoryQuery = 'DELETE FROM inventory WHERE prd_id = ?';
-      console.log('Deleting from inventory:', { query: deleteInventoryQuery, params: [productId] });
-
-      db.query(deleteInventoryQuery, [productId], (err) => {
-          if (err) {
-              console.error('Error deleting from inventory:', err);
-              return db.rollback(() => {
-                  res.status(500).json({
-                      error: 'Failed to delete from inventory',
-                      details: err.message
-                  });
-              });
-          }
-
-          // Then delete from product
-          const deleteProductQuery = 'DELETE FROM product WHERE productid = ?';
-          console.log('Deleting from product:', { query: deleteProductQuery, params: [productId] });
-
-          db.query(deleteProductQuery, [productId], (err) => {
-              if (err) {
-                  console.error('Error deleting product:', err);
-                  return db.rollback(() => {
-                      res.status(500).json({
-                          error: 'Failed to delete product',
-                          details: err.message
-                      });
-                  });
-              }
-
-              // Commit transaction
-              db.commit(err => {
-                  if (err) {
-                      console.error('Error committing delete transaction:', err);
-                      return db.rollback(() => {
-                          res.status(500).json({
-                              error: 'Failed to commit delete transaction',
-                              details: err.message
-                          });
-                      });
-                  }
-                  console.log('Delete transaction committed successfully');
-
-                  res.status(200).json({
-                      message: 'Product deleted successfully',
-                      productId: productId
-                  });
-              });
-          });
+    if (err) {
+      console.error('Error starting delete transaction:', err);
+      return res.status(500).json({
+        error: 'Failed to start delete transaction',
+        details: err.message
       });
+    }
+    console.log('Delete transaction started');
+
+    // Delete from inventory first (due to foreign key constraint)
+    const deleteInventoryQuery = 'DELETE FROM inventory WHERE prd_id = ?';
+    console.log('Deleting from inventory:', { query: deleteInventoryQuery, params: [productId] });
+
+    db.query(deleteInventoryQuery, [productId], (err) => {
+      if (err) {
+        console.error('Error deleting from inventory:', err);
+        return db.rollback(() => {
+          res.status(500).json({
+            error: 'Failed to delete from inventory',
+            details: err.message
+          });
+        });
+      }
+
+      // Then delete from product
+      const deleteProductQuery = 'DELETE FROM product WHERE productid = ?';
+      console.log('Deleting from product:', { query: deleteProductQuery, params: [productId] });
+
+      db.query(deleteProductQuery, [productId], (err) => {
+        if (err) {
+          console.error('Error deleting product:', err);
+          return db.rollback(() => {
+            res.status(500).json({
+              error: 'Failed to delete product',
+              details: err.message
+            });
+          });
+        }
+
+        // Commit transaction
+        db.commit(err => {
+          if (err) {
+            console.error('Error committing delete transaction:', err);
+            return db.rollback(() => {
+              res.status(500).json({
+                error: 'Failed to commit delete transaction',
+                details: err.message
+              });
+            });
+          }
+          console.log('Delete transaction committed successfully');
+
+          res.status(200).json({
+            message: 'Product deleted successfully',
+            productId: productId
+          });
+        });
+      });
+    });
   });
 });
 
@@ -1019,10 +1019,11 @@ app.post('/resetpass', (req, res) => {
 
   // First check if current password matches
   db.query(sql, [userid], (err, result) => {
+    0
     if (err) {
       return res.json({ success: false, messages: ["Lỗi hệ thống"] });
     }
-    
+
     if (result.length === 0) {
       return res.json({ success: false, messages: ["Người dùng không tồn tại"] });
     }
@@ -1049,15 +1050,15 @@ app.post('/checkCurrentPassword', (req, res) => {
     if (err) {
       return res.json({ valid: false, message: "Lỗi hệ thống" });
     }
-    
+
     if (result.length === 0) {
       return res.json({ valid: false, message: "Người dùng không tồn tại" });
     }
 
     const isValid = result[0].password === hashPass(currentPassword);
-    res.json({ 
-      valid: isValid, 
-      message: isValid ? "" : "Mật khẩu hiện tại không đúng" 
+    res.json({
+      valid: isValid,
+      message: isValid ? "" : "Mật khẩu hiện tại không đúng"
     });
   });
 });
@@ -1214,9 +1215,9 @@ app.get('/auth/github/callback',
   });
 
 //update profile 
-app.post('/updateuser',(req,res)=>{
-  const sql="UPDATE user set username = ?, phone=?,address=? where email=? "
-  const values=[
+app.post('/updateuser', (req, res) => {
+  const sql = "UPDATE user set username = ?, phone=?,address=? where email=? "
+  const values = [
     req.body.username,
     req.body.phone,
     req.body.address,
@@ -1230,13 +1231,13 @@ app.post('/updateuser',(req,res)=>{
   });
 })
 // upload image
-app.post('/upload',upload.single('image'),(req,res) =>{
-    const image=req.file.filename;
-    const sql="update user set image_url=? where consumerid=?"
-    db.query(sql,[image,req.body.consumerid],(err,result) => {
-    if (err) return res.json({status:"false"});
-    return res.json({status:"true", filename: image})
-})
+app.post('/upload', upload.single('image'), (req, res) => {
+  const image = req.file.filename;
+  const sql = "update user set image_url=? where consumerid=?"
+  db.query(sql, [image, req.body.consumerid], (err, result) => {
+    if (err) return res.json({ status: "false" });
+    return res.json({ status: "true", filename: image })
+  })
 })
 
 
@@ -1280,7 +1281,7 @@ app.get('/api/filters', (req, res) => {
     "SELECT DISTINCT NULLIF(categoryname, '') AS categoryname FROM category WHERE categoryname IS NOT NULL"
   ];
 
-  Promise.all(queries.map(query => 
+  Promise.all(queries.map(query =>
     new Promise((resolve, reject) => {
       db.query(query, (err, results) => {
         if (err) reject(err);
@@ -1288,20 +1289,20 @@ app.get('/api/filters', (req, res) => {
       });
     })
   ))
-  .then(([brands, goldAges, materials, genders, productTypes]) => {
-    const filters = {
-      brands: ['Tất cả', ...brands.map(b => b.brand)],
-      goldAges: ['Tất cả', ...goldAges.map(g => g.goldage)],
-      materials: ['Tất cả', ...materials.map(m => m.material)],
-      genders: ['Tất cả', ...genders.map(g => g.gender)],
-      productTypes: ['Tất cả', ...productTypes.map(p => p.categoryname)]
-    };
-    res.json(filters);
-  })
-  .catch(err => {
-    console.error('Error fetching filters:', err);
-    res.status(500).json({ error: "Internal server error" });
-  });
+    .then(([brands, goldAges, materials, genders, productTypes]) => {
+      const filters = {
+        brands: ['Tất cả', ...brands.map(b => b.brand)],
+        goldAges: ['Tất cả', ...goldAges.map(g => g.goldage)],
+        materials: ['Tất cả', ...materials.map(m => m.material)],
+        genders: ['Tất cả', ...genders.map(g => g.gender)],
+        productTypes: ['Tất cả', ...productTypes.map(p => p.categoryname)]
+      };
+      res.json(filters);
+    })
+    .catch(err => {
+      console.error('Error fetching filters:', err);
+      res.status(500).json({ error: "Internal server error" });
+    });
 });
 
 app.get('/api/filterdashboard', (req, res) => {
@@ -1314,7 +1315,7 @@ app.get('/api/filterdashboard', (req, res) => {
     "SELECT DISTINCT NULLIF(size, '') AS size FROM inventory WHERE size IS NOT NULL"
   ];
 
-  Promise.all(queries.map(query => 
+  Promise.all(queries.map(query =>
     new Promise((resolve, reject) => {
       db.query(query, (err, results) => {
         if (err) reject(err);
@@ -1322,21 +1323,21 @@ app.get('/api/filterdashboard', (req, res) => {
       });
     })
   ))
-  .then(([brands, goldAges, materials, genders, productTypes, sizes]) => {
-    const filters = {
-      brands: [ ...brands.map(b => b.brand)],
-      goldAges: ["Không có", ...goldAges.map(g => g.goldage)],
-      materials: [ ...materials.map(m => m.material)],
-      genders: [ ...genders.map(g => g.gender)],
-      productTypes: [ ...productTypes.map(p => p.categoryname)],
-      sizes: [ ...sizes.map(s => s.size)]
-    };
-    res.json(filters);
-  })
-  .catch(err => {
-    console.error('Error fetching filters:', err);
-    res.status(500).json({ error: "Internal server error" });
-  });
+    .then(([brands, goldAges, materials, genders, productTypes, sizes]) => {
+      const filters = {
+        brands: [...brands.map(b => b.brand)],
+        goldAges: ["Không có", ...goldAges.map(g => g.goldage)],
+        materials: [...materials.map(m => m.material)],
+        genders: [...genders.map(g => g.gender)],
+        productTypes: [...productTypes.map(p => p.categoryname)],
+        sizes: [...sizes.map(s => s.size)]
+      };
+      res.json(filters);
+    })
+    .catch(err => {
+      console.error('Error fetching filters:', err);
+      res.status(500).json({ error: "Internal server error" });
+    });
 });
 // Endpoint cho trang sức (jewelry)
 app.get('/api/jewelry/:type', (req, res) => {
@@ -1428,7 +1429,7 @@ app.post('/addtocart', (req, res) => {
     req.body.productid,
     req.body.size
   ]
-  db.query(checkedSql, [req.body.userid,req.body.productid,req.body.size,], (error, checkData) => {
+  db.query(checkedSql, [req.body.userid, req.body.productid, req.body.size,], (error, checkData) => {
     if (error) {
       return res.status(500).json("error")
     }
@@ -1449,7 +1450,7 @@ app.post('/addtocart', (req, res) => {
         return res.json(data);
       })
     }
-  }) ;
+  });
 })
 
 app.delete('/removefromcart/:cartid', (req, res) => {
@@ -1471,7 +1472,7 @@ app.post('/cart', (req, res) => {
   //   req.body.userid,
   // ]
   const userId = [req.body.userId];
-  db.query(sql, userId,(err, data) => {
+  db.query(sql, userId, (err, data) => {
     if (err) {
       return res.json("Error")
     }
@@ -1504,16 +1505,16 @@ app.post('/order', (req, res) => {
     const orderDetailId = result.insertId;
     items.forEach(item => {
       const sql2 = "INSERT INTO order_item(order_id, product_id, size, quantity) VALUES (?,?,?,?)";
-      db.query(sql2,[orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
-        if(err2) {
+      db.query(sql2, [orderDetailId, item.productId, item.size, item.quantity], (err2, data) => {
+        if (err2) {
           return res.json("Error 2");
         }
         //https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NO>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>
         const sql3 = "DELETE FROM cart WHERE product_id = ? and size = ?"
-        db.execute(sql3,[item.productId, item.size]);
+        db.execute(sql3, [item.productId, item.size]);
         //TODO update inventory
         const sql4 = "UPDATE product SET amount = amount - ? where productid = ?"
-        db.execute(sql4,[item.quantity, item.productId]);
+        db.execute(sql4, [item.quantity, item.productId]);
         if (paymentStatus === 1) {
           return res.json({ message: 'Cảm ơn bạn đã đặt hàng' });
         } else {
@@ -1532,7 +1533,7 @@ app.post('/userInfomation', (req, res) => {
   //   req.body.userid,
   // ]
   const userId = [req.body.userId];
-  db.query(sql, userId,(err, data) => {
+  db.query(sql, userId, (err, data) => {
     if (err) {
       return res.json("Error")
     }
@@ -1549,7 +1550,7 @@ app.get('/orders', (req, res) => {
   // const values = [
   //   req.body.userid,
   // ]
-  db.query(sql,(err, data) => {
+  db.query(sql, (err, data) => {
     if (err) {
       return res.json("Error")
     }
@@ -1565,14 +1566,14 @@ app.get('/orders/:orderId/items', async (req, res) => {
   const { orderId } = req.params;
   // const connection = await mysql.createConnection(dbConfig);
   // const [rows] = await connection.query(`
-    
+
   // `, [orderId]);
   const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image 
     FROM order_item oi 
     JOIN product p ON oi.product_id = p.productid 
     WHERE oi.order_id = ?
   `
-  db.query(sql,[orderId],(err, data) => {
+  db.query(sql, [orderId], (err, data) => {
     if (err) {
       return res.json("Error")
     }
@@ -1585,8 +1586,8 @@ app.put('/orders/:orderId', async (req, res) => {
   const { paymentStatus } = req.body;
   // const connection = await mysql.createConnection(dbConfig);
   const sql = 'UPDATE order_detail SET payment_status = ? WHERE order_id = ?';
-  
-  db.query(sql,[paymentStatus, orderId],(err, data) => {
+
+  db.query(sql, [paymentStatus, orderId], (err, data) => {
     if (err) {
       return res.json("Error")
     }
@@ -1595,23 +1596,122 @@ app.put('/orders/:orderId', async (req, res) => {
   // res.status(204).send();
 });
 
-//AI
+
+
+//feedback product
+app.post('/submitFeedback', (req, res) => {
+  const { user_id, product_id, rate, feedback } = req.body;
+
+  const insertFeedback = `INSERT INTO feedback (user_id, product_id, rate, feedback) VALUES (?, ?, ?, ?)`;
+  const updateProductRate = `
+      UPDATE product
+      SET totalrate = totalrate + ?, peoplerate = peoplerate + 1
+      WHERE productid = ?
+  `;
+
+  db.query(insertFeedback, [user_id, product_id, rate, feedback], (err, result) => {
+    if (err) {
+      console.error("Error inserting feedback:", err);
+      res.status(500).send("Error saving feedback");
+      return;
+    }
+
+    db.query(updateProductRate, [rate, product_id], (updateErr) => {
+      if (updateErr) {
+        console.error("Error updating product rate:", updateErr);
+        res.status(500).send("Error updating product rate");
+      } else {
+        res.send("Feedback submitted successfully");
+      }
+    });
+  });
+});
+
+//Order info
+app.get('/orderinfo/:consumerid', (req, res) => {
+  const consumerId = req.params.consumerid;
+  const sql = `
+        SELECT 
+        od.total, od.payment_status, od.order_date, od.order_status, 
+        oi.size, oi.quantity,
+        p.name, p.image, p.productid, p.code
+      FROM order_detail od 
+      INNER JOIN order_item oi ON od.order_id = oi.order_id
+      INNER JOIN product p ON oi.product_id = p.productid
+      WHERE od.user_id = ?
+
+  `;
+  db.query(sql, [consumerId], (err, result) => {
+    if (err) {
+      console.error("Error fetching order info:", err);
+      res.status(500).send("Error fetching order info");
+    } else {
+      res.json(result);
+    }
+  });
+});
+
+app.listen(8088, () => {
+  console.log("Server running on port 8088");
+});
+
+
+
+function hashPass(content) {
+  if (typeof content !== 'string') {
+    content = JSON.stringify(content);
+  }
+  return createHash('sha256').update(content).digest('hex');
+}
+
+
+
+// Tạo một DataSource mới cho TypeORM
+const typeormDataSource = new DataSource({
+  type: 'mysql',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'swpvip',
+  entities: [], // Không sử dụng entities vì chúng ta chỉ dùng cho LangChain
+  synchronize: false, // Không tự động đồng bộ hóa schema
+  logging: false,
+});
+
+// Hàm khởi tạo hệ thống QA
+const dbPromise = db.promise()
 async function initializeQASystem() {
   const model = new ChatGoogleGenerativeAI({
-    modelName: "gemini-1.5-pro",
+    modelName: "gemini-1.5-flash",
     temperature: 0,
   });
 
-  const datasource = new DataSource({
-    type: "mysql",
-    host: "localhost",
-    username: "root",
-    password: "",
-    database: "swpvip"
-  });
+  const systemPrompt = SystemMessagePromptTemplate.fromTemplate(`
+    Bạn là một chuyên viên tư vấn trang sức chuyên nghiệp.
+    Nhiệm vụ của bạn là:
+    1. Phân tích câu hỏi của khách hàng.
+    2. Tạo truy vấn vào cơ sở dữ liệu của chúng tôi để lấy thông tin cần thiết.
+    3. Đưa ra câu trả lời chính xác và hữu ích dựa trên dữ liệu lấy được.
+    4. Tư vấn dựa trên nhu cầu khách hàng mà không bao gồm bất kỳ câu lệnh SQL nào trong câu trả lời.
 
+    Nguyên tắc trả lời:
+    - Chỉ cung cấp thông tin liên quan trực tiếp đến câu hỏi.
+    - Sử dụng ngôn ngữ tiếng Việt đơn giản, dễ hiểu.
+    - Từ chối trả lời mọi câu hỏi về thông tin tài khoản/mật khẩu.
+    - Trình bày kết quả dưới dạng bảng nếu có nhiều dữ liệu.
+    - Không bao giờ hiển thị hoặc đề cập đến câu lệnh SQL trong câu trả lời.
+  `);
+
+  const chatPrompt = ChatPromptTemplate.fromMessages([
+    systemPrompt,
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{question}"]
+  ]);
+
+  // Tạo instance của SqlDatabase sử dụng dbPromise
   const knowledge_base = await SqlDatabase.fromDataSourceParams({
-    appDataSource: datasource,
+    appDataSource: typeormDataSource
   });
 
   const executeQuery = new QuerySqlTool(knowledge_base);
@@ -1621,138 +1721,105 @@ async function initializeQASystem() {
     dialect: "mysql"
   });
 
-  const answerPrompt = PromptTemplate.fromTemplate(`
-  Bạn là nhân viên tiệm trang sức. Bạn hãy dựa vào lịch sử hội thoại, câu hỏi để tạo nên query vào database SQL của bạn và đưa ra câu trả lời hữu ích.
-
-  Lịch sử hội thoại:  {chat_history}
-  Câu hỏi: {question}
-  SQL Query: {query}
-  SQL Đầu ra: {result}
-  Câu trả lời: `);
-
-  const answerChain = answerPrompt.pipe(model).pipe(new StringOutputParser());
   const chain = RunnableSequence.from([
-    RunnablePassthrough.assign({ query: writeQuery }).assign({
-      result: (i) => executeQuery.invoke(i.query),
+    RunnablePassthrough.assign({
+      query: writeQuery
+    }).assign({
+      result: async (i) => {
+        try {
+          const queryResult = await executeQuery.invoke(i.query);
+          // Trả về kết quả truy vấn mà không bao gồm SQL
+          return queryResult;
+        } catch (error) {
+          console.error('Error executing query:', error);
+          return 'Đã xảy ra lỗi khi truy vấn dữ liệu.';
+        }
+      },
     }),
-    answerChain,
+    chatPrompt.pipe(model).pipe(new StringOutputParser()),
   ]);
 
   return { chain, knowledge_base };
 }
 
-function formatChatHistory(chatHistory) {
-  return chatHistory.map(entry => 
-    `User: ${entry.question}\nAssistant: ${entry.answer}`
-  ).join('\n\n');
-}
-
-async function getChatHistory() {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT question, answer, timestamp 
-      FROM chat_history 
-      ORDER BY timestamp DESC 
-      LIMIT 5
-    `;
-    
-    db.query(query, (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(rows || []);
-    });
-  });
-}
-
-async function saveChatHistory(question, answer) {
-  return new Promise((resolve, reject) => {
-    const query = 'INSERT INTO chat_history (question, answer, timestamp) VALUES (?, ?, NOW())';
-    db.query(query, [question, answer], (err, result) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(result);
-    });
-  });
-}
-
-initializeQASystem().then(qaSystem => {
-  app.post('/api/chat', async (req, res) => {
-    const { message } = req.body;
-    
-    if (!message) {
-      return res.status(400).json({ response: 'Message is required' });
-    }
-
-    try {
-      const chatHistory = await getChatHistory();
-      const result = await qaSystem.chain.invoke({ 
-        question: message,
-        chat_history: formatChatHistory(chatHistory)
-      });
-      await saveChatHistory(message, result);
-      res.json({ response: result });
-    } catch (error) {
-      console.error('Chat error:', error);
-      res.status(500).json({ response: 'An error occurred while processing your message' });
-    }
-  });
-
-  app.get('/api/chat-history', (req, res) => {
-    const query = `
-      SELECT question, answer, timestamp 
-      FROM chat_history 
-      ORDER BY timestamp DESC 
-      LIMIT 50
-    `;
-    
-    db.query(query, (err, rows) => {
-      if (err) {
-        console.error('Error retrieving chat history:', err);
-        return res.status(500).json([]);
-      }
-      res.json(rows || []);
-    });
-  });
-
-
-  //Order info 
-  app.get('/orderinfo/:consumerid', (req, res) => {
-    const consumerId = req.params.consumerid;
-    const sql = `
-        SELECT 
-            od.total, od.payment_status, od.order_date, 
-            oi.size, oi.quantity,
-            p.name, p.image
-        FROM order_detail od 
-        LEFT JOIN order_item oi ON od.order_id = oi.order_id
-        LEFT JOIN product p ON oi.product_id = p.productid
-        WHERE od.user_id = ?
-    `;
-    db.query(sql, [consumerId], (err, result) => {
-        if (err) {
-            console.error("Error fetching order info:", err);
-            res.status(500).send("Error fetching order info");
-        } else {
-            res.json(result);
-        }
-    });
-});
-
-
-
-  app.listen(8088, () => {
-    console.log("Server running on port 8088");
-  });
-});
-
-
-function hashPass(content) {
-  if (typeof content !== 'string') {
-    content = JSON.stringify(content);
+// Hàm lấy lịch sử chat từ database
+const getChatHistory = async () => {
+  try {
+    const [rows] = await dbPromise.query("SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT 10");
+    return rows;
+  } catch (err) {
+    console.error('Error fetching chat history:', err);
+    return [];
   }
-  return createHash('sha256').update(content).digest('hex');
-}
+};
+
+// Hàm lưu lịch sử chat vào database
+const saveChatHistory = async (question, answer) => {
+  try {
+    const sql = "INSERT INTO chat_history (question, answer) VALUES (?, ?)";
+    await dbPromise.execute(sql, [question, answer]);
+    return true;
+  } catch (err) {
+    console.error('Error saving chat history:', err);
+    return false;
+  }
+};
+
+// Hàm xử lý phản hồi từ model
+const processResponse = (response) => {
+  // Loại bỏ bất kỳ đoạn mã SQL nào nếu có
+  let cleaned = response.replace(/```sql[\s\S]*?```/gi, '');
+  cleaned = cleaned.replace(/^\s*SQL\s*:\s*.*$/gi, '');
+  return cleaned.trim();
+};
+
+// Khởi tạo hệ thống QA và lưu vào biến toàn cục
+let qaSystem;
+
+(async () => {
+  try {
+    qaSystem = await initializeQASystem();
+    console.log("Hệ thống QA đã được khởi tạo thành công!");
+  }
+  catch (error) {
+    console.error("Ứng dụng không thể khởi động do lỗi kết nối database hoặc khởi tạo QA:", error);
+    process.exit(1);
+  }
+})();
+
+// Endpoint xử lý chat
+app.post('/api/chat', async (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ response: 'Hãy nhập câu hỏi của bạn!' });
+  }
+
+  try {
+    const chatHistory = await getChatHistory();
+    const formattedHistory = chatHistory.map(entry => [
+      { role: "human", content: entry.question },
+      { role: "assistant", content: entry.answer }
+    ]).flat();
+
+    const result = await qaSystem.chain.invoke({
+      question: message,
+      chat_history: formattedHistory
+    });
+
+    // Xử lý phản hồi để loại bỏ SQL nếu có
+    const cleanedResult = processResponse(result);
+
+    const saveSuccess = await saveChatHistory(message, cleanedResult);
+    if (!saveSuccess) {
+      console.warn('Không thể lưu lịch sử chat.');
+    }
+
+    res.json({ response: cleanedResult });
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ response: 'Đã xảy ra lỗi khi xử lý tin nhắn của bạn.' });
+  }
+});
+
+

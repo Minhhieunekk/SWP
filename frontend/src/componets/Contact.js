@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Divider } from 'antd';
 import { Image, Button } from 'react-bootstrap';
-import { PhoneOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { PhoneOutlined, SketchOutlined } from '@ant-design/icons';
 import AppHeader from './Header';
 const { Title, Paragraph, Text, Link } = Typography;
 
 const Contact = () => {
     const [status, setStatus] = useState("Đã đóng cửa");
     const openingTime = "08:00"; 
+    const closeTime ="23:00";
 
     useEffect(() => {
         const updateStatus = () => {
             const currentTime = new Date();
             const currentHour = currentTime.getHours();
-            const isOpen = currentHour >= 8 && currentHour < 18; 
+            const isOpen = currentHour >= 8 && currentHour < 23; 
 
             if (isOpen) {
                 setStatus("Đang mở cửa");
@@ -36,7 +37,7 @@ const Contact = () => {
             <Card style={{ width: 500 }} bordered>
                 <div className="text-center mb-4">
                     <Image src="logoshop.png" alt="PNJ Logo" className="mb-3" roundedCircle style={{ width: '100px' }} />
-                    <Title level={2}>Trang sức Nhóm 6 <CheckCircleOutlined style={{ color: 'green' }} /></Title>
+                    <Title level={2}>Cửa hàng trang sức jewelry <SketchOutlined style={{color:'purple'}}/> </Title>
                     <Text type="secondary">Mua sắm & Bán lẻ</Text>
                 </div>
                 
@@ -53,9 +54,9 @@ const Contact = () => {
                 <div className="details">
                     <Paragraph><strong>Địa chỉ:</strong> Thạch Thất, Hòa Lạc, FPT</Paragraph>
                     <Paragraph>
-                        <strong>Điện thoại:</strong> <Link href="tel:1800545457"><PhoneOutlined /> 0948086971</Link>
+                        <strong>Điện thoại:</strong> <Link href="tel:0948086971"><PhoneOutlined /> 0948086971</Link>
                     </Paragraph>
-                    <Paragraph><strong>Trạng thái:</strong> {status} • Mở cửa lúc {openingTime}</Paragraph>
+                    <Paragraph><strong>Trạng thái:</strong> {status} • Mở cửa lúc {openingTime} tới lúc {closeTime}</Paragraph>
                     <Paragraph>
                         <strong>Website:</strong> <Link href="/" target="_blank" rel="noopener noreferrer">Shop trang sức jewelry</Link>
                     </Paragraph>

@@ -6,10 +6,18 @@ const Validationsignup = (values) => {
 
     
     if (!email_pattern.test(values.email)) {
-        error.email="Wrong email format"
+        error.email="Sai định dạng email"
         Swal.fire({
-            title: "Error signup",
-            text: "Wrong email format",
+            title: "Lỗi đăng ký",
+            text: "Sai định dạng email ",
+            icon: "warning"
+          });
+    }
+    if (values.password.length < 8) {
+        error.password="Mật khẩu phải có ít nhất 8 kí tự"
+        Swal.fire({
+            title: "Lỗi đăng ky",
+            text: "Mật khẩu phải có ít nhất 8 kí tự",
             icon: "warning"
           });
     }

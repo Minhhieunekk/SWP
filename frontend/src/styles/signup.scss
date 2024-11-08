@@ -22,7 +22,7 @@ body {
     background: linear-gradient(90deg, #5D54A4, #7C78B8);        
     position: relative;    
     height: 730px;
-    width: 800px; // Increased width to accommodate two columns
+    width: 800px;
     box-shadow: 0px 0px 24px #5C5696;
 }
 
@@ -30,58 +30,58 @@ body {
     z-index: 1;
     position: relative;    
     height: 100%;
+    overflow: visible !important; /* Ensure dropdown appears above other elements */
 }
 
 .screen__background {		
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 0;
-	-webkit-clip-path: inset(0 0 0 0);
-	clip-path: inset(0 0 0 0);	
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    clip-path: inset(0 0 0 0);	
 }
 
 .screen__background__shape {
-	transform: rotate(45deg);
-	position: absolute;
+    transform: rotate(45deg);
+    position: absolute;
 }
 
 .screen__background__shape1 {
-	height: 520px;
-	width: 520px;
-	background: #FFF;	
-	top: -50px;
-	right: 120px;	
-	border-radius: 0 72px 0 0;
+    height: 520px;
+    width: 520px;
+    background: #FFF;	
+    top: -50px;
+    right: 120px;	
+    border-radius: 0 72px 0 0;
 }
 
 .screen__background__shape2 {
-	height: 220px;
-	width: 220px;
-	background: #6C63AC;	
-	top: -172px;
-	right: 0;	
-	border-radius: 32px;
+    height: 220px;
+    width: 220px;
+    background: #6C63AC;	
+    top: -172px;
+    right: 0;	
+    border-radius: 32px;
 }
 
 .screen__background__shape3 {
-	height: 540px;
-	width: 190px;
-	background: linear-gradient(270deg, #5D54A4, #6A679E);
-	top: -24px;
-	right: 0;	
-	border-radius: 32px;
+    height: 540px;
+    width: 190px;
+    background: linear-gradient(270deg, #5D54A4, #6A679E);
+    top: -24px;
+    right: 0;	
+    border-radius: 32px;
 }
 
 .screen__background__shape4 {
-	height: 400px;
-	width: 200px;
-	background: #7E7BB9;	
-	top: 420px;
-	right: 50px;	
-	border-radius: 60px;
+    height: 400px;
+    width: 200px;
+    background: #7E7BB9;	
+    top: 420px;
+    right: 50px;	
+    border-radius: 60px;
 }
 
 .login {
@@ -92,7 +92,7 @@ body {
 
 .form-title {
     text-align: center;
-    color: #fff;
+    color: black;
     margin-bottom: 20px;
 }
 
@@ -120,7 +120,7 @@ body {
     padding: 10px;
     padding-left: 24px;
     font-weight: 700;
-    width: 100%; // Changed from 75% to 100%
+    width: 100%;
     transition: .2s;
     color: black;
 }
@@ -131,6 +131,8 @@ body {
     outline: none;
     border-bottom-color: #6A679E;
     color: black;
+    background-color: #f9f9ff; /* Background color change on focus */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 .login__input::placeholder {
@@ -149,13 +151,13 @@ body {
     font-weight: 700;
     display: flex;
     align-items: center;
-    width: 50%; // Changed from 100% to 50%
+    width: 50%;
     margin-left: auto;
     margin-right: auto;
     color: #4C489D;
     box-shadow: 0px 2px 2px #5C5696;
     cursor: pointer;
-    transition: .2s;
+    transition: all 0.3s ease; /* Smooth transition */
 }
 
 .login__submit:active,
@@ -163,62 +165,52 @@ body {
 .login__submit:hover {
     border-color: #6A679E;
     outline: none;
+    transform: translateY(-2px); /* Subtle hover effect */
 }
 
 .social-login {	
-	position: absolute;
-	height: 140px;
-	width: 160px;
-	text-align: center;
-	bottom: 0px;
-	right: 0px;
-	color: #fff;
+    position: absolute;
+    height: 140px;
+    width: 160px;
+    text-align: center;
+    bottom: 0px;
+    right: 0px;
+    color: #fff;
 }
 
 .social-icons {
-	display: flex;
-	align-items: center;
-	justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .social-login__icon {
-	padding: 20px 10px;
-	color: #fff;
-	text-decoration: none;	
-	text-shadow: 0px 0px 8px #7875B5;
+    padding: 20px 10px;
+    color: #fff;
+    text-decoration: none;	
+    text-shadow: 0px 0px 8px #7875B5;
 }
 
 .social-login__icon:hover {
-	transform: scale(1.5);	
+    transform: scale(1.5);	
 }
 
 .success {
     color: #4CAF50;
-    font-size: 12px;
+    font-size: 13px; /* Slightly larger font size */
+    font-weight: bold; /* Make text bolder for emphasis */
     margin-top: 5px;
     display: block;
 }
 
 .error {
     color: #f44336;
-    font-size: 12px;
+    font-size: 13px; /* Slightly larger font size */
+    font-weight: bold; /* Make text bolder for emphasis */
     margin-top: 5px;
     display: block;
 }
 
-// Make select elements match input styling
-// select.login__input {
-//     appearance: none;
-//     background-color: transparent;
-//     cursor: pointer;
-//     width: 100%;
-//     color: black;
-// }
-
-// select.login__input option {
-//     background: white;
-//     color: black;
-// }
 .searchable-select {
     position: relative;
     width: 100%;
@@ -243,11 +235,15 @@ body {
     padding: 10px;
     cursor: pointer;
     color: black;
-    
+    transition: background-color 0.2s, font-weight 0.2s; /* Smooth transition */
+
     &:hover {
-        background-color: #f5f5f5;
+        background-color: #eaeaea;
+        font-weight: 600; /* Emphasize selected option */
     }
 }
+
+/* Scrollbar styling for dropdown */
 .searchable-select__dropdown::-webkit-scrollbar {
     width: 8px;
 }
@@ -258,15 +254,10 @@ body {
 }
 
 .searchable-select__dropdown::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #444; /* Darker color for improved visibility */
     border-radius: 4px;
 }
 
 .searchable-select__dropdown::-webkit-scrollbar-thumb:hover {
     background: #555;
-}
-
-/* Đảm bảo dropdown hiển thị trên các phần tử khác */
-.screen__content {
-    overflow: visible !important;
 }

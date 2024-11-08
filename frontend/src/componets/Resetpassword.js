@@ -71,7 +71,7 @@ const PasswordChangeForm = () => {
       errors.push("Mật khẩu mới không khớp");
     }
     
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       errors.push("Mật khẩu mới phải có ít nhất 6 ký tự");
     }
 

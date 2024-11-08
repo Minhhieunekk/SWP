@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Form, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Badge, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
 import AppHeader from "./Header";
 import { useNavigate } from "react-router";
+import { ArrowRightOutlined } from "@ant-design/icons";
+
 const ProductFilter = () => {
   const [selectedFilters, setSelectedFilters] = useState({
     brands: '',
@@ -14,8 +16,11 @@ const ProductFilter = () => {
 
   const [products, setProducts] = useState([]);
   const [filters, setFilters] = useState([]);
-  const [sortOption, setSortOption] = useState('all'); // Default to show all products
-  const navigate=useNavigate();
+  const [sortOption, setSortOption] = useState('all');
+  const [minPrice, setMinPrice] = useState('0');
+  const [maxPrice, setMaxPrice] = useState('100.000.000');
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -37,9 +42,9 @@ const ProductFilter = () => {
     return Object.entries(filtersData).map(([key, values]) => ({
       id: key,
       label: getFilterLabel(key),
-      options: values.map(value => ({ 
+      options: values.map(value => ({
         value: value === 'Tất cả' ? '' : value,
-        label: value 
+        label: value
       }))
     }));
   };
@@ -66,52 +71,76 @@ const ProductFilter = () => {
     setSortOption(event.target.value);
   };
 
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const parseCurrency = (formattedValue) => {
+    return parseInt(formattedValue.replace(/\./g, ''), 10) || 0;
+  };
+
+  const handleMinPriceChange = (e) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setMinPrice(formatCurrency(rawValue));
+  };
+
+  const handleMaxPriceChange = (e) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setMaxPrice(formatCurrency(rawValue));
+  };
+
+  const filteredProducts = products.filter(product => {
+    const parsedMinPrice = parseCurrency(minPrice);
+    const parsedMaxPrice = parseCurrency(maxPrice);
+
+    return (
+      Object.entries(selectedFilters).every(([key, value]) => {
+        if (!value) return true;
+        switch (key) {
+          case 'brands':
+            return product.brand === value;
+          case 'goldAges':
+            return product.goldage === value;
+          case 'materials':
+            return product.material === value;
+          case 'genders':
+            return (value === 'Nam' && product.gender === 'Nam') ||
+                   (value === 'Nữ' && product.gender === 'Nữ');
+          case 'productTypes':
+            return product.categoryname === value;
+          default:
+            return true;
+        }
+      }) &&
+      product.price >= parsedMinPrice &&
+      product.price <= parsedMaxPrice
+    );
+  });
+
   const getSortedProducts = () => {
     let sortedProducts = [...filteredProducts];
 
     switch (sortOption) {
       case 'newest':
-        return sortedProducts.slice(-20); 
+        return sortedProducts.slice(-20);
       case 'priceLowToHigh':
         return sortedProducts.sort((a, b) => a.price - b.price);
       case 'priceHighToLow':
         return sortedProducts.sort((a, b) => b.price - a.price);
       case 'all':
       default:
-        return sortedProducts; 
+        return sortedProducts;
     }
   };
-
-  const filteredProducts = products.filter(product => {
-    return Object.entries(selectedFilters).every(([key, value]) => {
-      if (!value) return true;
-      
-      switch(key) {
-        case 'brands':
-          return product.brand === value;
-        case 'goldAges':
-          return product.goldage === value;
-        case 'materials':
-          return product.material === value;
-        case 'genders':
-          return (value === 'Nam' && product.gender === 'Nam') || 
-                 (value === 'Nữ' && product.gender === 'Nữ');
-        case 'productTypes':
-          return product.categoryname === value;
-        default:
-          return true;
-      }
-    });
-  });
 
   const sortedProducts = getSortedProducts();
 
   return (
     <>
-      <AppHeader/>
-      <Container fluid className="py-4" style={{position:"relative",top:"200px"}}>
+      <AppHeader />
+      <Container fluid className="py-4" style={{ position: "relative", top: "200px" }}>
         <Row>
-        <Col xs={2}>
+          <Col xs={2}>
             <Form.Select className="mb-4" size="sm" onChange={handleSortChange}>
               <option value="all">Tất cả sản phẩm</option>
               <option value="newest">Sản phẩm mới nhất</option>
@@ -137,17 +166,49 @@ const ProductFilter = () => {
                   </Form.Select>
                 </Col>
               ))}
-             
             </Row>
           </Col>
         </Row>
-        <Row>
-          
+        <Row className="mb-3">
+          <Form.Group controlId="priceRange" className="mb-4">
+            <Row className="align-items-center">
+              <Col xs={3} md={1}>
+                <Form.Label>Khoảng giá: </Form.Label>
+              </Col>
+              <Col xs={4} md={3}>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="Giá thấp nhất"
+                    value={minPrice}
+                    onChange={handleMinPriceChange}
+                    className="text-center"
+                  />
+                  <InputGroup.Text>VND</InputGroup.Text>
+                </InputGroup>
+              </Col>
+              <Col xs="auto" className="d-flex justify-content-center">
+                <ArrowRightOutlined style={{ fontSize: '20px', color: '#888' }} />
+              </Col>
+              <Col xs={4} md={3}>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="Giá cao nhất"
+                    value={maxPrice}
+                    onChange={handleMaxPriceChange}
+                    className="text-center"
+                  />
+                  <InputGroup.Text>VND</InputGroup.Text>
+                </InputGroup>
+              </Col>
+            </Row>
+          </Form.Group>
         </Row>
         <Row xs={2} md={3} lg={4} className="g-4">
           {sortedProducts.map(product => (
             <Col key={product.id}>
-              <Card className="h-100" style={{cursor:'pointer'}} onClick={()=>navigate(`/productdetail/${product.productid}`)}>
+              <Card className="h-100" style={{ cursor: 'pointer' }} onClick={() => navigate(`/productdetail/${product.productid}`)}>
                 <Card.Img variant="top" src={product.image} />
                 {product.isnew === 1 && (
                   <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">

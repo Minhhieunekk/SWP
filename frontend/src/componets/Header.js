@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown, Modal } from "antd";
+import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown, Modal, Typography } from "antd";
 import {
   UserOutlined,
   ShoppingCartOutlined,
@@ -10,11 +10,12 @@ import {
   LineChartOutlined,
 } from "@ant-design/icons";
 import SubMenu from "antd/es/menu/SubMenu";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import { HomeFilled, SearchOutlined } from "@ant-design/icons";
 import CentralSearchModal from "./Search";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
+const {Link}=Typography;
 
 const { Header } = Layout;
 
@@ -152,8 +153,11 @@ const AppHeader = () => {
                 </div>
               </Col>
               <Col>
-                <PhoneOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
+              <Link href="tel:0948086971" style={{textDecoration:'none',color:'black'}}>
+              <PhoneOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
                 094 808 6971
+              </Link>
+                
               </Col>
             </Row>
           </Col>
@@ -208,21 +212,14 @@ const AppHeader = () => {
           <Col span={2}>
             <Image src="/images/logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/")} />
           </Col>
-          <Col span={8}>
+          <Col span={7}>
             <Menu
               theme={customTheme}
               mode="horizontal"
               selectedKeys={[selectedKey]}
               onClick={handleMenuClick} // Sự kiện khi nhấp vào mục menu
             >
-              <Menu.Item
-                key="home"
-                className={selectedKey === "home" ? "menu-item-selected" : ""}
-              >
-                <Link to="/login" style={{ color: customTheme.color }}>
-                  <HomeFilled style={{ color: customTheme.color }} />
-                </Link>
-              </Menu.Item>
+            
 
               <SubMenu
                 key="1"
