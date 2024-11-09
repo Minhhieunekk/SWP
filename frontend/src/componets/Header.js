@@ -28,6 +28,7 @@ const AppHeader = () => {
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState("1");
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+  const [itemCount, setItemCount] = useState(0);
 
   if (consumerid) {
     localStorage.setItem('userId', consumerid);
@@ -81,6 +82,19 @@ const AppHeader = () => {
     }
   };
   const location=useLocation();
+  const fetchItemInCart = async () => {
+    try {
+      const user_id = localStorage.getItem('userId');
+      const response = await axios.post('http://localhost:8088/cart-count', {
+        user_id,  // Send the  consumerid in the body
+      });
+
+      setItemCount(response.data.itemCount);
+    } catch (error) {
+      console.error('Error fetching cart item count:', error);
+      setItemCount(0); // In case of error, you can set the count to 0 or handle accordingly
+    }
+  };
   useEffect(()=>{
     const token = localStorage.getItem('token');
         const queryParams = new URLSearchParams(location.search);
@@ -91,6 +105,8 @@ const AppHeader = () => {
       } else if (token) {
           fetchUserData(token);
       }
+      fetchItemInCart();
+
   },[location.search])
   const userMenu = (
     <Menu >
@@ -183,7 +199,7 @@ const AppHeader = () => {
               </Col>
               {consumerid && consumerid !==11 && 
               <Col>
-                <Badge count={0} offset={[9, 0]}>
+                <Badge count={itemCount} offset={[9, 0]}>
                   <div onClick={() => navigate(`/cart/${consumerid}`)}><ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng </div>
                 </Badge>
               </Col>}
