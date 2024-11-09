@@ -126,7 +126,9 @@ const ProductCard = ({
                             <Card.Text className='ms-5 d-flex' ><strong style={{ marginRight: '5px' }}>Chất liệu:</strong>{`${categoryname} ${material} ${goldage || ''}`}</Card.Text>
                             <Card.Text  className='ms-5 d-flex' ><strong style={{ marginRight: '5px' }}>Thương hiệu:</strong>  {` ${brand} `}</Card.Text>
                             <Card.Text  className='ms-5 d-flex'><strong style={{ marginRight: '5px' }}>Mã sản phẩm:</strong> {`${code} `}</Card.Text>
-                            <Card.Text className="fw-bold mb-3">{currentPrice.toLocaleString()} VND</Card.Text>
+                            <Card.Text className="text-decoration-line-through fw-bold mb-3">{(currentPrice/discount_value*100).toLocaleString()} VND</Card.Text>
+                            <Card.Text className="text-success fw-bold mb-3" >{currentPrice.toLocaleString()} VND</Card.Text>
+                            
                             <div className="mb-3">
                                 {[...Array(5)].map((_, i) => (
                                     <Star key={i} size={16} fill={i < rate ? "#FFC107" : "none"} color="#FFC107" />
