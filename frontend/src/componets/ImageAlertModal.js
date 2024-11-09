@@ -3,8 +3,8 @@ import Modal from 'react-modal';
 
 const ImageAlertModal = ({ isOpen, onClose, message, imageUrl }) => {
   return (
-    <Modal isOpen={isOpen} onRequestClose={onClose} ariaHideApp={false}>
-      <img src={imageUrl} alt="Alert" style={{ width: '100%', objectFit: 'fill' }} />
+    <Modal isOpen={isOpen} onRequestClose={onClose}>
+      <img src={imageUrl} style={{ width: '400px'}} />
       {/* <Card.Img
           variant="top"
           src={`/images/${image}`}

@@ -61,9 +61,10 @@ app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
+  port: "3306",
   user: "root",
-  password: "",
-  database: "swpvip"
+  password: "abcd1234",
+  database: "swp_final"
 })
 
 
@@ -504,7 +505,10 @@ app.get('/productdetail', (req, res) => {
       p.productid,
       p.name,
       p.image,
-      p.price,
+      p.price as old_price,
+      CASE
+        when d.discount_value is null then p.price
+        when d.discount_value is not null then (p.price * (100-d.discount_value)/100) end as price,
       p.totalrate,
       p.peoplerate,
       p.description,
@@ -523,7 +527,7 @@ app.get('/productdetail', (req, res) => {
       category c ON p.category = c.categoryid
     JOIN 
       inventory i ON p.productid = i.prd_id
-    LEFT JOIN discount d ON d.discount_id = p.discount_id
+    LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = p.discount_id
     WHERE 
       p.productid = ?
   `;
@@ -548,10 +552,15 @@ app.get("/home", (req, res) => {
 
   // Step 1: Get the last 10 products by productid
   const last10ProductsQuery = `
-      SELECT product.*, discount.discount_value 
+      SELECT product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id,
+      CASE 
+        when d.discount_value is null then product.price
+        when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
+      discount.discount_value ,
+      category.*
       FROM product 
       JOIN category ON product.category = category.categoryid
-      LEFT JOIN discount ON discount.discount_id = product.discount_id
+      LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id
       ORDER BY product.productid DESC 
       LIMIT 10;
   `;
@@ -594,7 +603,14 @@ app.get("/home/bongtai", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT product.*, category.*, discount.discount_value FROM product LEFT JOIN discount ON discount.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = `SELECT product.*,
+    product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id,
+    CASE 
+      when d.discount_value is null then product.price
+      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
+      d.discount_value,
+    category.*, 
+    discount.discount_value FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -625,7 +641,13 @@ app.get("/home/daychuyen", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = `SELECT product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id,
+    CASE 
+      when d.discount_value is null then product.price
+      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
+      d.discount_value,
+    category.*  
+    FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 7 and 12  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -656,7 +678,14 @@ app.get("/home/vongtay", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = `SELECT
+    product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id,
+    category.*,
+    CASE 
+      when d.discount_value is null then product.price
+      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
+      d.discount_value
+    FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 13 and 18  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -687,7 +716,14 @@ app.get("/home/nhan", (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Then, get the products for the current page
-    const sql = "SELECT * FROM product LEFT JOIN discount d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?";
+    const sql = `SELECT 
+      product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id,
+      category.*,
+      CASE 
+        when d.discount_value is null then product.price
+        when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
+        d.discount_value
+     FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 19 and 24  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -1271,9 +1307,12 @@ app.post('/upload', upload.single('image'), (req, res) => {
 app.get('/api/products', (req, res) => {
   const sql = `
     SELECT 
-      product.*, 
+      product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id, 
       category.categoryname, 
       category.material,
+      CASE 
+	      when d.discount_value is null then product.price
+	      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
@@ -1282,7 +1321,7 @@ app.get('/api/products', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
-    LEFT JOIN discount ON product.discount_id = discount.discount_id
+    LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON product.discount_id = d.discount_id
   `;
 
   db.query(sql, (err, data) => {
@@ -1373,9 +1412,12 @@ app.get('/api/jewelry/:type', (req, res) => {
   const { type } = req.params;
   const sql = `
     SELECT 
-      product.*, 
+      product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id, 
       category.categoryname, 
       category.material,
+      CASE 
+        when d.discount_value is null then product.price
+        when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
@@ -1384,7 +1426,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
-    LEFT JOIN discount ON product.discount_id = discount.discount_id
+    LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON product.discount_id = d.discount_id
     WHERE category.categoryname = ?
   `;
 
@@ -1402,9 +1444,12 @@ app.get('/api/materials/:material', (req, res) => {
   const { material } = req.params;
   const sql = `
     SELECT 
-      product.*, 
+      product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id, 
       category.categoryname, 
       category.material,
+      CASE 
+        when d.discount_value is null then product.price
+        when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
@@ -1413,7 +1458,7 @@ app.get('/api/materials/:material', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
-    LEFT JOIN discount ON product.discount_id = discount.discount_id
+    LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON product.discount_id = d.discount_id
     WHERE category.material = ?
   `;
 
@@ -1432,9 +1477,12 @@ app.get('/api/gifts/:gender', (req, res) => {
   const genderValue = gender === 'Nam' ? 0 : 1;
   const sql = `
     SELECT 
-      product.*, 
+      product.productid , product.name, product.image, product.price as old_price, product.description, product.category, product.totalrate, product.peoplerate, product.brand, product.goldage, product.code, product.discount_id, 
       category.categoryname, 
       category.material,
+      CASE 
+        when d.discount_value is null then product.price
+        when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       discount.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
@@ -1443,7 +1491,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       END AS gender
     FROM product
     JOIN category ON product.category = category.categoryid
-    LEFT JOIN discount ON product.discount_id = discount.discount_id
+    LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON product.discount_id = d.discount_id
     WHERE category.gender = ?
   `;
 
@@ -1503,7 +1551,19 @@ app.delete('/removefromcart/:cartid', (req, res) => {
 });
 
 app.post('/cart', (req, res) => {
-  const sql = "select c.quantity , c.size, c.cart_id as cartid, p.*, i.amount from cart c join product p on c.product_id = p.productid join inventory i on i.prd_id = p.productid where c.size = i.size and c.user_id = ?";
+  const sql = `select c.quantity , c.size, c.cart_id as cartid, 
+    p.productid , p.name, p.image, p.price as old_price, p.description, p.category, p.totalrate, p.peoplerate, p.brand, p.goldage, p.code, p.discount_id,
+    i.amount,
+    CASE 
+      when d.discount_value is null then p.price
+      when d.discount_value is not null then (p.price * (100-d.discount_value)/100) end as price 
+    from cart c 
+    join product p on c.product_id = p.productid 
+    join inventory i on i.prd_id = p.productid 
+    left join 
+      (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d
+      on p.discount_id = d.discount_id
+    where c.size = i.size and c.user_id = ?`;
   // const values = [
   //   req.body.userid,
   // ]
@@ -1609,7 +1669,7 @@ const formatDate = (date) => {
 
 // API to fetch orders
 app.get('/orders', (req, res) => {
-  const { startDate, endDate, status, numberPerPage, page, sortColumn, sortDirection } = req.query;
+  const { startDate, endDate, paymentStatus, status, numberPerPage, page, sortColumn, sortDirection } = req.query;
 
   const start = new Date(startDate || new Date(new Date().setDate(new Date().getDate() - 7)));
   const end = new Date(endDate || new Date());
@@ -1619,6 +1679,7 @@ app.get('/orders', (req, res) => {
   end.setHours(23, 59, 59, 999);
 
   const statusFilter = status === '-1' ? '' : `AND od.order_status = ${status}`;
+  const paymentFilter = paymentStatus === '-1' ? '' : ` AND od.payment_status = ${paymentStatus} `
   const limit = parseInt(numberPerPage) || 10;
   const offset = (parseInt(page) - 1) * limit || 0;
   const column = sortColumn || 'order_date';
@@ -1630,6 +1691,7 @@ app.get('/orders', (req, res) => {
     JOIN user u ON u.consumerid = od.user_id
     WHERE od.order_date BETWEEN ? AND ?
     ${statusFilter}
+    ${paymentFilter}
     ORDER BY od.${column} ${direction}
     LIMIT ? OFFSET ?
   `;
@@ -1673,10 +1735,16 @@ app.get('/orders/:orderId/items', async (req, res) => {
   // const [rows] = await connection.query(`
 
   // `, [orderId]);
-  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, i.amount 
+  const sql = ` SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price as old_price, i.amount,
+    CASE 
+    when d.discount_value is null then p.price
+    when d.discount_value is not null then (p.price * (100-d.discount_value)/100) end as price
     FROM order_item oi 
     JOIN product p ON oi.product_id = p.productid
     JOIN inventory i on oi.product_id = i.prd_id
+    left join 
+      (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d
+      on p.discount_id = d.discount_id
     WHERE oi.order_id = ? AND i.size=oi.size
   `
   db.query(sql, [orderId], (err, data) => {
@@ -1691,7 +1759,7 @@ app.put('/orders/:orderId', async (req, res) => {
   const { orderId } = req.params;
   const { paymentStatus } = req.body;
   // const connection = await mysql.createConnection(dbConfig);
-  const sql = 'UPDATE order_detail SET payment_status = ? WHERE order_id = ?';
+  const sql = 'UPDATE order_detail SET payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ? ';
 
   db.query(sql, [paymentStatus, orderId], (err, data) => {
     if (err) {
@@ -1702,22 +1770,22 @@ app.put('/orders/:orderId', async (req, res) => {
   // res.status(204).send();
 });
 
-// Fetch order details
-app.get('/order-details/:orderId', (req, res) => {
-  const { orderId } = req.params;
+// // Fetch order details
+// app.get('/order-details/:orderId', (req, res) => {
+//   const { orderId } = req.params;
 
-  const query = `
-    SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price, p.amount
-    FROM order_item oi
-    JOIN product p ON oi.product_id = p.productid
-    WHERE oi.order_id = ?;
-  `;
+//   const query = `
+//     SELECT oi.order_item_id, oi.order_id, oi.product_id, oi.size, oi.quantity, p.name, p.image, p.price as old price, p.amount
+//     FROM order_item oi
+//     JOIN product p ON oi.product_id = p.productid
+//     WHERE oi.order_id = ?;
+//   `;
 
-  db.query(query, [orderId], (err, rows) => {
-    if (err) return res.status(500).send({ error: 'Error fetching order items' });
-    res.json({ items: rows });
-  });
-});
+//   db.query(query, [orderId], (err, rows) => {
+//     if (err) return res.status(500).send({ error: 'Error fetching order items' });
+//     res.json({ items: rows });
+//   });
+// });
 
 // Update quantity of an order item
 app.put('/order-item/quantity', (req, res) => {
@@ -1777,7 +1845,7 @@ app.delete('/order-item/:orderItemId', (req, res) => {
 app.put('/order/payment-status', (req, res) => {
 
   db.query(
-    'UPDATE order_detail SET payment_status = 1 WHERE order_id = ?',
+    'UPDATE order_detail SET payment_status = 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
     [orderId],
     (err, result) => {
       if (err) return res.status(500).send({ error: 'Error updating payment status' });
@@ -1789,9 +1857,11 @@ app.put('/order/payment-status', (req, res) => {
 // Update order status of the order
 app.put('/order/order-status', (req, res) => {
   const { orderId, status } = req.body;
-
+  if (status === 5) {
+        db.execute("UPDATE order_detail SET payment_status = 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?", [orderId]);
+  }
   db.query(
-    'UPDATE order_detail SET order_status = ? WHERE order_id = ?',
+    'UPDATE order_detail SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
     [status, orderId],
     (err, result) => {
       if (err) return res.status(500).send({ error: 'Error updating payment status' });
@@ -1804,7 +1874,7 @@ app.put('/orders/updateTotal', (req, res) => {
   const { orderId, newTotal } = req.body;
 
   db.query(
-    'UPDATE order_detail SET total = ? WHERE order_id = ?',
+    'UPDATE order_detail SET total = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
     [newTotal, orderId],
     (err, result) => {
       if (err) return res.status(500).send({ error: 'Error updating payment status' });
@@ -1813,81 +1883,71 @@ app.put('/orders/updateTotal', (req, res) => {
   );
 });
 
-// Get all products (for discount type 1)
-app.get('/api/product', (req, res) => {
-  db.query('SELECT * FROM product limit 5', (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to fetch products' });
-    }
-    res.json(results);
-  });
-});
+// // Create a new discount
+// app.post('/api/discounts', (req, res) => {
+//   const {
+//     discount_code,
+//     discount_name,
+//     discount_type,
+//     start_date,
+//     end_date,
+//     discount_value,
+//     discount_condition,
+//     selected_products,
+//     discount_description,  // New field
+//   } = req.body;
 
-// Create a new discount
-app.post('/api/discounts', (req, res) => {
-  const {
-    discount_code,
-    discount_name,
-    discount_type,
-    start_date,
-    end_date,
-    discount_value,
-    discount_condition,
-    selected_products,
-    discount_description,  // New field
-  } = req.body;
+//   // Check if required fields are provided and not null
+//   if (!discount_code || !discount_name || !start_date || !end_date || !discount_value || !discount_description) {
+//     return res.status(400).json({
+//       error: 'All fields are required: discount_code, discount_name, start_date, end_date, discount_value, and discount_description',
+//     });
+//   }
 
-  // Check if required fields are provided and not null
-  if (!discount_code || !discount_name || !start_date || !end_date || !discount_value || !discount_description) {
-    return res.status(400).json({
-      error: 'All fields are required: discount_code, discount_name, start_date, end_date, discount_value, and discount_description',
-    });
-  }
+//   // Check if discount_value is a valid number
+//   if (isNaN(discount_value)) {
+//     return res.status(400).json({ error: 'Discount value must be a valid number' });
+//   }
 
-  // Check if discount_value is a valid number
-  if (isNaN(discount_value)) {
-    return res.status(400).json({ error: 'Discount value must be a valid number' });
-  }
+//   const discountQuery = `
+//     INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description)
+//     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  const discountQuery = `
-    INSERT INTO discount (discount_code, discount_name, discount_type, start_date, end_date, discount_value, discount_condition, discount_description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+//   db.query(
+//     discountQuery,
+//     [
+//       discount_code,
+//       discount_name,
+//       discount_type,
+//       start_date,
+//       end_date,
+//       discount_value,
+//       discount_condition || null, // Allow null for condition in product-based discount
+//       discount_description, // Save description
+//     ],
+//     (err, result) => {
+//       if (err) {
+//         console.error('Error saving discount:', err);
+//         return res.status(500).json({ error: 'Failed to create discount' });
+//       }
 
-  db.query(
-    discountQuery,
-    [
-      discount_code,
-      discount_name,
-      discount_type,
-      start_date,
-      end_date,
-      discount_value,
-      discount_condition || null, // Allow null for condition in product-based discount
-      discount_description, // Save description
-    ],
-    (err, result) => {
-      if (err) {
-        console.error('Error saving discount:', err);
-        return res.status(500).json({ error: 'Failed to create discount' });
-      }
+//       const discountId = result.insertId;
 
-      const discountId = result.insertId;
+//       if (discount_type === 1 && selected_products.length > 0) {
+//         // Apply discount to products
+//         selected_products.forEach((productId) => {
+//           db.query('UPDATE product SET discount_id = ? WHERE productid = ?', [discountId, productId], (err) => {
+//             if (err) {
+//               console.error(`Error applying discount to product ${productId}:`, err);
+//             }
+//           });
+//         });
+//       }
 
-      if (discount_type === 1 && selected_products.length > 0) {
-        // Apply discount to products
-        selected_products.forEach((productId) => {
-          db.query('UPDATE product SET discount_id = ? WHERE productid = ?', [discountId, productId], (err) => {
-            if (err) {
-              console.error(`Error applying discount to product ${productId}:`, err);
-            }
-          });
-        });
-      }
-
-      res.status(201).json({ message: 'Discount created successfully', discountId });
-    }
-  );
-});
+//       res.status(201).json({ message: 'Discount created successfully', discountId });
+//     }
+//   );
+// });
 
 // Route: Get all discounts with pagination
 app.get('/api/discounts', (req, res) => {
@@ -2127,9 +2187,11 @@ app.get('/order-status-counts', (req, res) => {
       (SELECT COUNT(*) FROM order_detail WHERE payment_status = 0 ) AS not_paid,
       (SELECT COUNT(*) FROM order_detail WHERE payment_status = 1 ) AS paid,
       (SELECT COUNT(*) FROM order_detail WHERE order_status = 1 ) AS received,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 ) AS packaging,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 ) AS shipping,
-      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 ) AS done,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 2 ) AS confirm,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 3 ) AS packaging,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 4 ) AS shipping,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 5 ) AS done,
+      (SELECT COUNT(*) FROM order_detail WHERE order_status = 6) AS failed,
       (SELECT COUNT(*) FROM order_detail WHERE order_status = 0 ) AS cancel;
   `;
   // Execute the query with the date range parameters
@@ -2163,8 +2225,8 @@ const getLastSixMonths = () => {
 app.get('/earnings', (req, res) => {
   const query = `
     SELECT
-      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND DATE(order_date) = CURDATE()) AS today_earn,
-      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND MONTH(order_date) = MONTH(CURDATE()) AND YEAR(order_date) = YEAR(CURDATE())) AS this_month_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND DATE(updated_at) = CURDATE()) AS today_earn,
+      (SELECT SUM(total) FROM order_detail WHERE payment_status = 1 AND MONTH(updated_at) = MONTH(CURDATE()) AND YEAR(updated_at) = YEAR(CURDATE())) AS this_month_earn,
       (SELECT SUM(total) FROM order_detail WHERE payment_status = 1) AS all_time_earn
   `;
 
@@ -2604,6 +2666,39 @@ app.get('/orderinfo/:consumerid', (req, res) => {
       res.json(result);
     }
   });
+});
+
+// Endpoint to check discount code
+app.post('/check-discount', (req, res) => {
+  const { discountCode, totalPrice } = req.body;
+
+  // Query the database for discount details
+  db.query(
+    'SELECT discount_code, discount_value, discount_condition FROM discount WHERE discount_code = ?',
+    [discountCode],
+    (err, results) => {
+      if (err) {
+        console.error('Error executing query:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      if (results.length === 0) {
+        // No discount code found
+        return res.status(404).json({ message: 'Mã giảm giá không đúng' });
+      }
+
+      const { discount_value, discount_condition } = results[0];
+
+      if (discount_condition > totalPrice) {
+        // Discount condition not met
+        return res.status(400).json({ message: 'Đơn hàng không thỏa mãn điều kiện tối thiểu' });
+      }
+
+      // Calculate the new price if the discount is valid
+      const newPrice = totalPrice * (100 - discount_value) / 100;
+      return res.json({ newPrice });
+    }
+  );
 });
 
 // Tạo một DataSource mới cho TypeORM

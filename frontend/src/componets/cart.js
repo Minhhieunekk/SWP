@@ -35,6 +35,37 @@ const Cart = () => {
 
     const [user, setUser] = useState(null);
 
+    const [newPrice, setNewPrice] = useState(null);
+    const [errorDiscountMessage, setErrorDiscountMessage] = useState('');
+    const [discountCode, setDiscountCode] = useState('');
+
+    const handleApplyDiscount = async () => {
+        if (!discountCode) {
+          // If no discount code is entered, show an error message
+          setErrorDiscountMessage('Vui lòng nhập mã giảm giá');
+          return;
+        }
+    
+        try {
+          const response = await axios.post('http://localhost:8088/check-discount', {
+            discountCode,
+            totalPrice,
+          });
+    
+          // If discount is valid, update the price
+          setNewPrice(response.data.newPrice);
+          setErrorDiscountMessage('');  // Reset error message on success
+        } catch (error) {
+          if (error.response) {
+            // Handle the error messages returned by backend
+            setErrorDiscountMessage(error.response.data.message);  // Use updated variable name
+          } else {
+            // Handle general errors
+            setErrorDiscountMessage('An error occurred, please try again later.');  // Use updated variable name
+          }
+        }
+      };
+
     const fetchUserData = async (token) => {
     try {
         
@@ -64,6 +95,7 @@ const Cart = () => {
     };
 
     const handleClose = () => {
+        setNewPrice(null);
         setIsPopupOpen(false);
       }; 
     const openAlert = () => {
@@ -200,11 +232,11 @@ const Cart = () => {
     const handlePayment = async (paymentType) => {
         handleCheckout(paymentType);
         setIsPopupOpen(false);
-        if (paymentType === 'cod') {
-            setIsModalOpen(false)
-        } else {
-            setIsModalOpen(true);
-        }
+        // if (paymentType === 'cod') {
+        //     setIsModalOpen(false)
+        // } else {
+        //     setIsModalOpen(true);
+        // }
     };
     const beforeHandlePay = () => {
         console.log(selectedItems);
@@ -219,7 +251,7 @@ const Cart = () => {
         const selectedItemsData = cartItems.filter(item => selectedItems.includes(item.cartid));
         const orderData = {
             userId: consumerId,
-            total: totalPrice,
+            total: !newPrice?totalPrice: newPrice,
             phone: phone,
             address:  address,
             email: email,
@@ -237,16 +269,15 @@ const Cart = () => {
                     alert('Cảm ơn bạn đã đặt hàng');
                 } else {
                     setImgUrl(`${response.data.imageUrl}`);
-                    console.log("HHHHHHHHHHHHHHHHHHHHHHHHHHH")
-                    console.log(imgUrl) 
-                    alert(`Payment URL: ${response.data.imageUrl}`);
+                    openAlert();
+                    // alert(`Payment URL: ${response.data.imageUrl}`);
                 }
                 try {
                     const response = await axios.post(`http://localhost:8088/cart`,{userId : consumerId});
                     console.log(response.data);
                     if (response.data === "No item in cart") {
                         setCartItems([]);
-                        setErrorMessage("No items in cart");
+                        setErrorMessage("Hiện tại không có sản phẩm nào trong giỏ hàng");
                     } else {
                         setCartItems(response.data);
                         setErrorMessage('');
@@ -263,6 +294,7 @@ const Cart = () => {
             .catch(error => {
                 console.error('Error placing order', error);
             });
+        setNewPrice(null);
     };
 
     const [phoneErrors, setPhoneErrors] = useState('Số điện thoại phải có 10 số');
@@ -565,7 +597,7 @@ const Cart = () => {
                                 />
                             </td>
                             <td className="price">
-                                {item.price.toLocaleString()}
+                                {(item.price * 1).toLocaleString()}
                             </td>
                             <td>
                             <input
@@ -594,7 +626,7 @@ const Cart = () => {
             </table>
             {cartItems.length > 0 && (
                 <div>
-                    <h2>Tổng cộng: {totalPrice.toLocaleString()} VND</h2>
+                    <h2>Số tiền cần phải thanh toán: {totalPrice.toLocaleString()} VND</h2>
                     {/* <button onClick={handlePayment}>Thanh toán</button> */}
                     <button onClick={deleteSelectedItems}>Xóa nhiều</button>
                     <button onClick={() => beforeHandlePay()}>Thanh toán</button>
@@ -704,7 +736,37 @@ const Cart = () => {
                                     </div>
                                 </div>
                             )}
-                            <button disabled={isSubmitDisabled} onClick={() => {
+                            
+                        </div>
+                        </div>
+                        </div>
+                        </div>
+                        <div style={{ flex: 1, marginLeft: '20px' }}>
+                            <h4>Nhập mã giảm giá</h4>
+                            
+                            {/* Textbox for discount code */}
+                            <input
+                                type="text"
+                                value={discountCode}
+                                placeholder="Nhập mã giảm giá"
+                                onInput={(e) => setDiscountCode(e.target.value)}  // Updates discount code when typing
+                            />
+                            
+                            {/* Button to apply discount */}
+                            <button onClick={handleApplyDiscount}>Áp dụng</button>
+
+                            {/* Display error messages */}
+                            {errorDiscountMessage && <p style={{ color: 'red' }}>{errorDiscountMessage}</p>}  {/* Display error message */}
+                            
+                            {/* Display the new price after discount */}
+                            {newPrice !== null && (
+                                <p style={{ color: 'green' }}>
+                                    Giá sau giảm: <strong>{newPrice.toLocaleString()} VND</strong>
+                                </p>
+                            )}
+                            </div>
+                        </div>
+                        <button disabled={isSubmitDisabled} onClick={() => {
                                 handlePayment('cod');
                                 // setPaymentMethod('cod');
                                 // handleCheckout();
@@ -719,11 +781,6 @@ const Cart = () => {
                                 
                             }}>Thanh toán online</button>
                             <button onClick={handleClose}>Đóng</button>
-                        </div>
-                        </div>
-                        </div>
-                        </div>
-                        </div>
                         </div>
                     )}
 
