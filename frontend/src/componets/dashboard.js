@@ -6,6 +6,7 @@ import '../styles/dashboard.scss';
 import axios from 'axios';
 import AppHeader from './Header';
 import { toast, Bounce } from 'react-toastify';
+import { Link, useLocation } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Dashboard = () => {
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [user, setUser] = useState(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -91,10 +93,43 @@ const Dashboard = () => {
       setCurrentPage(prev => prev + 1);
     }
   };
+  const fetchUserData = async (token) => {
+    try {
+
+      const res = await axios.get('http://localhost:8088/api/user/details', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUser(res.data);
+
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+
+      }
+    }
+  };
+  const location = useLocation();
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const queryParams = new URLSearchParams(location.search);
+    const tokenFromUrl = queryParams.get('token');
+    if (!token && tokenFromUrl) {
+      localStorage.setItem('token', tokenFromUrl);
+      fetchUserData(tokenFromUrl);
+    } else if (token) {
+      fetchUserData(token);
+    }
+  }, [location.search])
+
+
 
   return (
     <>
-      <AppHeader />
+       {user?.admin===1 &&
+        <>
+        <AppHeader />
       <div className="container" style={{ position: 'relative', top: '130px' }}>
         <div className="table-responsive">
           <div className="table-wrapper">
@@ -115,7 +150,7 @@ const Dashboard = () => {
                 <Form onSubmit={handleSearch}>
                   <InputGroup>
                     <FormControl
-                      placeholder="Tìm kiếm sản phẩm..."
+                      placeholder="Nhập mã sản phẩm để tìm kiếm..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -160,13 +195,13 @@ const Dashboard = () => {
                     </td>
                     <td>{product.size}</td>
                     <td>
-                      <Button onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
-                        <Edit size={18} />
-                      </Button>
-                      <Button onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
-                        <Trash size={18} />
-                      </Button>
-                    </td>
+                          <Link className="edit" onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
+                            <Edit size={18} />
+                          </Link>
+                          <Link className="delete" onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
+                            <Trash size={18} />
+                          </Link>
+                        </td>
                   </tr>
                 ))}
               </tbody>
@@ -203,6 +238,9 @@ const Dashboard = () => {
           </Modal.Footer>
         </Modal>
       </div>
+        </>
+       }
+      
     </>
   );
 };
