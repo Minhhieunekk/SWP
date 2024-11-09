@@ -4,12 +4,13 @@ import axios from 'axios';
 import AppHeader from "./Header";
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router";
+
 export const JewelryCategory = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState('all'); // Default to show all products
   const { type } = useParams();
-  const [isNew,setIsNew]=useState(false);
+  const [isNew, setIsNew] = useState(false);
   const typeMap = {
     "1": "Dây chuyền",
     "2": "Vòng Tay",
@@ -37,12 +38,12 @@ export const JewelryCategory = () => {
     setSortOption(selectedOption);
   
     if (selectedOption === 'newest') {
-      setIsNew(true); // Đặt isNew thành true khi chọn sản phẩm mới nhất
+      setIsNew(true); // Set isNew to true for the "newest" option
     } else {
-      setIsNew(false); // Đặt isNew thành false cho các tùy chọn khác
+      setIsNew(false); // Set isNew to false for other options
     }
   };
-  
+
   const getSortedProducts = () => {
     let sortedProducts = [...products];
   
@@ -53,15 +54,18 @@ export const JewelryCategory = () => {
         return sortedProducts.sort((a, b) => a.price - b.price);
       case 'priceDesc':
         return sortedProducts.sort((a, b) => b.price - a.price);
+      case 'promo':
+        // Filter promotional products by discount_id
+        return sortedProducts.filter(product => product.discount_id);
       case 'all':
       default:
         return sortedProducts; // Show all products
     }
   };
-  
 
   const sortedProducts = getSortedProducts();
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+
   return (
     <>
       <AppHeader />
@@ -74,25 +78,36 @@ export const JewelryCategory = () => {
               <option value="newest">Sản phẩm mới nhất</option>
               <option value="priceAsc">Giá từ thấp đến cao</option>
               <option value="priceDesc">Giá từ cao đến thấp</option>
-              {/* <option value="bestSelling">Sản phẩm bán chạy nhất</option> */}
+              <option value="promo">Sản phẩm khuyến mãi</option> {/* Added promotional products */}
             </Form.Select>
           </Col>
         </Row>
         <Row xs={2} md={3} lg={4} className="g-4">
           {sortedProducts.map(product => (
             <Col key={product.id}>
-              <Card className="h-100" style={{cursor:'pointer'}} onClick={()=>navigate(`/productdetail/${product.productid}`)}>
+              <Card className="h-100" style={{cursor: 'pointer'}} onClick={() => navigate(`/productdetail/${product.productid}`)}>
                 <Card.Img variant="top" src={`/images/${product.image}`} />
-                {isNew  && (
+                {isNew && (
                   <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">
                     NEW
                   </Badge>
                 )}
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="h6">{product.name}</Card.Title>
-                  <Card.Text className="text-danger fw-bold mt-auto">
-                    {parseInt(product.price).toLocaleString()}đ
-                  </Card.Text>
+                  {product.discount_id ? (
+                    <>
+                      <Card.Text className="text-danger fw-bold mt-auto" style={{textDecoration: "line-through"}}>
+                        {parseInt(product.old_price).toLocaleString()}VND
+                      </Card.Text>
+                      <Card.Text className="text-success fw-bold mt-auto">
+                        {parseInt(product.price).toLocaleString()}VND
+                      </Card.Text>
+                    </>
+                  ) : (
+                    <Card.Text className="text-success fw-bold mt-auto">
+                      {parseInt(product.price).toLocaleString()}VND
+                    </Card.Text>
+                  )}
                   <small className="text-muted">{product.code}</small>
                 </Card.Body>
               </Card>

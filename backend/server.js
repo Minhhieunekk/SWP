@@ -739,7 +739,34 @@ app.get("/home/nhan", (req, res) => {
 //tìm kiếm sản phẩm
 app.get('/search', (req, res) => {
   const searchTerm = req.query.term;
-  const sql = "SELECT * FROM product WHERE name LIKE ? LIMIT 10";
+          const sql = `SELECT 
+          product.productid, 
+          product.name, 
+          product.image, 
+          product.price AS old_price, 
+          product.description, 
+          product.totalrate, 
+          product.peoplerate, 
+          product.brand, 
+          product.goldage, 
+          product.code, 
+          product.discount_id,
+          CASE 
+              WHEN d.discount_value IS NULL THEN product.price
+              ELSE (product.price * (100 - d.discount_value) / 100)
+          END AS price,
+          d.discount_value
+        FROM 
+          product
+        LEFT JOIN 
+          (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d 
+          ON d.discount_id = product.discount_id
+        WHERE 
+          product.name LIKE ? 
+        ORDER BY 
+          product.productid DESC 
+        LIMIT 10;
+        `;
   db.query(sql, [`%${searchTerm}%`], (err, results) => {
     if (err) {
       console.error('Error searching products:', err);
@@ -750,7 +777,34 @@ app.get('/search', (req, res) => {
 });
 app.get('/product/:id', (req, res) => {
   const productId = req.params.id;
-  const sql = "SELECT * FROM product WHERE productid = ?";
+  const sql =  `SELECT 
+          product.productid, 
+          product.name, 
+          product.image, 
+          product.price AS old_price, 
+          product.description, 
+          product.totalrate, 
+          product.peoplerate, 
+          product.brand, 
+          product.goldage, 
+          product.code, 
+          product.discount_id,
+          CASE 
+              WHEN d.discount_value IS NULL THEN product.price
+              ELSE (product.price * (100 - d.discount_value) / 100)
+          END AS price,
+          d.discount_value
+        FROM 
+          product
+        LEFT JOIN 
+          (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d 
+          ON d.discount_id = product.discount_id
+        WHERE 
+          product.productid = ? 
+        ORDER BY 
+          product.productid DESC 
+        LIMIT 10;
+        `;
   db.query(sql, [productId], (err, results) => {
     if (err) {
       console.error('Error fetching product details:', err);

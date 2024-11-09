@@ -125,7 +125,7 @@ const Dashboard = () => {
                     <tr>
                       <th>Tên</th>
                       <th>Mã sản phẩm</th>
-                      <th>Giá</th>
+                      <th>Giá gốc</th>
                       <th>Số lượng (cái)</th>
                       <th>Phân loại</th>
                       <th>Thương hiệu</th>

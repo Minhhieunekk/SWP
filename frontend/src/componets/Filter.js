@@ -127,6 +127,8 @@ const ProductFilter = () => {
         return sortedProducts.sort((a, b) => a.price - b.price);
       case 'priceHighToLow':
         return sortedProducts.sort((a, b) => b.price - a.price);
+      case 'promo':
+        return sortedProducts.filter(product => product.discount_id);
       case 'all':
       default:
         return sortedProducts;
@@ -146,6 +148,7 @@ const ProductFilter = () => {
               <option value="newest">Sản phẩm mới nhất</option>
               <option value="priceLowToHigh">Giá từ thấp đến cao</option>
               <option value="priceHighToLow">Giá từ cao đến thấp</option>
+              <option value="promo">Sản phẩm khuyến mãi</option>
             </Form.Select>
           </Col>
           <Col xs={10} className="mb-4">
@@ -217,9 +220,19 @@ const ProductFilter = () => {
                 )}
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="h6">{product.name}</Card.Title>
-                  <Card.Text className="text-danger fw-bold mt-auto">
-                    {parseInt(product.price).toLocaleString()}đ
+                  {product.discount_id ? 
+                  <>
+                    <Card.Text className="text-danger fw-bold mt-auto" style={{textDecoration:"line-through"}}>
+                    {parseInt(product.old_price).toLocaleString()}VND
                   </Card.Text>
+                  <Card.Text className="text-success fw-bold mt-auto">
+                    {parseInt(product.price).toLocaleString()}VND
+                  </Card.Text>
+                  </> : 
+                  <Card.Text className="text-success fw-bold mt-auto">
+                    {parseInt(product.price).toLocaleString()}VND
+                  </Card.Text>
+                  }
                   <small className="text-muted">{product.code}</small>
                   {product.soldcount > 0 && (
                     <small className="text-muted">{product.soldcount} đã bán</small>
@@ -230,6 +243,7 @@ const ProductFilter = () => {
           ))}
         </Row>
       </Container>
+
     </>
   );
 };

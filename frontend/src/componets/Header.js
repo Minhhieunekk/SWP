@@ -114,27 +114,27 @@ const AppHeader = () => {
       
 
       {
-        (consumerid===8) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
+        (consumerid===11) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
           Quản lý người dùng
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="7" icon={<LineChartOutlined />} onClick={() => navigate("/statistic")}>
+        (consumerid===11) && (<Menu.Item key="7" icon={<LineChartOutlined />} onClick={() => navigate("/statistic")}>
           Thống kê
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="8" icon={<LineChartOutlined />} onClick={() => navigate("/manage-discount")}>
+        (consumerid===11) && (<Menu.Item key="8" icon={<LineChartOutlined />} onClick={() => navigate("/manage-discount")}>
           Khuyến mãi
         </Menu.Item>)
       }

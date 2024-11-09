@@ -4,12 +4,13 @@ import axios from 'axios';
 import AppHeader from "./Header";
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router";
+
 export const GiftCategory = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState('all'); // Default to show all products
   const { id } = useParams();
-  const [isNew,setIsNew]=useState(false);
+  const [isNew, setIsNew] = useState(false);
   const genderMap = {
     "1": "Nam",
     "2": "Nữ"
@@ -35,9 +36,9 @@ export const GiftCategory = () => {
     setSortOption(selectedOption);
   
     if (selectedOption === 'newest') {
-      setIsNew(true); // Đặt isNew thành true khi chọn sản phẩm mới nhất
+      setIsNew(true); // Set isNew to true for the "newest" option
     } else {
-      setIsNew(false); // Đặt isNew thành false cho các tùy chọn khác
+      setIsNew(false); // Set isNew to false for other options
     }
   };
 
@@ -53,6 +54,9 @@ export const GiftCategory = () => {
         return sortedProducts.sort((a, b) => b.price - a.price);
       case 'bestSelling':
         return sortedProducts.sort((a, b) => b.soldcount - a.soldcount); // Sort by sold count
+      case 'promo':
+        // Filter promotional products by discount_id
+        return sortedProducts.filter(product => product.discount_id);
       case 'all':
       default:
         return sortedProducts; // Show all products
@@ -60,7 +64,8 @@ export const GiftCategory = () => {
   };
 
   const sortedProducts = getSortedProducts();
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+
   return (
     <>
       <AppHeader />
@@ -73,14 +78,14 @@ export const GiftCategory = () => {
               <option value="newest">Sản phẩm mới nhất</option>
               <option value="priceAsc">Giá từ thấp đến cao</option>
               <option value="priceDesc">Giá từ cao đến thấp</option>
-              {/* <option value="bestSelling">Sản phẩm bán chạy nhất</option> */}
+              <option value="promo">Sản phẩm khuyến mãi</option> {/* Added promotional products */}
             </Form.Select>
           </Col>
         </Row>
         <Row xs={2} md={3} lg={4} className="g-4">
           {sortedProducts.map(product => (
             <Col key={product.id}>
-              <Card className="h-100" style={{cursor:'pointer'}} onClick={()=>navigate(`/productdetail/${product.productid}`)}>
+              <Card className="h-100" style={{cursor:'pointer'}} onClick={() => navigate(`/productdetail/${product.productid}`)}>
                 <Card.Img variant="top" src={`/images/${product.image}`} />
                 {isNew && (
                   <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-2">
@@ -89,9 +94,20 @@ export const GiftCategory = () => {
                 )}
                 <Card.Body className="d-flex flex-column">
                   <Card.Title className="h6">{product.name}</Card.Title>
-                  <Card.Text className="text-danger fw-bold mt-auto">
-                    {parseInt(product.price).toLocaleString()}đ
-                  </Card.Text>
+                  {product.discount_id ? (
+                    <>
+                      <Card.Text className="text-danger fw-bold mt-auto" style={{textDecoration: "line-through"}}>
+                        {parseInt(product.old_price).toLocaleString()}VND
+                      </Card.Text>
+                      <Card.Text className="text-success fw-bold mt-auto">
+                        {parseInt(product.price).toLocaleString()}VND
+                      </Card.Text>
+                    </>
+                  ) : (
+                    <Card.Text className="text-success fw-bold mt-auto">
+                      {parseInt(product.price).toLocaleString()}VND
+                    </Card.Text>
+                  )}
                   <small className="text-muted">{product.code}</small>
                   {product.soldcount > 0 && (
                     <small className="text-muted">{product.soldcount} đã bán</small>

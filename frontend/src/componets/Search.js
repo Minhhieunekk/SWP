@@ -83,7 +83,12 @@ const CentralSearchModal = ({ visible, onClose }) => {
                 avatar={
                 <Image src={`http://localhost:8088/images/${item.image}`} width={100} alt={item.name} />}
                 title={<Text strong>{item.name}</Text>}
-                description={<Text type="secondary">{parseFloat(item.price).toLocaleString('vi-VN')} VND</Text>}
+                description={
+                 <> 
+                <Text type="secondary" style={{textDecoration:"line-through"}}>{parseFloat(item.old_price).toLocaleString('vi-VN')} VND</Text> 
+                <Text type="success">{parseFloat(item.price).toLocaleString('vi-VN')} VND</Text>
+                </>
+                }
               />
             </List.Item>
           )}
