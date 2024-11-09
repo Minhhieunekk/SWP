@@ -159,10 +159,24 @@ const ProductCard = ({
                                 <Button variant="outline-success" size="lg" disabled={amount === 0} onClick={HandletoBuy} >Mua ngay</Button>
                                 <Button variant="outline-info" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
                                 {popupVisible && (
-                                    <div className="popup">
-                                        <p>Đã thêm sản phẩm vào giỏ hàng</p>
-                                        <button onClick={handleContinueShopping}>Tiếp tục mua hàng</button>
-                                        <button onClick={handleGoToCart}>Đến giỏ hàng</button>
+                                    <div className="popup-container">
+                                        <div className="popup">
+                                            <p className="popup-message">Đã thêm sản phẩm vào giỏ hàng</p>
+                                        <div className="popup-actions">
+                                            <button 
+                                            className="popup-button continue-button" 
+                                            onClick={handleContinueShopping}
+                                            >
+                                            Tiếp tục mua hàng
+                                            </button>
+                                            <button 
+                                            className="popup-button cart-button" 
+                                            onClick={handleGoToCart}
+                                            >
+                                            Đến giỏ hàng
+                                            </button>
+                                        </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
