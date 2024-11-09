@@ -103,6 +103,7 @@ const ProductCard = ({
 
     const handleContinueShopping = () => {
         setPopupVisible(false);
+        navigate(`/`);;
     };
 
     const handleGoToCart = () => {
