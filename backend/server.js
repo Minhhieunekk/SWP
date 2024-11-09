@@ -69,7 +69,7 @@ const db = mysql.createConnection({
 
 function generateToken(user) {
   return jwt.sign(
-    { username: user.username, consumerid: user.consumerid, password: user.password },
+    { username: user.username, consumerid: user.consumerid, password: user.password,admin: user.admin },
     "22112004",
     { expiresIn: '1d' }
   );
@@ -295,7 +295,8 @@ app.post('/addproduct', (req, res) => {
 app.get('/manageruser', (req, res) => {
   const sql = `
           SELECT 
-          u.consumerid, 
+          u.consumerid,
+          u.admin, 
           u.username, 
           u.phone, 
           u.email, 
@@ -317,6 +318,32 @@ app.get('/manageruser', (req, res) => {
       return res.status(500).json({ error: 'Error fetching users' });
     }
     res.json(results);
+  });
+});
+//xoá người dùng và thay đổi quyền
+app.delete('/manageruser/:userId', (req, res) => {
+  const { userId } = req.params;
+  const sql = 'DELETE FROM user WHERE consumerid = ?';
+
+  db.query(sql, [userId], (err, result) => {
+      if (err) {
+          console.error('Error deleting user:', err);
+          return res.status(500).json({ error: 'Error deleting user' });
+      }
+      res.status(200).json({ message: 'User deleted successfully' });
+  });
+});
+app.put('/manageruser/:userId', (req, res) => {
+  const { userId } = req.params;
+  const { admin } = req.body;  // Admin value (0 or 1)
+  const sql = 'UPDATE user SET admin = ? WHERE consumerid = ?';
+
+  db.query(sql, [admin, userId], (err, result) => {
+      if (err) {
+          console.error('Error updating role:', err);
+          return res.status(500).json({ error: 'Error updating role' });
+      }
+      res.status(200).json({ message: 'Role updated successfully' });
   });
 });
 
@@ -341,7 +368,8 @@ app.post('/login', (req, res) => {
         user: {
           username: user.username,
           consumerid: user.consumerid,
-          password: user.password
+          password: user.password,
+          admin: user.admin
         }
       });
     } else {
@@ -360,7 +388,7 @@ app.get('/api/user/details', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, "22112004");
-    const sql = "SELECT username, consumerid, password FROM user WHERE consumerid = ?";
+    const sql = "SELECT username, consumerid, password,admin FROM user WHERE consumerid = ?";
 
     db.query(sql, [decoded.consumerid], (err, data) => {
       if (err) {
@@ -370,7 +398,8 @@ app.get('/api/user/details', (req, res) => {
         return res.json({
           username: data[0].username,
           consumerid: data[0].consumerid,
-          password: data[0].password
+          password: data[0].password,
+          admin:data[0].admin
         });
       }
       return res.status(404).json({ message: "User not found" });

@@ -102,7 +102,7 @@ const Dashboard = () => {
 
   return (
     <>
-      {user?.consumerid === 11 &&
+      {user?.admin===1 &&
         <>
           <AppHeader />
           <div className="container" style={{ position: "relative", top: '130px' }}>

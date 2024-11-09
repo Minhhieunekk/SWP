@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { Star } from 'lucide-react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate,useLocation } from 'react-router-dom';
 import "../styles/detailproduct.scss";
 import { Image } from 'antd';
 import AppHeader from "./Header";
@@ -29,7 +29,7 @@ const ProductCard = ({
     const [selectedSize, setSelectedSize] = useState(sizes[0]?.size || 5);
     const [popupVisible, setPopupVisible] = useState(false);
     const userId = localStorage.getItem('userId');
-    const token =localStorage.getItem('token');
+   
     const navigate = useNavigate();
     const rate = Math.round(totalrate / peoplerate);
 
@@ -109,6 +109,36 @@ const ProductCard = ({
         setPopupVisible(false);
         navigate(`/cart/${userId}`);
     };
+    const [user, setUser] = useState(null);
+    const fetchUserData = async (token) => {
+        try {
+    
+          const res = await axios.get('http://localhost:8088/api/user/details', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          setUser(res.data);
+    
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+    
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            localStorage.removeItem('token');
+    
+          }
+        }
+      };
+      const location = useLocation();
+      useEffect(() => {
+        const token = localStorage.getItem('token');
+        const queryParams = new URLSearchParams(location.search);
+        const tokenFromUrl = queryParams.get('token');
+        if (!token && tokenFromUrl) {
+          localStorage.setItem('token', tokenFromUrl);
+          fetchUserData(tokenFromUrl);
+        } else if (token) {
+          fetchUserData(token);
+        }
+      }, [location.search])
 
     return (
         <div className="container mt-4" style={{ position: "relative", top: "50px" }}>
@@ -156,7 +186,7 @@ const ProductCard = ({
                                     className="text-center"
                                 />
                             </Form.Group>
-                            {token && userId !=='11' &&
+                            { user?.admin !==1 &&
                                 <div className="d-grid gap-2">
                                 <Button variant="outline-success" size="lg" disabled={amount === 0} onClick={HandletoBuy} >Mua ngay</Button>
                                 <Button variant="outline-info" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>

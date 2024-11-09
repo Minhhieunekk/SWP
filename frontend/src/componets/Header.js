@@ -25,6 +25,7 @@ const AppHeader = () => {
   const username = user?.username;
   const password = user?.password;
   const consumerid = user?.consumerid;
+  const admin=user?.admin;
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState("1");
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
@@ -114,27 +115,27 @@ const AppHeader = () => {
       
 
       {
-        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (admin===1) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (admin===1) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }
       {
-        (consumerid===11) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
+        (admin===1) && (<Menu.Item key="6" icon={<LineChartOutlined />} onClick={() => navigate("/manageuser")}>
           Quản lý người dùng
         </Menu.Item>)
       }
       {
-        (consumerid===11) && (<Menu.Item key="7" icon={<LineChartOutlined />} onClick={() => navigate("/statistic")}>
+        (admin===1) && (<Menu.Item key="7" icon={<LineChartOutlined />} onClick={() => navigate("/statistic")}>
           Thống kê
         </Menu.Item>)
       }
       {
-        (consumerid===11) && (<Menu.Item key="8" icon={<LineChartOutlined />} onClick={() => navigate("/manage-discount")}>
+        (admin===1) && (<Menu.Item key="8" icon={<LineChartOutlined />} onClick={() => navigate("/manage-discount")}>
           Khuyến mãi
         </Menu.Item>)
       }
@@ -181,7 +182,7 @@ const AppHeader = () => {
                   </div>
                 </Dropdown>
               </Col>
-              {consumerid && consumerid !==11 && 
+              {consumerid && admin!==1 && 
               <Col>
                 <Badge count={0} offset={[9, 0]}>
                   <div onClick={() => navigate(`/cart/${consumerid}`)}><ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng </div>
