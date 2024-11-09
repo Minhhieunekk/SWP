@@ -584,6 +584,63 @@ app.get("/home", (req, res) => {
   });
 });
 
+//lấy sản phẩm giảm giá
+app.get("/home/discount", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+  const offset = (page - 1) * limit;
+
+  // First, get the total count of products that have a discount_id
+  db.query("SELECT COUNT(*) as total FROM product WHERE product.discount_id IS NOT NULL", (err, countResult) => {
+    if (err) {
+      return res.status(500).json("Error counting products with discount");
+    }
+
+    const totalProducts = countResult[0].total;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Then, get the products with discount_id for the current page
+    const sql = `
+      SELECT product.*, 
+        product.productid, 
+        product.name, 
+        product.image, 
+        product.price AS old_price, 
+        product.description, 
+        product.category, 
+        product.totalrate, 
+        product.peoplerate, 
+        product.brand, 
+        product.goldage, 
+        product.code, 
+        product.discount_id,
+        CASE 
+          WHEN d.discount_value IS NULL THEN product.price 
+          WHEN d.discount_value IS NOT NULL THEN (product.price * (100 - d.discount_value) / 100) 
+        END AS price, 
+        d.discount_value, 
+        category.* 
+      FROM product
+      LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id
+      JOIN category ON product.category = category.categoryid
+      WHERE product.discount_id IS NOT NULL
+      ORDER BY product.productid DESC
+      LIMIT ? OFFSET ?`;
+
+    db.query(sql, [limit, offset], (err, data) => {
+      if (err) {
+        return res.status(500).json("Error fetching products with discount");
+      }
+
+      return res.json({
+        products: data,
+        currentPage: page,
+        totalPages: totalPages,
+        totalProducts: totalProducts
+      });
+    });
+  });
+});
 
 // lấy bông tai
 app.get("/home/bongtai", (req, res) => {
