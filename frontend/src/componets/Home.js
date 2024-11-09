@@ -9,7 +9,7 @@ import Footer from "./Footer";
 
 import { useLocation, useNavigate } from "react-router";
 
-const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate, isNew, discount_value }) => {
+const ProductCard = ({ productid, image, name, categoryname, material, price, totalrate, peoplerate, isNew, discount_value, old_price }) => {
     const navigate = useNavigate();
     const rate = Math.round(totalrate / peoplerate);
 
@@ -26,8 +26,8 @@ const ProductCard = ({ productid, image, name, categoryname, material, price, to
             <div className="product-info">
                 <h3 className="product-title">{name}</h3>
                 <p className="product-category">{categoryname} {material}</p>
-                {discount_value?<p className="product-old-price"> {parseInt(price).toLocaleString()} VND</p>:<p></p>}
-                {discount_value?<p className="product-price"> {parseInt(price*(100-discount_value)/100).toLocaleString()} VND</p>:<p className="product-price">{parseInt(price).toLocaleString()} VND</p>}
+                {discount_value?<p className="product-old-price"> {parseInt(old_price).toLocaleString()} VND</p>:<p></p>}
+                <p className="product-price">{parseInt(price).toLocaleString()} VND</p>
                
                 <div className="rating">
                     {[...Array(5)].map((_, i) => (

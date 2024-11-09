@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Typography, Box } from '@mui/material';
 import ProductSelectionPopup from './ProductSelectionPopup';
 import '../styles/discount.scss';
+import AppHeader from './Header';
 
 const CreateDiscount = () => {
   const navigate = useNavigate();
@@ -79,6 +80,16 @@ const CreateDiscount = () => {
   };
 
   return (
+    <>
+    <AppHeader/>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
     <Box sx={{ padding: 3, maxWidth: 800, margin: '0 auto', backgroundColor: '#f5f5f5', borderRadius: 2 }}>
       <Typography variant="h4" align="center" gutterBottom>Tạo mã khuyến mãi</Typography>
 
@@ -217,6 +228,7 @@ const CreateDiscount = () => {
         onSubmit={handleSubmitProducts}
       />
     </Box>
+    </>
   );
 };
 

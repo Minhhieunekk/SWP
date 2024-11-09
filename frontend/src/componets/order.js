@@ -7,10 +7,12 @@ import AppHeader from './Header';
 
 const orderStatusLabels = {
   0: 'Hủy',
-  1: 'Đã nhận đơn hàng',
-  2: 'Đang đóng hàng',
-  3: 'Đang vận chuyển',
-  4: 'Hoàn Thành',
+  1: 'Chờ xác nhận',
+  2: 'Đã xác nhận',
+  3: 'Đang chuẩn bị hàng',
+  4: 'Đang giao hàng',
+  5: 'Hoàn Thành',
+  6: 'Giao hàng thất bại',
 };
 
 const TrackingOrder = () => {
@@ -23,10 +25,10 @@ const TrackingOrder = () => {
 
   const [modifiedItems, setModifiedItems] = useState([]);  // To track modified or deleted items
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [newTotal, setNewTotal] = useState(0);
   const [oldTotal, setOldTotal] = useState(0);
   const [newListItem, setNewListItem] = useState(null);
-
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({
@@ -57,6 +59,7 @@ const fetchUserData = async (token) => {
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
+    paymentStatus: '-1',
     status: '-1',
     numberPerPage: 10,
   });
@@ -78,9 +81,11 @@ const fetchUserData = async (token) => {
     not_paid: 0,
     paid: 0,
     received: 0,
+    confirm: 0,
     packaging: 0,
     shipping: 0,
     done: 0,
+    failed: 0,
     cancel: 0,
   });
 
@@ -160,7 +165,7 @@ const fetchUserData = async (token) => {
   //   fetchOrders();
   // }, []);
 
-  const handleRowClick = async (orderId, currentPaymentStatus, oldTotal, currentOrderStatus) => {
+  const handleRowClick = async (orderId, currentPaymentStatus, currentOrderStatus, name, address, oldTotal) => {
     const response = await axios.get(`http://localhost:8088/orders/${orderId}/items`);
     setSelectedOrderItems(response.data);
     setNewListItem(response.data);
@@ -168,7 +173,8 @@ const fetchUserData = async (token) => {
     setPaymentStatus(currentPaymentStatus);
     setOrderStatus(currentOrderStatus);
     setOldTotal(oldTotal);
-    setNewTotal(oldTotal);
+    setName(name);
+    setAddress(address);
     setIsModalOpen(true);
   };
 
@@ -178,108 +184,6 @@ const fetchUserData = async (token) => {
     // Optionally refresh the orders list
     const response = await axios.get('http://localhost:8088/orders');
     setOrders(response.data);
-  };
-
-  ////////////////
-  ////////////////
-  // Update item quantity in local state (track changes)
-  const updateItemQuantity = (orderItemId, newQuantity) => {
-    if (newQuantity === 0) {
-      const confirmDelete = window.confirm("Bạn có muốn xóa món đồ này không?");
-      if (confirmDelete) {
-        setModifiedItems(prevItems => {
-          const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
-          updatedItems.push({ order_item_id: orderItemId, deleted: true });
-          return updatedItems;
-        });
-        console.log ('updatedItemsupdatedItems');
-        console.log (modifiedItems);
-        selectedOrderItems.forEach(element => {
-          if(element.order_item_id === orderItemId) element.quantity = newQuantity;
-        });
-        let updatedItems1 = selectedOrderItems.filter(element => element.order_item_id !== orderItemId);
-        setSelectedOrderItems(updatedItems1);
-        console.log('ggggggggggggggggggggggg')
-        console.log(updatedItems1);
-        const newprice = calculateTotalPrice();
-        setNewTotal(newprice);
-      } else {
-        // selectedOrderItems.forEach(element => {
-        //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
-        // });
-      }
-    } else {
-      setModifiedItems(prevItems => {
-        const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
-        updatedItems.push({ order_item_id: orderItemId, newQuantity });
-        return updatedItems;
-      });
-      selectedOrderItems.forEach(element => {
-        if(element.order_item_id === orderItemId) element.quantity = newQuantity;
-      });
-      const newprice = calculateTotalPrice();
-      setNewTotal(newprice);
-    }
-    
-    // const newCartItems = selectedOrderItems.map(i => 
-    //   i.order_item_id === orderItemId ? { ...i, quantity: newQuantity } : i.quantity
-    // );
-    // selectedOrderItems.forEach(element => {
-    //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
-    // });
-    // newListItem.forEach(element => {
-    //   if(element.order_item_id === orderItemId) element.quantity = newQuantity;
-    // });
-    // if (newQuantity === 0) {
-
-    // }
-    
-  };
-
-  // Mark item for deletion (do not delete immediately)
-  const markItemForDeletion = (orderItemId) => {
-    setModifiedItems(prevItems => {
-      const updatedItems = prevItems.filter(item => item.order_item_id !== orderItemId);
-      updatedItems.push({ order_item_id: orderItemId, deleted: true });
-      return updatedItems;
-    });
-    const tempList2 = selectedOrderItems.filter(element => element.order_item_id !== orderItemId);
-    setSelectedOrderItems(tempList2);
-    const newprice = calculateTotalPrice();
-    setNewTotal(newprice);
-    console.log(modifiedItems);
-    
-  };
-
-  // Save changes (commit the changes to the database)
-  const saveChanges = async () => {
-    try {
-      for (const modifiedItem of modifiedItems) {
-        if (modifiedItem.newQuantity !== undefined) {
-          // Update item quantity in the database
-          await axios.put('http://localhost:8088/order-item/quantity', { orderItemId: modifiedItem.order_item_id, newQuantity: modifiedItem.newQuantity });
-        }
-        if (modifiedItem.deleted) {
-          // Delete item from the database
-          await axios.delete(`http://localhost:8088/order-item/${modifiedItem.order_item_id}`);
-        }
-      }
-      const abcde = await axios.put('http://localhost:8088/orders/updateTotal', { orderId:selectedOrderId, newTotal: newTotal });
-      console.log('updateeeeeeeeeeeeeeeeeeeeeeeee');
-      console.log(abcde.data);  
-      console.log(abcde);
-      console.log(selectedOrderId);
-      console.log(newTotal);
-      alert('Đã lưu thay đổi!');
-      setModifiedItems([]); // Clear the modified items
-      setOldTotal(newTotal);
-      setNewTotal(0);
-      handleRowClick(selectedOrderId, paymentStatus, oldTotal, orderStatus); // Refresh order details
-    } catch (error) {
-      console.log('errrrrrrrr');
-      console.log(error);
-      alert('Error saving changes');
-    }
   };
 
   const updateOrderStatus = async (status) => {
@@ -311,7 +215,6 @@ const fetchUserData = async (token) => {
   const handleClose = () => {
     setIsModalOpen(false);
     setModifiedItems([]);
-    setNewTotal(0);
     fetchOrders();
   };
 
@@ -332,20 +235,30 @@ const fetchUserData = async (token) => {
       <h1>Theo dõi đơn hàng</h1>
 
       <div>
-        <label>Từ ngày:</label>
+        <label>Từ:</label>
         <input
           type="date"
           name="startDate"
           value={filters.startDate}
           onChange={handleFilterChange}
         />
-        <label>đến ngày:</label>
+        <label>đến:</label>
         <input
           type="date"
           name="endDate"
           value={filters.endDate}
           onChange={handleFilterChange}
         />
+        <label>Thanh toán:</label>
+        <select
+          name="paymentStatus"
+          value={filters.paymentStatus}
+          onChange={handleFilterChange}
+        >
+          <option value="-1">Tất cả</option>
+          <option value="0">Chưa thanh toán</option>
+          <option value="1">Đã thanh toán</option>
+        </select>
         <label>Trạng thái đơn hàng:</label>
         <select
           name="status"
@@ -359,7 +272,7 @@ const fetchUserData = async (token) => {
           <option value="3">Đang vận chuyển</option>
           <option value="4">Hoàn Thành</option>
         </select>
-        <label>Số lượng đơn hàng 1 trang:</label>
+        <label>Paging:</label>
         <select
           name="numberPerPage"
           value={filters.numberPerPage}
@@ -382,23 +295,31 @@ const fetchUserData = async (token) => {
             <span className="status-count">{orderCounts.paid}</span>
           </div>
           <div className="status-item-1">
-            <span className="status-label">Đã nhận đơn:</span>
+            <span className="status-label">Chờ xác nhận:</span>
             <span className="status-count">{orderCounts.received}</span>
           </div>
           <div className="status-item-2">
-            <span className="status-label">Đang đóng hàng:</span>
-            <span className="status-count">{orderCounts.packaging}</span>
+            <span className="status-label">Đã xác nhận:</span>
+            <span className="status-count">{orderCounts.confirm}</span>
           </div>
           <div className="status-item-3">
-            <span className="status-label">Đang vận chuyển:</span>
-            <span className="status-count">{orderCounts.shipping}</span>
+            <span className="status-label">Đang chuẩn bị hàng:</span>
+            <span className="status-count">{orderCounts.packaging}</span>
           </div>
           <div className="status-item-4">
+            <span className="status-label">Đang giao hàng:</span>
+            <span className="status-count">{orderCounts.shipping}</span>
+          </div>
+          <div className="status-item-5">
             <span className="status-label">Hoàn thành:</span>
             <span className="status-count">{orderCounts.done}</span>
           </div>
+          <div className="status-item-6">
+            <span className="status-label">Giao hàng thất bại:</span>
+            <span className="status-count">{orderCounts.failed}</span>
+          </div>
           <div className="status-item-0">
-            <span className="status-label">Cancelled:</span>
+            <span className="status-label">Đơn bị hủy:</span>
             <span className="status-count">{orderCounts.cancel}</span>
           </div>
         </div>
@@ -420,7 +341,7 @@ const fetchUserData = async (token) => {
         </thead>
         <tbody>
           {orders.map(order => (
-            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status, order.total, order.order_status)}>
+            <tr key={order.order_id} onClick={() => handleRowClick(order.order_id, order.payment_status, order.order_status, order.username , order.address , order.total)}>
               <td>{order.order_id}</td>
               <td>{order.username}</td>
               <td>{(order.total * 1).toLocaleString()} VND</td>
@@ -473,6 +394,7 @@ const fetchUserData = async (token) => {
           
         <h2>Chi tiết đơn hàng</h2>
         <p>Giá trị đơn hàng: {oldTotal}</p>
+        <p>Người nhận: {name} - Địa chỉ: {address}</p>
         {/* { modifiedItems.length !==0 ? <p>Giá trị đơn hàng nếu cập nhật: {newTotal}</p> : null} */}
         <table className="table table-striped table-hover">
           <thead>
@@ -501,21 +423,26 @@ const fetchUserData = async (token) => {
           {/* <h3>Total: {total}</h3> */}
           <label>
             Trạng thái đơn hàng: {orderStatusLabels[orderStatus]}
-            {orderStatus === 1 || orderStatus === 2 ? (
+            {/* {orderStatus === 1 || orderStatus === 2 ? (
               <button onClick={() => updateOrderStatus(3)}>Đến bước đóng hàng</button>
             ) : orderStatus === 3 ? (
               <button onClick={() => updateOrderStatus(4)}>Đến bước vận chuyển</button>
             ) : orderStatus === 4 ? (
               <button onClick={() => updateOrderStatus(5)}>Hoàn thành đơn hàng</button>
-            ) : null}
+            ) : null} */}
+            <button onClick={() => updateOrderStatus(2)} disabled={orderStatus !== 1} className="confirm-btn">Xác nhận đơn hàng</button>
+            <button onClick={() => updateOrderStatus(3)} disabled={orderStatus !== 2} className="package-btn" >Đến bước đóng hàng</button>
+            <button onClick={() => updateOrderStatus(4)} disabled={orderStatus !== 3} className="ship-btn">Gửi hàng đi</button>
+            <button onClick={() => updateOrderStatus(5)} disabled={orderStatus !== 4} className="done-btn">Hoàn thành đơn hàng</button>
+            <button onClick={() => updateOrderStatus(6)} disabled={orderStatus !== 4} className="fail-btn">Giao hàng thất bại</button>
 
             {orderStatus !== 0 && orderStatus !== 5&& (
-              <button onClick={() => updateOrderStatus(0)}>Hủy đơn hàng</button>
+              <button onClick={() => updateOrderStatus(0)} className="delete-btn">Hủy đơn hàng</button>
             )}
           </label>
         </div>
-        <button onClick={saveChanges}>Lưu</button>
-        <button onClick={handleClose}>Đóng</button>
+        {/* <button onClick={saveChanges}>Lưu</button> */}
+        <button onClick={handleClose} className="close-btn">Đóng</button>
         </div>
         </div>
         </div>

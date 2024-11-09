@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Bar, Line } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
+import AppHeader from './Header';
 
 const Statistic = () => {
   const [earnings, setEarnings] = useState({});
@@ -97,6 +98,15 @@ const Statistic = () => {
   };
 
   return (
+    <>
+    <AppHeader/>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
+    <br></br>
     <div className="dashboard">
       <h1>Dashboard</h1>
 
@@ -219,6 +229,7 @@ const Statistic = () => {
                 </div>
             </div>
         </div>
+        </>
   );
 };
 
