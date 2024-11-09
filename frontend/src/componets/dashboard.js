@@ -53,6 +53,7 @@ const Dashboard = () => {
         });
     } catch (err) {
       console.error('Error adding product:', err);
+      alert("Lỗi");
     }
   };
 
@@ -73,6 +74,7 @@ const Dashboard = () => {
         });
     } catch (err) {
       console.error('Error updating product:', err);
+      alert("Lỗi");
     }
   };
 
@@ -96,6 +98,7 @@ const Dashboard = () => {
           });
       } catch (err) {
         console.error('Error deleting product:', err);
+        alert("Lỗi");
       }
     }
   };
@@ -274,6 +277,11 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
     image: null
   });
 
+  const [errors, setErrors] = useState({
+    price: '',
+    amount: ''
+  });
+
   const [filters, setFilters] = useState({
     brands: [],
     goldAges: [],
@@ -320,33 +328,99 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
         goldage: '',
         gender: '',
         size: '',
-        image: null // Empty when no product is selected
+        image: null
       });
     }
+    // Reset errors when modal is opened/closed
+    setErrors({
+      price: '',
+      amount: ''
+    });
   }, [product, show]);
+
+  const validateNumber = (value, fieldName) => {
+    const numberValue = parseInt(value);
+    if (value === '') {
+      return `${fieldName} không được để trống`;
+    }
+    if (isNaN(numberValue)) {
+      return `${fieldName} phải là số nguyên`;
+    }
+    if (numberValue < 0) {
+      return `${fieldName} không được âm `;
+    }
+    if (numberValue !== parseFloat(value)) {
+      return `${fieldName} phải là số nguyên`;
+    }
+    return '';
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    
+    if (name === 'price' || name === 'amount') {
+      const error = validateNumber(value, name === 'price' ? 'Giá' : 'Số lượng');
+      setErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0]; // Get the selected file
+    const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, image: file.name }); // Store the file itself
+      setFormData(prev => ({
+        ...prev,
+        image: file.name
+      }));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Validate all fields before submission
+    const priceError = validateNumber(formData.price, 'Giá');
+    const amountError = validateNumber(formData.amount, 'Số lượng');
+
+    setErrors({
+      price: priceError,
+      amount: amountError
+    });
+
+    if (priceError || amountError) {
+      toast.error('Vui lòng kiểm tra lại thông tin nhập vào', {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light"
+      });
+      return;
+    }
+
+    // Convert price and amount to integers before submission
+    const submissionData = {
+      ...formData,
+      price: parseInt(formData.price),
+      amount: parseInt(formData.amount)
+    };
+
+    onSubmit(submissionData);
     onHide();
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered
-   
-    >
+    <Modal show={show} onHide={onHide} centered>
       <Form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{title}</Modal.Title>
@@ -363,28 +437,40 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               required
             />
           </Form.Group>
+
           <Form.Group controlId="formProductPrice">
             <Form.Label>Giá nhập</Form.Label>
             <Form.Control
-              type="number"
+              type="text"
               placeholder="Nhập giá sản phẩm"
               name="price"
               value={formData.price}
               onChange={handleChange}
+              isInvalid={!!errors.price}
               required
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.price}
+            </Form.Control.Feedback>
           </Form.Group>
+
           <Form.Group controlId="formProductAmount">
             <Form.Label>Số lượng(cái)</Form.Label>
             <Form.Control
-              type="number"
+              type="text"
               placeholder="Chọn số lượng"
               name="amount"
               value={formData.amount}
               onChange={handleChange}
+              isInvalid={!!errors.amount}
               required
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.amount}
+            </Form.Control.Feedback>
           </Form.Group>
+
+          {/* Rest of the form groups remain the same */}
           <Form.Group controlId="formProductCategory">
             <Form.Label>Phân loại</Form.Label>
             <Form.Control
@@ -399,6 +485,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductBrand">
             <Form.Label>Thương hiệu</Form.Label>
             <Form.Control
@@ -413,6 +500,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductMaterial">
             <Form.Label>Chất liệu</Form.Label>
             <Form.Control
@@ -427,6 +515,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductGoldage">
             <Form.Label>Tuổi vàng</Form.Label>
             <Form.Control
@@ -441,6 +530,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductGender">
             <Form.Label>Giới tính</Form.Label>
             <Form.Control
@@ -455,6 +545,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductSize">
             <Form.Label>Size</Form.Label>
             <Form.Control
@@ -469,6 +560,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               ))}
             </Form.Control>
           </Form.Group>
+
           <Form.Group controlId="formProductImage">
             <Form.Label>Hình ảnh</Form.Label>
             <Form.Control
