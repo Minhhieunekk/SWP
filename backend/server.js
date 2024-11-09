@@ -2839,6 +2839,30 @@ app.post('/check-discount', (req, res) => {
   );
 });
 
+app.post('/cart-count', (req, res) => {
+  const { user_id } = req.body;  // Get consumerid from the request body
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'consumerid is required' });
+  }
+
+  // Query to count the number of items in the user's cart
+  db.query(
+    'SELECT COUNT(*) AS item_count FROM cart WHERE user_id = ?',
+    [user_id],
+    (err, results) => {
+      if (err) {
+        console.error('Error executing query:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      // Send the item count as a response
+      const itemCount = results[0].item_count;
+      return res.json({ itemCount });
+    }
+  );
+});
+
 // Tạo một DataSource mới cho TypeORM
 const typeormDataSource = new DataSource({
   type: 'mysql',
