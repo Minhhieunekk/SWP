@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
-import { Edit, Trash, PlusCircle } from 'react-feather';
+import { Modal, Button, Form, FormControl, InputGroup } from 'react-bootstrap';
+import { Edit, Trash, PlusCircle, Search } from 'react-feather';
 import { Image } from 'antd';
-import '../styles/dashboard.scss'
-import axios from "axios";
+import '../styles/dashboard.scss';
+import axios from 'axios';
 import AppHeader from './Header';
-import { Link, useLocation } from 'react-router-dom';
-import { toast,Bounce } from 'react-toastify';
+import { toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Dashboard = () => {
@@ -17,43 +16,45 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [user, setUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
 
-
   useEffect(() => {
-    fetchProducts(currentPage, itemsPerPage);
-  }, [currentPage]);
+    fetchProducts(currentPage, itemsPerPage, searchTerm);
+  }, [currentPage, searchTerm]);
 
-  const fetchProducts = async (page, limit) => {
-    setProducts([]);
+  const fetchProducts = async (page, limit, search) => {
     try {
-      const res = await axios.get(`http://localhost:8088/dashboard?page=${page}&limit=${limit}`);
+      const url = new URL('http://localhost:8088/dashboard');
+      url.searchParams.append('page', page);
+      url.searchParams.append('limit', limit);
+      if (search) {
+        url.searchParams.append('search', search);
+      }
+
+      const res = await axios.get(url.toString());
       setProducts(res.data.products);
       setTotalPages(res.data.totalPages);
     } catch (err) {
       console.error('Error fetching products:', err);
+      toast.error('Lỗi khi tải dữ liệu sản phẩm');
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchProducts(1, itemsPerPage, searchTerm);
   };
 
   const handleAdd = async (newProduct) => {
     try {
       await axios.post('http://localhost:8088/addproduct', newProduct);
       fetchProducts(currentPage, itemsPerPage);
-      toast.success('Đã thêm sản phẩm thành công', {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-        });
+      toast.success('Đã thêm sản phẩm thành công', { position: 'top-center', transition: Bounce });
     } catch (err) {
       console.error('Error adding product:', err);
-      alert("Lỗi");
+      toast.error('Lỗi khi thêm sản phẩm');
     }
   };
 
@@ -61,20 +62,10 @@ const Dashboard = () => {
     try {
       await axios.put(`http://localhost:8088/updateproduct/${updatedProduct.productid}`, updatedProduct);
       fetchProducts(currentPage, itemsPerPage);
-      toast.success('Đã cập nhật sản phẩm thành công', {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-        });
+      toast.success('Đã cập nhật sản phẩm thành công', { position: 'top-center', transition: Bounce });
     } catch (err) {
       console.error('Error updating product:', err);
-      alert("Lỗi");
+      toast.error('Lỗi khi cập nhật sản phẩm');
     }
   };
 
@@ -85,20 +76,10 @@ const Dashboard = () => {
         fetchProducts(currentPage, itemsPerPage);
         setShowDeleteModal(false);
         setSelectedProduct(null);
-        toast.error('Đã xoá sản phẩm thành công', {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          transition: Bounce,
-          });
+        toast.success('Đã xoá sản phẩm thành công', { position: 'top-center', transition: Bounce });
       } catch (err) {
         console.error('Error deleting product:', err);
-        alert("Lỗi");
+        toast.error('Lỗi khi xoá sản phẩm');
       }
     }
   };
@@ -110,154 +91,118 @@ const Dashboard = () => {
       setCurrentPage(prev => prev + 1);
     }
   };
-  const fetchUserData = async (token) => {
-    try {
-
-      const res = await axios.get('http://localhost:8088/api/user/details', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setUser(res.data);
-
-    } catch (err) {
-      console.error('Error fetching user data:', err);
-
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        localStorage.removeItem('token');
-
-      }
-    }
-  };
-  const location = useLocation();
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const queryParams = new URLSearchParams(location.search);
-    const tokenFromUrl = queryParams.get('token');
-    if (!token && tokenFromUrl) {
-      localStorage.setItem('token', tokenFromUrl);
-      fetchUserData(tokenFromUrl);
-    } else if (token) {
-      fetchUserData(token);
-    }
-  }, [location.search])
 
   return (
     <>
-      {user?.admin===1 &&
-        <>
-          <AppHeader />
-          <div className="container" style={{ position: "relative", top: '130px' }}>
-            <div className="table-responsive">
-              <div className="table-wrapper">
-                <div className="table-title">
-                  <div className="row">
-                    <div className="col-sm-6">
-                      <h2>Quản lý <b>Sản phẩm</b></h2>
-                    </div>
-                    <div className="col-sm-6">
-                      <Button className="btn btn-success" onClick={() => setShowAddModal(true)}>
-                        <PlusCircle size={18} /> <span>Thêm mới sản phẩm</span>
-                      </Button>
-                    </div>
-                  </div>
+      <AppHeader />
+      <div className="container" style={{ position: 'relative', top: '130px' }}>
+        <div className="table-responsive">
+          <div className="table-wrapper">
+            <div className="table-title">
+              <div className="row">
+                <div className="col-sm-6">
+                  <h2>Quản lý <b>Sản phẩm</b></h2>
                 </div>
-                <table className="table table-striped table-hover">
-                  <thead>
-                    <tr>
-                      <th>Tên</th>
-                      <th>Mã sản phẩm</th>
-                      <th>Giá gốc</th>
-                      <th>Số lượng (cái)</th>
-                      <th>Phân loại</th>
-                      <th>Thương hiệu</th>
-                      <th>Chất liệu</th>
-                      <th>Tuổi vàng</th>
-                      <th>Ảnh</th>
-                      <th>Kích cỡ</th>
-                      <th>Chỉnh sửa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => (
-                      <tr key={product.productid}>
-                        <td>{product.name}</td>
-                        <td>{product.code}</td>
-                        <td>{product.price.toLocaleString()} VND</td>
-                        <td>{product.amount}</td>
-                        <td>{product.categoryname}</td>
-                        <td>{product.brand}</td>
-                        <td>{product.material}</td>
-                        <td>{product.goldage}</td>
-                        <td>
-                          {product.image && (
-                            <Image
-                              src={`images/${product.image}`}
-                              alt={product.name}
-                              width={100}
-                              height={100}
-                            />
-                          )}
-                        </td>
-                        <td>{product.size}</td>
-                        <td>
-                          <Link className="edit" onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
-                            <Edit size={18} />
-                          </Link>
-                          <Link className="delete" onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
-                            <Trash size={18} />
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="clearfix">
-                  <div className="hint-text">Biểu diễn <b>{products.length}</b> sản phẩm</div>
-                </div>
-
-                {/* Pagination Controls */}
-                <div className="pagination">
-                  <Button disabled={currentPage === 1} onClick={() => handlePageChange('prev')}>Trước</Button>
-                  <span>Trang {currentPage} trong {totalPages}</span>
-                  <Button disabled={currentPage === totalPages} onClick={() => handlePageChange('next')}>Sau</Button>
+                <div className="col-sm-6">
+                  <Button className="btn btn-success" onClick={() => setShowAddModal(true)}>
+                    <PlusCircle size={18} /> <span>Thêm mới sản phẩm</span>
+                  </Button>
                 </div>
               </div>
             </div>
+            <div className="row mt-3">
+              <div className="col-12">
+                <Form onSubmit={handleSearch}>
+                  <InputGroup>
+                    <FormControl
+                      placeholder="Tìm kiếm sản phẩm..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Button variant="outline-secondary" type="submit">
+                      <Search size={18} />
+                    </Button>
+                  </InputGroup>
+                </Form>
+              </div>
+            </div>
+            <table className="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Tên</th>
+                  <th>Mã sản phẩm</th>
+                  <th>Giá gốc</th>
+                  <th>Số lượng (cái)</th>
+                  <th>Phân loại</th>
+                  <th>Thương hiệu</th>
+                  <th>Chất liệu</th>
+                  <th>Tuổi vàng</th>
+                  <th>Ảnh</th>
+                  <th>Kích cỡ</th>
+                  <th>Chỉnh sửa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.productid}>
+                    <td>{product.name}</td>
+                    <td>{product.code}</td>
+                    <td>{product.price.toLocaleString()} VND</td>
+                    <td>{product.amount}</td>
+                    <td>{product.categoryname}</td>
+                    <td>{product.brand}</td>
+                    <td>{product.material}</td>
+                    <td>{product.goldage}</td>
+                    <td>
+                      {product.image && (
+                        <Image src={`images/${product.image}`} alt={product.name} width={100} height={100} />
+                      )}
+                    </td>
+                    <td>{product.size}</td>
+                    <td>
+                      <Button onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
+                        <Edit size={18} />
+                      </Button>
+                      <Button onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
+                        <Trash size={18} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="clearfix">
+              <div className="hint-text">Hiển thị <b>{products.length}</b> sản phẩm</div>
+            </div>
 
-            <ProductModal
-              show={showAddModal}
-              onHide={() => setShowAddModal(false)}
-              onSubmit={handleAdd}
-              title="Thêm sản phẩm"
-            />
-
-            <ProductModal
-              show={showEditModal}
-              onHide={() => setShowEditModal(false)}
-              onSubmit={handleEdit}
-              title="Thay đổi sản phẩm"
-              product={selectedProduct}
-            />
-
-            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered 
-             
-              
-            >
-              <Modal.Header closeButton>
-                <Modal.Title>Xoá sản phẩm</Modal.Title>
-              </Modal.Header>
-              <Modal.Body>
-                <p>Bạn có muốn xoá sản phẩm không?</p>
-                <p className="text-warning"><small>Điều này sẽ không thể hoàn tác</small></p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Huỷ</Button>
-                <Button variant="danger" onClick={handleDelete}>Xoá</Button>
-              </Modal.Footer>
-            </Modal>
+            {/* Pagination Controls */}
+            <div className="pagination">
+              <Button disabled={currentPage === 1} onClick={() => handlePageChange('prev')}>Trước</Button>
+              <span>Trang {currentPage} trong {totalPages}</span>
+              <Button disabled={currentPage === totalPages} onClick={() => handlePageChange('next')}>Sau</Button>
+            </div>
           </div>
-        </>
-      }
+        </div>
 
+        {/* Add/Edit Modal */}
+        <ProductModal show={showAddModal} onHide={() => setShowAddModal(false)} onSubmit={handleAdd} title="Thêm sản phẩm" />
+        <ProductModal show={showEditModal} onHide={() => setShowEditModal(false)} onSubmit={handleEdit} title="Thay đổi sản phẩm" product={selectedProduct} />
+
+        {/* Delete Modal */}
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Xoá sản phẩm</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>Bạn có muốn xoá sản phẩm không?</p>
+            <p className="text-warning"><small>Điều này sẽ không thể hoàn tác</small></p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Huỷ</Button>
+            <Button variant="danger" onClick={handleDelete}>Xoá</Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
     </>
   );
 };
@@ -267,6 +212,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
     productid: '',
     name: '',
     price: '',
+    description: '',
     amount: '',
     categoryname: '',
     brand: '',
@@ -307,6 +253,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
         productid: product.productid,
         name: product.name || '',
         price: product.price || '',
+        description: product.description || '',
         amount: product.amount || '',
         categoryname: product.categoryname || '',
         brand: product.brand || '',
@@ -321,6 +268,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
         productid: '',
         name: '',
         price: '',
+        description:'',
         amount: '',
         categoryname: '',
         brand: '',
@@ -435,6 +383,18 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
               value={formData.name}
               onChange={handleChange}
               required
+            />
+          </Form.Group>
+          <Form.Group controlId="formProductDescription">
+            <Form.Label>Mô tả sản phẩm</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Mô tả sản phẩm"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              as='textarea'
             />
           </Form.Group>
 

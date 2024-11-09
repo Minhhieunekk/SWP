@@ -193,8 +193,9 @@ app.post('/addproduct', (req, res) => {
                               brand, 
                               goldage, 
                               image,
+                              description,
                               code
-                          ) VALUES (?, ?, ?, ?, ?,?, ?)
+                          ) VALUES (?, ?, ?, ?, ?,?,?, ?)
                       `;
             const insertProductParams = [
               newProduct.name,
@@ -203,6 +204,7 @@ app.post('/addproduct', (req, res) => {
               newProduct.brand,
               goldageValue,
               newProduct.image,
+              newProduct.description,
               productCode
             ];
             console.log('Executing insert product query:', {
@@ -466,29 +468,42 @@ app.get("/dashboard", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
+  const search = req.query.search || '';
 
-  // Truy vấn đếm tổng số sản phẩm với các bảng JOIN
+  // Only search by 'code'
+  let whereClause = '1=1'; // Default condition
+  let searchParam = [];
+
+  if (search) {
+    whereClause = 'p.code LIKE ?';
+    searchParam = [`${search}`];
+  }
+
+  // Query to count total products with search condition
   const countSql = `
     SELECT COUNT(*) as total 
     FROM product p
     JOIN category c ON p.category = c.categoryid
     JOIN inventory i ON p.productid = i.prd_id
+    WHERE ${whereClause}
   `;
 
-  db.query(countSql, (err, countResult) => {
+  db.query(countSql, searchParam, (err, countResult) => {
     if (err) {
+      console.error("Error counting products:", err);
       return res.status(500).json("Error counting products");
     }
 
     const totalProducts = countResult[0].total;
     const totalPages = Math.ceil(totalProducts / limit);
 
-    // Truy vấn lấy sản phẩm cho trang hiện tại với các bảng JOIN
+    // Query to fetch products with search condition and pagination
     const sql = `
       SELECT 
         p.productid,
         p.name,
         p.price,
+        p.description,
         p.image,
         p.code,
         i.amount,
@@ -504,12 +519,17 @@ app.get("/dashboard", (req, res) => {
         category c ON p.category = c.categoryid
       JOIN 
         inventory i ON p.productid = i.prd_id
+      WHERE ${whereClause}
       ORDER BY p.productid
       LIMIT ? OFFSET ?
     `;
 
-    db.query(sql, [limit, offset], (err, data) => {
+    // Combine search parameters with pagination parameters
+    const queryParams = [...searchParam, limit, offset];
+
+    db.query(sql, queryParams, (err, data) => {
       if (err) {
+        console.error("Error fetching products:", err);
         return res.status(500).json("Error fetching products");
       }
 
@@ -522,6 +542,7 @@ app.get("/dashboard", (req, res) => {
     });
   });
 });
+
 
 
 
@@ -965,6 +986,7 @@ app.put('/updateproduct/:id', (req, res) => {
                   category = ?,
                   brand = ?,
                   goldage = ?,
+                  description = ?,
                   image = ?
               WHERE productid = ?
           `;
@@ -974,6 +996,7 @@ app.put('/updateproduct/:id', (req, res) => {
         categoryId,
         updatedProduct.brand,
         goldageValue,
+        updatedProduct.description,
         updatedProduct.image,
         productId
       ];

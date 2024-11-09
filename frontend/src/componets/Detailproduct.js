@@ -156,7 +156,8 @@ const ProductCard = ({
                             <Card.Text className='ms-5 d-flex' ><strong style={{ marginRight: '5px' }}>Chất liệu:</strong>{`${categoryname} ${material} ${goldage || ''}`}</Card.Text>
                             <Card.Text  className='ms-5 d-flex' ><strong style={{ marginRight: '5px' }}>Thương hiệu:</strong>  {` ${brand} `}</Card.Text>
                             <Card.Text  className='ms-5 d-flex'><strong style={{ marginRight: '5px' }}>Mã sản phẩm:</strong> {`${code} `}</Card.Text>
-                            <Card.Text className="text-decoration-line-through fw-bold mb-3">{(currentPrice/discount_value*100).toLocaleString()} VND</Card.Text>
+                            {discount_value &&  <Card.Text className="text-decoration-line-through fw-bold mb-3">{(currentPrice/discount_value*100).toLocaleString()} VND</Card.Text> }
+                           
                             <Card.Text className="text-success fw-bold mb-3" >{currentPrice.toLocaleString()} VND</Card.Text>
                             
                             <div className="mb-3">
@@ -187,7 +188,7 @@ const ProductCard = ({
                                     className="text-center"
                                 />
                             </Form.Group>
-                            { user?.admin !==1 &&
+                            {userId && user?.admin !==1 &&
                                 <div className="d-grid gap-2">
                                 <Button variant="outline-success" size="lg" disabled={amount === 0} onClick={HandletoBuy} >Mua ngay</Button>
                                 <Button variant="outline-info" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
