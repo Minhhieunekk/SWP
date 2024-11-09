@@ -6,6 +6,9 @@ import '../styles/dashboard.scss'
 import axios from "axios";
 import AppHeader from './Header';
 import { Link, useLocation } from 'react-router-dom';
+import { toast,Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -16,6 +19,7 @@ const Dashboard = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [user, setUser] = useState(null);
   const itemsPerPage = 10;
+
 
   useEffect(() => {
     fetchProducts(currentPage, itemsPerPage);
@@ -36,6 +40,17 @@ const Dashboard = () => {
     try {
       await axios.post('http://localhost:8088/addproduct', newProduct);
       fetchProducts(currentPage, itemsPerPage);
+      toast.success('Đã thêm sản phẩm thành công', {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+        });
     } catch (err) {
       console.error('Error adding product:', err);
     }
@@ -45,6 +60,17 @@ const Dashboard = () => {
     try {
       await axios.put(`http://localhost:8088/updateproduct/${updatedProduct.productid}`, updatedProduct);
       fetchProducts(currentPage, itemsPerPage);
+      toast.success('Đã cập nhật sản phẩm thành công', {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+        });
     } catch (err) {
       console.error('Error updating product:', err);
     }
@@ -57,6 +83,17 @@ const Dashboard = () => {
         fetchProducts(currentPage, itemsPerPage);
         setShowDeleteModal(false);
         setSelectedProduct(null);
+        toast.error('Đã xoá sản phẩm thành công', {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+          });
       } catch (err) {
         console.error('Error deleting product:', err);
       }

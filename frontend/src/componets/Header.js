@@ -327,6 +327,13 @@ const AppHeader = () => {
                 >
                   Bạc
                 </Menu.Item>
+                <Menu.Item
+                  key="2.3"
+                  className={selectedKey === "2.3" ? "menu-item-selected" : ""}
+                  onClick={() => navigate("/chat-lieu/3")}
+                >
+                  Kim cương
+                </Menu.Item>
               </SubMenu>
 
               <SubMenu

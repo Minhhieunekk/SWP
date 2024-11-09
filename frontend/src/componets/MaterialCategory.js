@@ -14,7 +14,8 @@ export const MaterialCategory = () => {
 
   const materialMap = {
     "1": "Vàng",
-    "2": "Bạc"
+    "2": "Bạc",
+    "3":"Kim cương"
   };
 
   useEffect(() => {

@@ -22,6 +22,8 @@ import ManageDiscounts from './componets/managedicount';
 import UserManagementComponent from './componets/manageruser';
 import OrderInfo from './componets/Orderinfo';
 import Statistic from './componets/statistic';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -53,6 +55,7 @@ function App() {
           <Route path="/statistic" element={<Statistic />} /> 
         </Routes>
       </BrowserRouter>
+      <ToastContainer />
 
     </div>
   );
