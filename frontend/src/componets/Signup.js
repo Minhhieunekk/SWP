@@ -16,6 +16,7 @@ const Signup = () => {
         district: '',
         ward: ''
     });
+    const [errors, setErrors] = useState({});
     const [messages, setMessages] = useState({
         username: '',
         email: '',
@@ -173,6 +174,36 @@ const Signup = () => {
         
         updateFullAddress();
     }, [values.province, values.district, values.ward, values.streetAddress, addressComponents]);
+    const validateFields = (field, value) => {
+        const newErrors = { ...errors };
+
+        if (field === "email") {
+            newErrors.email = value && !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)
+                ? "Sai định dạng email"
+                : "";
+        }
+
+        if (field === "password") {
+            newErrors.password = value && value.length < 8
+                ? "Mật khẩu phải có ít nhất 8 kí tự"
+                : "";
+        }
+
+        if (field === "phone") {
+            newErrors.phone = value && value.length !== 10
+                ? "Số điện thoại phải là 10 ký tự"
+                : "";
+        }
+
+        if (field === "address" || field === "streetAddress" || field === "province" || field === "district" || field === "ward") {
+            newErrors.address = values.streetAddress && values.province && values.district && values.ward
+                ? ""
+                : "Vui lòng nhập đầy đủ thông tin địa chỉ";
+        }
+
+        setErrors(newErrors);
+    };
+
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -208,6 +239,7 @@ const Signup = () => {
     const handleInput = (event) => {
         const { name, value } = event.target;
         setValues(prev => ({ ...prev, [name]: value }));
+        validateFields(name, value); 
     };
 
     // Username check effect
@@ -302,6 +334,7 @@ const Signup = () => {
                                             name="password" 
                                             required
                                         />
+                                         {errors.password && <span className="error">{errors.password}</span>}
                                     </div>
                                     <div className="login__field">
                                         <input 
@@ -312,9 +345,9 @@ const Signup = () => {
                                             name="phone" 
                                             required
                                         />
-                                        {messages.phone && (
-                                            <span className={isPhoneAvailable ? "success" : "error"}>
-                                                {messages.phone}
+                                         {(errors.phone || messages.phone) && (
+                                            <span className={isPhoneAvailable ? "error" : "error"}>
+                                                {errors.phone || messages.phone}
                                             </span>
                                         )}
                                     </div>
@@ -327,9 +360,9 @@ const Signup = () => {
                                             name="email" 
                                             required
                                         />
-                                        {messages.email && (
-                                            <span className={isEmailAvailable ? "success" : "error"}>
-                                                {messages.email}
+                                        {(errors.email || messages.email) && (
+                                            <span className={isEmailAvailable ? "error" : "error"}>
+                                                {errors.email || messages.email}
                                             </span>
                                         )}
                                     </div>
@@ -337,17 +370,7 @@ const Signup = () => {
 
                                 {/* Right Column - Address Information */}
                                 <div className="form-column">
-                                    <div className="login__field">
-                                        <input 
-                                            type="text"
-                                            className="login__input"
-                                            placeholder="Số nhà, tên đường"
-                                            onChange={handleInput}
-                                            name="streetAddress"
-                                            value={values.streetAddress}
-                                            required
-                                        />
-                                    </div>
+                                   
                                     <div className="login__field">
                                         <SearchableSelect
                                             options={addressComponents.provinces}
@@ -382,6 +405,17 @@ const Signup = () => {
                                             />
                                         </div>
                                     )}
+                                    <div className="login__field">
+                                        <input 
+                                            type="text"
+                                            className="login__input"
+                                            placeholder="Số nhà, tên đường"
+                                            onChange={handleInput}
+                                            name="streetAddress"
+                                            value={values.streetAddress}
+                                            required
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <button 

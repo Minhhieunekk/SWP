@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Container, Row, Col } from 'react-bootstrap';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import "../styles/home.scss";
@@ -182,13 +182,13 @@ const Home = () => {
                 </div>
                 <div class="carousel-inner" >
                     <div class="carousel-item active">
-                        <img src="banner1.jpg" class="d-block w-100 " alt="banner1" />
+                        <img src="banner5.png" class="d-block w-100 " alt="banner1" />
                     </div>
                     <div class="carousel-item">
-                        <img src="banner2.jpg" class="d-block w-100 " alt="banner2" />
+                        <img src="banner6.png" class="d-block w-100 " alt="banner2" />
                     </div>
                     <div class="carousel-item">
-                        <img src="banner3.jpg" class="d-block w-100 " alt="banner3" />
+                        <img src="banner7.png" class="d-block w-100 " alt="banner3" />
                     </div>
                 </div>
             </div>

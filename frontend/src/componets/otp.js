@@ -23,6 +23,11 @@ const OTP = () => {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (newPassword.length < 8) {
+      setMessage('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:8088/reset-password', { email, otp, newPassword });
       setMessage(response.data);
@@ -67,7 +72,7 @@ const OTP = () => {
                     <Form.Label>OTP</Form.Label>
                     <Form.Control
                       type="text"
-                      placeholder="Enter OTP"
+                      placeholder="Nhập mã OTP"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       required
@@ -77,7 +82,7 @@ const OTP = () => {
                     <Form.Label>Mật khẩu mới</Form.Label>
                     <Form.Control
                       type="password"
-                      placeholder="Enter new password"
+                      placeholder="Nhập mật khẩu mới"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
@@ -91,7 +96,7 @@ const OTP = () => {
                 </Form>
               )}
               {step === 3 && (
-                <p>Mật khẩu đã được thay đổi thành công vui lòng <Link to="/" className="linkreset">đăng nhập</Link> với mật khẩu mới.</p>
+                <p>Mật khẩu đã được thay đổi thành công vui lòng <Link to="/login" className="linkreset">đăng nhập</Link> với mật khẩu mới.</p>
               )}
             </Card.Body>
           </Card>

@@ -6,10 +6,18 @@ const Validationsignup = (values) => {
 
     
     if (!email_pattern.test(values.email)) {
-        error.email="Wrong email format"
+        error.email="Sai định dạng email"
         Swal.fire({
-            title: "Error signup",
-            text: "Wrong email format",
+            title: "Lỗi đăng ký",
+            text: "Sai định dạng email ",
+            icon: "warning"
+          });
+    }
+    if (values.password.length < 8) {
+        error.password="Mật khẩu phải có ít nhất 8 kí tự"
+        Swal.fire({
+            title: "Lỗi đăng ký",
+            text: "Mật khẩu phải có ít nhất 8 kí tự",
             icon: "warning"
           });
     }
@@ -19,7 +27,7 @@ const Validationsignup = (values) => {
         title: "Đăng ký thành công",
         text: "Hãy bấm đăng nhập ngay",
         icon: "success",
-        showCancelButton: true,
+       
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Đăng nhập"

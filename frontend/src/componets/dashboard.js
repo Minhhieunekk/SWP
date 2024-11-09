@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { Edit, Trash, PlusCircle } from 'react-feather';
-import {Image} from 'antd';
-import '../styles/dashboard.scss';
+import { Image } from 'antd';
+import '../styles/dashboard.scss'
 import axios from "axios";
 import AppHeader from './Header';
+import { Link, useLocation } from 'react-router-dom';
 const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [user, setUser] = useState(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -68,117 +70,154 @@ const Dashboard = () => {
       setCurrentPage(prev => prev + 1);
     }
   };
+  const fetchUserData = async (token) => {
+    try {
+
+      const res = await axios.get('http://localhost:8088/api/user/details', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUser(res.data);
+
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+
+      }
+    }
+  };
+  const location = useLocation();
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const queryParams = new URLSearchParams(location.search);
+    const tokenFromUrl = queryParams.get('token');
+    if (!token && tokenFromUrl) {
+      localStorage.setItem('token', tokenFromUrl);
+      fetchUserData(tokenFromUrl);
+    } else if (token) {
+      fetchUserData(token);
+    }
+  }, [location.search])
 
   return (
     <>
-    <AppHeader/>
-    <div className="container" style={{position:"relative",top:'130px'}}>
-      <div className="table-responsive">
-        <div className="table-wrapper">
-          <div className="table-title">
-            <div className="row">
-              <div className="col-sm-6">
-                <h2>Quản lý <b>Sản phẩm</b></h2>
-              </div>
-              <div className="col-sm-6">
-                <Button className="btn btn-success" onClick={() => setShowAddModal(true)}>
-                  <PlusCircle size={18} /> <span>Thêm mới sản phẩm</span>
-                </Button>
+      {user?.consumerid === 11 &&
+        <>
+          <AppHeader />
+          <div className="container" style={{ position: "relative", top: '130px' }}>
+            <div className="table-responsive">
+              <div className="table-wrapper">
+                <div className="table-title">
+                  <div className="row">
+                    <div className="col-sm-6">
+                      <h2>Quản lý <b>Sản phẩm</b></h2>
+                    </div>
+                    <div className="col-sm-6">
+                      <Button className="btn btn-success" onClick={() => setShowAddModal(true)}>
+                        <PlusCircle size={18} /> <span>Thêm mới sản phẩm</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <table className="table table-striped table-hover">
+                  <thead>
+                    <tr>
+                      <th>Tên</th>
+                      <th>Mã sản phẩm</th>
+                      <th>Giá</th>
+                      <th>Số lượng (cái)</th>
+                      <th>Phân loại</th>
+                      <th>Thương hiệu</th>
+                      <th>Chất liệu</th>
+                      <th>Tuổi vàng</th>
+                      <th>Ảnh</th>
+                      <th>Kích cỡ</th>
+                      <th>Chỉnh sửa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product) => (
+                      <tr key={product.productid}>
+                        <td>{product.name}</td>
+                        <td>{product.code}</td>
+                        <td>{product.price.toLocaleString()} VND</td>
+                        <td>{product.amount}</td>
+                        <td>{product.categoryname}</td>
+                        <td>{product.brand}</td>
+                        <td>{product.material}</td>
+                        <td>{product.goldage}</td>
+                        <td>
+                          {product.image && (
+                            <Image
+                              src={`images/${product.image}`}
+                              alt={product.name}
+                              width={100}
+                              height={100}
+                            />
+                          )}
+                        </td>
+                        <td>{product.size}</td>
+                        <td>
+                          <Link className="edit" onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
+                            <Edit size={18} />
+                          </Link>
+                          <Link className="delete" onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
+                            <Trash size={18} />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="clearfix">
+                  <div className="hint-text">Biểu diễn <b>{products.length}</b> sản phẩm</div>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="pagination">
+                  <Button disabled={currentPage === 1} onClick={() => handlePageChange('prev')}>Trước</Button>
+                  <span>Trang {currentPage} trong {totalPages}</span>
+                  <Button disabled={currentPage === totalPages} onClick={() => handlePageChange('next')}>Sau</Button>
+                </div>
               </div>
             </div>
+
+            <ProductModal
+              show={showAddModal}
+              onHide={() => setShowAddModal(false)}
+              onSubmit={handleAdd}
+              title="Thêm sản phẩm"
+            />
+
+            <ProductModal
+              show={showEditModal}
+              onHide={() => setShowEditModal(false)}
+              onSubmit={handleEdit}
+              title="Thay đổi sản phẩm"
+              product={selectedProduct}
+            />
+
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered 
+             
+              
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Xoá sản phẩm</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <p>Bạn có muốn xoá sản phẩm không?</p>
+                <p className="text-warning"><small>Điều này sẽ không thể hoàn tác</small></p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Huỷ</Button>
+                <Button variant="danger" onClick={handleDelete}>Xoá</Button>
+              </Modal.Footer>
+            </Modal>
           </div>
-          <table className="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>Tên</th>
-                <th>Mã sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng (cái)</th>
-                <th>Phân loại</th>
-                <th>Thương hiệu</th>
-                <th>Chất liệu</th>
-                <th>Tuổi vàng</th>
-                <th>Ảnh</th> 
-                <th>Kích cỡ</th>
-                <th>Chỉnh sửa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.productid}>
-                  <td>{product.name}</td>
-                  <td>{product.code}</td>
-                  <td>{product.price.toLocaleString()} VND</td>
-                  <td>{product.amount}</td>
-                  <td>{product.categoryname}</td>
-                  <td>{product.brand}</td>
-                  <td>{product.material}</td>
-                  <td>{product.goldage}</td>
-                  <td>
-                    {product.image && (
-                      <Image
-                        src={`images/${product.image}`} 
-                        alt={product.name}
-                        width={100} 
-                        height={100} 
-                      />
-                    )}
-                  </td>
-                  <td>{product.size}</td>
-                  <td>
-                    <a href="#" className="edit" onClick={() => { setSelectedProduct(product); setShowEditModal(true); }}>
-                      <Edit size={18} />
-                    </a>
-                    <a href="#" className="delete" onClick={() => { setSelectedProduct(product); setShowDeleteModal(true); }}>
-                      <Trash size={18} />
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="clearfix">
-            <div className="hint-text">Biểu diễn <b>{products.length}</b> sản phẩm</div>
-          </div>
+        </>
+      }
 
-          {/* Pagination Controls */}
-          <div className="pagination">
-            <Button disabled={currentPage === 1} onClick={() => handlePageChange('prev')}>Trước</Button>
-            <span>Trang {currentPage} trong {totalPages}</span>
-            <Button disabled={currentPage === totalPages} onClick={() => handlePageChange('next')}>Sau</Button>
-          </div>
-        </div>
-      </div>
-
-      <ProductModal
-        show={showAddModal}
-        onHide={() => setShowAddModal(false)}
-        onSubmit={handleAdd}
-        title="Thêm sản phẩm"
-      />
-
-      <ProductModal
-        show={showEditModal}
-        onHide={() => setShowEditModal(false)}
-        onSubmit={handleEdit}
-        title="Thay đổi sản phẩm"
-        product={selectedProduct}
-      />
-
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Xoá sản phẩm</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Bạn có muốn xoá sản phẩm không?</p>
-          <p className="text-warning"><small>Điều này sẽ không thể hoàn tác</small></p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Huỷ</Button>
-          <Button variant="danger" onClick={handleDelete}>Xoá</Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
     </>
   );
 };
@@ -195,7 +234,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
     goldage: '',
     gender: '',
     size: '',
-    image: null  
+    image: null
   });
 
   const [filters, setFilters] = useState({
@@ -230,7 +269,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
         goldage: product.goldage || '',
         gender: product.gender || '',
         size: product.size || '',
-        image: null 
+        image: null
       });
     } else {
       setFormData({
@@ -268,7 +307,9 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} centered
+   
+    >
       <Form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{title}</Modal.Title>

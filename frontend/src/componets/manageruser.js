@@ -3,11 +3,13 @@ import { Container, Table, Pagination, Row, Col } from 'react-bootstrap';
 import { Image } from 'antd';
 import axios from 'axios';
 import AppHeader from './Header';
+import { useLocation } from 'react-router';
 
 const UserManagementComponent = () => {
     const [users, setUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const usersPerPage = 10;
+    const [user,setUser]=useState(null)
 
     useEffect(() => {
         fetchUsers();
@@ -32,8 +34,39 @@ const UserManagementComponent = () => {
         setCurrentPage(page);
     };
 
+    const fetchUserData = async (token) => {
+        try {
+    
+          const res = await axios.get('http://localhost:8088/api/user/details', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          setUser(res.data);
+    
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+    
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            localStorage.removeItem('token');
+    
+          }
+        }
+      };
+      const location = useLocation();
+      useEffect(() => {
+        const token = localStorage.getItem('token');
+        const queryParams = new URLSearchParams(location.search);
+        const tokenFromUrl = queryParams.get('token');
+        if (!token && tokenFromUrl) {
+          localStorage.setItem('token', tokenFromUrl);
+          fetchUserData(tokenFromUrl);
+        } else if (token) {
+          fetchUserData(token);
+        }
+      }, [location.search])
+
     return (
         <>
+        {user?.consumerid === 11 && <>
             <AppHeader />
             <Container>
                 <Col>
@@ -93,6 +126,8 @@ const UserManagementComponent = () => {
                     </Row>
                 </Col>
             </Container>
+        </> }
+           
         </>
     );
 };

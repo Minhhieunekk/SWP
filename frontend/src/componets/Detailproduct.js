@@ -6,6 +6,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import "../styles/detailproduct.scss";
 import { Image } from 'antd';
 import AppHeader from "./Header";
+import Swal from 'sweetalert2/dist/sweetalert2.js'
+import 'sweetalert2/src/sweetalert2.scss'
 
 const ProductCard = ({
     productid,
@@ -27,6 +29,7 @@ const ProductCard = ({
     const [selectedSize, setSelectedSize] = useState(sizes[0]?.size || 5);
     const [popupVisible, setPopupVisible] = useState(false);
     const userId = localStorage.getItem('userId');
+    const token =localStorage.getItem('token');
     const navigate = useNavigate();
     const rate = Math.round(totalrate / peoplerate);
 
@@ -60,10 +63,37 @@ const ProductCard = ({
                 size: selectedSize
             });
             if (responseData.data === 'Existed') {
-                alert('Sản phẩm này đã có trong giỏ hàng');
+                Swal.fire({
+                    title: "Jewelry thông báo",
+                    text: "Sản phẩm này đã có trong giỏ hàng",
+                    icon: "info"
+                  });
                 return;
             } else {
                 setPopupVisible(true);
+            };
+            
+        } catch (error) {
+            console.error('Error adding to cart', error);
+        }
+    };
+    const HandletoBuy = async () => {
+        try {
+            const responseData = await axios.post(`http://localhost:8088/addtocart`, {
+                userid: userId,
+                productid,
+                quantity,
+                size: selectedSize
+            });
+            if (responseData.data === 'Existed') {
+                Swal.fire({
+                    title: "Jewelry thông báo",
+                    text: "Sản phẩm này đã có trong giỏ hàng",
+                    icon: "info"
+                  });
+                return;
+            } else {
+                navigate(`/cart/${userId}`);
             };
             
         } catch (error) {
@@ -124,9 +154,10 @@ const ProductCard = ({
                                     className="text-center"
                                 />
                             </Form.Group>
-                            <div className="d-grid gap-2">
-                                <Button variant="primary" size="lg" disabled={amount === 0}>Mua ngay</Button>
-                                <Button variant="outline-primary" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
+                            {token && userId !=='11' &&
+                                <div className="d-grid gap-2">
+                                <Button variant="outline-success" size="lg" disabled={amount === 0} onClick={HandletoBuy} >Mua ngay</Button>
+                                <Button variant="outline-info" size="lg" disabled={amount === 0} onClick={AddToCart}>Thêm vào giỏ hàng</Button>
                                 {popupVisible && (
                                     <div className="popup-container">
                                         <div className="popup">
@@ -149,6 +180,8 @@ const ProductCard = ({
                                     </div>
                                 )}
                             </div>
+                             }
+                            
                         </Card.Body>
                     </Col>
                 </Row>

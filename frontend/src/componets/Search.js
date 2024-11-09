@@ -69,6 +69,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
           <Spin size="large" />
         </div>
       ) : (
+        <>
         <List
           dataSource={searchResults}
           renderItem={(item) => (
@@ -80,13 +81,15 @@ const CentralSearchModal = ({ visible, onClose }) => {
             >
               <List.Item.Meta
                 avatar={
-                <Image src={item.image} width={100} alt={item.name} />}
+                <Image src={`http://localhost:8088/images/${item.image}`} width={100} alt={item.name} />}
                 title={<Text strong>{item.name}</Text>}
                 description={<Text type="secondary">{parseFloat(item.price).toLocaleString('vi-VN')} ₫</Text>}
               />
             </List.Item>
           )}
         />
+        
+        </>
       )}
 
       {selectedProduct && (
@@ -97,7 +100,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
           title="Chi tiết sản phẩm"
         >
           <Image
-            src={selectedProduct.image}
+            src={`http://localhost:8088/images/${selectedProduct.image}`}
             alt={selectedProduct.name}
             style={{ maxWidth: '100%', marginBottom: 16 }}
           />
@@ -106,8 +109,8 @@ const CentralSearchModal = ({ visible, onClose }) => {
             <Descriptions.Item label="Giá" span={3}>
               {parseFloat(selectedProduct.price).toLocaleString('vi-VN')} ₫
             </Descriptions.Item>
-            <Descriptions.Item label="Số lượng" span={3}>{selectedProduct.amount}</Descriptions.Item>
-            <Descriptions.Item label="Danh mục" span={3}>{selectedProduct.category}</Descriptions.Item>
+            <Descriptions.Item label="Thương hiệu" span={3}>{selectedProduct.brand}</Descriptions.Item>
+            <Descriptions.Item label="Mã sản phẩm" span={3}>{selectedProduct.code}</Descriptions.Item>
             <Descriptions.Item label="Đánh giá" span={3}>
               <Rate disabled defaultValue={(selectedProduct.totalrate/selectedProduct.peoplerate) || 0} />
               ({selectedProduct.peoplerate || 0} đánh giá)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Input, Row, Col, Badge, Button, Image, Dropdown, Modal } from "antd";
+import { Layout, Menu, Row, Col, Badge, Button, Image, Dropdown, Modal, Typography } from "antd";
 import {
   UserOutlined,
   ShoppingCartOutlined,
@@ -10,11 +10,12 @@ import {
   LineChartOutlined,
 } from "@ant-design/icons";
 import SubMenu from "antd/es/menu/SubMenu";
-import { Link, useNavigate } from "react-router-dom";
-import { HomeFilled, SearchOutlined } from "@ant-design/icons";
+import {  useNavigate } from "react-router-dom";
+import { SearchOutlined } from "@ant-design/icons";
 import CentralSearchModal from "./Search";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
+const {Link}=Typography;
 
 const { Header } = Layout;
 
@@ -113,12 +114,12 @@ const AppHeader = () => {
       
 
       {
-        (consumerid===8) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
+        (consumerid===11) && (<Menu.Item key="4" icon={<LineChartOutlined />} onClick={() => navigate("/dashboard")}>
           Quản lý sản phẩm
         </Menu.Item>)
       }
       {
-        (consumerid===8) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
+        (consumerid===11) && (<Menu.Item key="5" icon={<LineChartOutlined />} onClick={() => navigate("/trackingorder")}>
           Quản lý đơn hàng
         </Menu.Item>)
       }
@@ -152,8 +153,11 @@ const AppHeader = () => {
                 </div>
               </Col>
               <Col>
-                <PhoneOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
+              <Link href="tel:0948086971" style={{textDecoration:'none',color:'black'}}>
+              <PhoneOutlined style={{ fontSize: "16px", marginRight: "5px" }} />
                 094 808 6971
+              </Link>
+                
               </Col>
             </Row>
           </Col>
@@ -167,11 +171,13 @@ const AppHeader = () => {
                   </div>
                 </Dropdown>
               </Col>
+              {consumerid && consumerid !==11 && 
               <Col>
                 <Badge count={0} offset={[9, 0]}>
                   <div onClick={() => navigate(`/cart/${consumerid}`)}><ShoppingCartOutlined style={{ fontSize: "16px" }} /> Giỏ Hàng </div>
                 </Badge>
-              </Col>
+              </Col>}
+              
             </Row>
           </Col>
         </Row>
@@ -208,21 +214,14 @@ const AppHeader = () => {
           <Col span={2}>
             <Image src="/images/logoshop.png" style={{ maxHeight: '60px', width: 'auto', fontSize: '30px', cursor: 'pointer' }} preview={false} onClick={() => navigate("/")} />
           </Col>
-          <Col span={8}>
+          <Col span={7}>
             <Menu
               theme={customTheme}
               mode="horizontal"
               selectedKeys={[selectedKey]}
               onClick={handleMenuClick} // Sự kiện khi nhấp vào mục menu
             >
-              <Menu.Item
-                key="home"
-                className={selectedKey === "home" ? "menu-item-selected" : ""}
-              >
-                <Link to="/login" style={{ color: customTheme.color }}>
-                  <HomeFilled style={{ color: customTheme.color }} />
-                </Link>
-              </Menu.Item>
+            
 
               <SubMenu
                 key="1"

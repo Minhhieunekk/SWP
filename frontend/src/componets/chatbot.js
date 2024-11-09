@@ -91,7 +91,7 @@ function Chatbot() {
           <Col xs={12} md={8} lg={6}>
             <Card className="chat-card shadow-sm">
               <Card.Header className="bg-primary text-white">
-                <h4 className="mb-0">AI Chatbot</h4>
+                <h4 className="mb-0">AI tư vấn khách hàng</h4>
               </Card.Header>
 
               <Card.Body className="chat-body">
