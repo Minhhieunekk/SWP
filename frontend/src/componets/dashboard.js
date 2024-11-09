@@ -327,7 +327,7 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
             />
           </Form.Group>
           <Form.Group controlId="formProductPrice">
-            <Form.Label>Giá sản phẩm</Form.Label>
+            <Form.Label>Giá nhập</Form.Label>
             <Form.Control
               type="number"
               placeholder="Nhập giá sản phẩm"
