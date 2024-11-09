@@ -61,10 +61,9 @@ app.use(passport.session());
 
 const db = mysql.createConnection({
   host: "localhost",
-  port: "3306",
   user: "root",
-  password: "abcd1234",
-  database: "swp_final"
+  password: "",
+  database: "swpvip"
 })
 
 
@@ -528,8 +527,7 @@ app.get('/productdetail', (req, res) => {
     JOIN 
       inventory i ON p.productid = i.prd_id
     LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = p.discount_id
-    WHERE 
-      p.productid = ?
+    WHERE p.productid = ?
   `;
 
   db.query(sql, [productid], (err, data) => {
@@ -556,7 +554,7 @@ app.get("/home", (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value ,
+      d.discount_value ,
       category.*
       FROM product 
       JOIN category ON product.category = category.categoryid
@@ -610,7 +608,7 @@ app.get("/home/bongtai", (req, res) => {
       when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       d.discount_value,
     category.*, 
-    discount.discount_value FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?`;
+    d.discount_value FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -1313,7 +1311,7 @@ app.get('/api/products', (req, res) => {
       CASE 
 	      when d.discount_value is null then product.price
 	      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1418,7 +1416,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1450,7 +1448,7 @@ app.get('/api/materials/:material', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1483,7 +1481,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'

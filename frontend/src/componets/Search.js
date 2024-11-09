@@ -83,7 +83,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
                 avatar={
                 <Image src={`http://localhost:8088/images/${item.image}`} width={100} alt={item.name} />}
                 title={<Text strong>{item.name}</Text>}
-                description={<Text type="secondary">{parseFloat(item.price).toLocaleString('vi-VN')} ₫</Text>}
+                description={<Text type="secondary">{parseFloat(item.price).toLocaleString('vi-VN')} VND</Text>}
               />
             </List.Item>
           )}
@@ -107,7 +107,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
           <Descriptions bordered>
             <Descriptions.Item label="Tên" span={3}>{selectedProduct.name}</Descriptions.Item>
             <Descriptions.Item label="Giá" span={3}>
-              {parseFloat(selectedProduct.price).toLocaleString('vi-VN')} ₫
+              {parseFloat(selectedProduct.price).toLocaleString('vi-VN')} VND
             </Descriptions.Item>
             <Descriptions.Item label="Thương hiệu" span={3}>{selectedProduct.brand}</Descriptions.Item>
             <Descriptions.Item label="Mã sản phẩm" span={3}>{selectedProduct.code}</Descriptions.Item>
