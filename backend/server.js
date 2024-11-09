@@ -556,7 +556,7 @@ app.get("/home", (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value ,
+      d.discount_value ,
       category.*
       FROM product 
       JOIN category ON product.category = category.categoryid
@@ -610,7 +610,7 @@ app.get("/home/bongtai", (req, res) => {
       when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
       d.discount_value,
     category.*, 
-    discount.discount_value FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?`;
+    d.discount_value FROM product LEFT JOIN (SELECT * FROM discount WHERE CURDATE() BETWEEN discount.start_date AND discount.end_date) d ON d.discount_id = product.discount_id,category where product.category=category.categoryid and product.category between 1 and 6  ORDER BY productid LIMIT ? OFFSET ?`;
     db.query(sql, [limit, offset], (err, data) => {
       if (err) {
         return res.status(500).json("Error fetching products");
@@ -1313,7 +1313,7 @@ app.get('/api/products', (req, res) => {
       CASE 
 	      when d.discount_value is null then product.price
 	      when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1418,7 +1418,7 @@ app.get('/api/jewelry/:type', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1450,7 +1450,7 @@ app.get('/api/materials/:material', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -1483,7 +1483,7 @@ app.get('/api/gifts/:gender', (req, res) => {
       CASE 
         when d.discount_value is null then product.price
         when d.discount_value is not null then (product.price * (100-d.discount_value)/100) end as price,
-      discount.discount_value,
+      d.discount_value,
       CASE 
         WHEN category.gender = 0 THEN 'Nam'
         WHEN category.gender = 1 THEN 'Nữ'
@@ -2697,6 +2697,30 @@ app.post('/check-discount', (req, res) => {
       // Calculate the new price if the discount is valid
       const newPrice = totalPrice * (100 - discount_value) / 100;
       return res.json({ newPrice });
+    }
+  );
+});
+
+app.post('/cart-count', (req, res) => {
+  const { user_id } = req.body;  // Get consumerid from the request body
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'consumerid is required' });
+  }
+
+  // Query to count the number of items in the user's cart
+  db.query(
+    'SELECT COUNT(*) AS item_count FROM cart WHERE user_id = ?',
+    [user_id],
+    (err, results) => {
+      if (err) {
+        console.error('Error executing query:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      // Send the item count as a response
+      const itemCount = results[0].item_count;
+      return res.json({ itemCount });
     }
   );
 });
