@@ -29,6 +29,7 @@ require('dotenv').config();
 
 const app = express();
 app.use('/avatar', express.static('public/avatar'));
+app.use('/images', express.static('public/images'));
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/avatar')

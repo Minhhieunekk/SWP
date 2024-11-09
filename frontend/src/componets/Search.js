@@ -69,6 +69,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
           <Spin size="large" />
         </div>
       ) : (
+        <>
         <List
           dataSource={searchResults}
           renderItem={(item) => (
@@ -80,13 +81,15 @@ const CentralSearchModal = ({ visible, onClose }) => {
             >
               <List.Item.Meta
                 avatar={
-                <Image src={item.image} width={100} alt={item.name} />}
+                <Image src={`http://localhost:8088/images/${item.image}`} width={100} alt={item.name} />}
                 title={<Text strong>{item.name}</Text>}
                 description={<Text type="secondary">{parseFloat(item.price).toLocaleString('vi-VN')} ₫</Text>}
               />
             </List.Item>
           )}
         />
+        
+        </>
       )}
 
       {selectedProduct && (
@@ -97,7 +100,7 @@ const CentralSearchModal = ({ visible, onClose }) => {
           title="Chi tiết sản phẩm"
         >
           <Image
-            src={selectedProduct.image}
+            src={`http://localhost:8088/images/${selectedProduct.image}`}
             alt={selectedProduct.name}
             style={{ maxWidth: '100%', marginBottom: 16 }}
           />
