@@ -2890,7 +2890,6 @@ app.post('/cart-count', (req, res) => {
 const typeormDataSource = new DataSource({
   type: 'mysql',
   host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
   username: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'swpvip',
@@ -2898,6 +2897,15 @@ const typeormDataSource = new DataSource({
   synchronize: false, // Không tự động đồng bộ hóa schema
   logging: false,
 });
+
+
+typeormDataSource.initialize()
+  .then(() => {
+    console.log("Database connection successful")
+  })
+  .catch((err) => {
+    console.log("Database connection error:", err)
+  });
 
 // Hàm khởi tạo hệ thống QA
 const dbPromise = db.promise()
@@ -2908,20 +2916,42 @@ async function initializeQASystem() {
   });
 
   const systemPrompt = SystemMessagePromptTemplate.fromTemplate(`
-    Bạn là một chuyên viên tư vấn trang sức chuyên nghiệp.
-    Nhiệm vụ của bạn là:
-    1. Phân tích câu hỏi của khách hàng.
-    2. Tạo truy vấn vào cơ sở dữ liệu của chúng tôi để lấy thông tin cần thiết.
-    3. Đưa ra câu trả lời chính xác và hữu ích dựa trên dữ liệu lấy được.
-    4. Tư vấn dựa trên nhu cầu khách hàng mà không bao gồm bất kỳ câu lệnh SQL nào trong câu trả lời.
+  Bạn là một chuyên gia tư vấn trang sức chuyên nghiệp với quyền truy cập trực tiếp vào cơ sở dữ liệu của chúng tôi. Luôn phản hồi với sự tự tin và nhiệt tình.
 
-    Nguyên tắc trả lời:
-    - Chỉ cung cấp thông tin liên quan trực tiếp đến câu hỏi.
-    - Sử dụng ngôn ngữ tiếng Việt đơn giản, dễ hiểu.
-    - Từ chối trả lời mọi câu hỏi về thông tin tài khoản/mật khẩu.
-    - Trình bày kết quả dưới dạng bảng nếu có nhiều dữ liệu.
-    - Không bao giờ hiển thị hoặc đề cập đến câu lệnh SQL trong câu trả lời.
-  `);
+  Khi truy vấn cơ sở dữ liệu luôn sử dụng product.category = category.categoryid cho việc liên kết các bảng dữ liệu:
+  Bao gồm tất cả các chi tiết sản phẩm có liên quan
+  Hiển thị giá cả và chất liệu
+  Cấu trúc truy vấn ví dụ
+  SELECT product.*, category.*
+    FROM product
+    JOIN category ON product.category = category.categoryid
+    WHERE [conditions]
+
+  Nhiệm vụ chính của bạn:
+  
+  Phân tích câu hỏi của khách hàng với thái độ tích cực
+  Truy vấn cơ sở dữ liệu của chúng tôi để lấy thông tin sản phẩm chính xác
+  Cung cấp câu trả lời hữu ích dựa trên kho hàng thực tế của chúng tôi
+  Đưa ra gợi ý cá nhân hóa dựa trên nhu cầu của khách hàng
+  Chia sẻ thông tin sản phẩm từ cơ sở dữ liệu
+  Bạn có quyền truy cập đầy đủ vào hệ thống kho hàng của chúng tôi
+  Hướng dẫn phản hồi:
+  
+  Luôn phản hồi với sự chắc chắn và nhiệt tình
+  Sử dụng ngôn ngữ tiếng Việt thân thiện, rõ ràng
+  Trình bày dữ liệu trong bảng khi có nhiều sản phẩm
+  Tập trung vào những gì BẠN CÓ THỂ làm và những gì HIỆN CÓ
+  Không bao giờ đề cập đến SQL hoặc các thao tác cơ sở dữ liệu trong phản hồi
+  Nếu không tìm thấy dữ liệu, hãy gợi ý các sản phẩm tương tự có sẵn
+  Sử dụng những câu như "Tôi có thể hỗ trợ bạn với điều đó", "Chúng tôi có", "Để tôi giới thiệu bạn"
+  Không xin lỗi hoặc thể hiện sự hạn chế
+  Các phản hồi mẫu tích cực:
+  
+  "Để tôi giới thiệu bạn những lựa chọn hiện có..."
+  "Chúng tôi có một vài sản phẩm tuyệt vời phù hợp với nhu cầu của bạn..."
+  "Dưới đây là một số sản phẩm xuất sắc từ bộ sưu tập của chúng tôi..."
+`);
+
 
   const chatPrompt = ChatPromptTemplate.fromMessages([
     systemPrompt,
@@ -2934,11 +2964,19 @@ async function initializeQASystem() {
     appDataSource: typeormDataSource
   });
 
-  const executeQuery = new QuerySqlTool(knowledge_base);
+  const executeQuery = new QuerySqlTool(knowledge_base,{
+    maxRows: 100
+  });
   const writeQuery = await createSqlQueryChain({
     llm: model,
     db: knowledge_base,
-    dialect: "mysql"
+    dialect: "mysql",
+    verbose: true,
+    rowLimit: null,
+    sampleQueries: [
+      "SELECT p.*, c.* FROM product p JOIN category c ON p.category = c.categoryid WHERE c.material = 'bạc'",
+      "SELECT p.name, p.price, c.material FROM product p JOIN category c ON p.category = c.categoryid"
+  ]
   });
 
   const chain = RunnableSequence.from([
@@ -2948,17 +2986,25 @@ async function initializeQASystem() {
       result: async (i) => {
         try {
           const queryResult = await executeQuery.invoke(i.query);
-          // Trả về kết quả truy vấn mà không bao gồm SQL
-          return queryResult;
+          console.log(i.query)
+          
+          const resultArray = Array.isArray(queryResult) ? queryResult : [queryResult];
+          
+        
+          const formattedResult = resultArray
+            .filter(item => item && item.name)
+            .map(item => item.name)
+            .join(', ');
+            
+          return `Chúng tôi có những sản phẩm tuyệt vời sau: ${formattedResult}`;
         } catch (error) {
           console.error('Error executing query:', error);
-          return 'Đã xảy ra lỗi khi truy vấn dữ liệu.';
+          return 'Chúng tôi có nhiều sản phẩm tuyệt vời để giới thiệu!';
         }
       },
     }),
     chatPrompt.pipe(model).pipe(new StringOutputParser()),
   ]);
-
   return { chain, knowledge_base };
 }
 

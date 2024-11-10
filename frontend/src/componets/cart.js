@@ -1,14 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Modal, Button, Form } from 'react-bootstrap';
-import { Edit, Trash, PlusCircle } from 'react-feather';
+import { Card, Modal, Button} from 'react-bootstrap';
+
 import "../styles/signup.scss";
-import '../styles/cart.scss'; 
+import '../styles/cart.scss';
 import axios from "axios";
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ImageAlertModal from "./ImageAlertModal";
 import AppHeader from './Header';
 
+const PaymentModal = ({ show, onHide, amount, onConfirm,userid }) => {
+    // Example bank details - replace with actual values
+    const BANK_ID = "970422"; // Example bank ID for Vietcombank
+    const ACCOUNT_NO = "221120048686";
+    const ACCOUNT_NAME = "TRAN MINH HIEU";
+    const TEMPLATE = "compact2";
+    const alert=`Khach hang ${userid} thanh toan don hang`
+    const qrImageUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-${TEMPLATE}.png?amount=${amount}&addInfo=${alert}&accountName=${ACCOUNT_NAME}`;
 
+    const handleConfirmPayment = () => {
+        onConfirm();
+        onHide();
+    };
+
+    return (
+        <Modal
+            show={show}
+            onHide={onHide}
+            centered
+            size="lg"
+        >
+            <Modal.Header closeButton>
+                <Modal.Title>Thanh toán đơn hàng</Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="text-center">
+                <p className="mb-3">Số tiền cần thanh toán: {amount.toLocaleString()} VND</p>
+                <div className="d-flex justify-content-center mb-3">
+                    <img
+                        src={qrImageUrl}
+                        alt="QR Code thanh toán"
+                        style={{
+                            width: '300px',
+                            height: '300px',
+                            objectFit: 'contain',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '4px',
+                            padding: '10px'
+                        }}
+                    />
+                </div>
+                <p className="text-danger">
+                   Yêu cầu quý khách không xoá nội dung chuyển khoản
+                </p>
+                <p className="text-muted">
+                    Quét mã QR để thanh toán và nhấn "Xác nhận đã thanh toán" sau khi hoàn tất
+                </p>
+                
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Hủy
+                </Button>
+                <Button variant="primary" onClick={handleConfirmPayment}>
+                    Xác nhận đã thanh toán
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
 const Cart = () => {
     const navigate = useNavigate();
     const consumerId = localStorage.getItem('userId');
@@ -32,60 +90,59 @@ const Cart = () => {
         district: '',
         ward: ''
     });
-
-    const [user, setUser] = useState(null);
-
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    // const [user, setUser] = useState(null);
     const [newPrice, setNewPrice] = useState(null);
     const [errorDiscountMessage, setErrorDiscountMessage] = useState('');
     const [discountCode, setDiscountCode] = useState('');
 
     const handleApplyDiscount = async () => {
         if (!discountCode) {
-          // If no discount code is entered, show an error message
-          setErrorDiscountMessage('Vui lòng nhập mã giảm giá');
-          return;
+            // If no discount code is entered, show an error message
+            setErrorDiscountMessage('Vui lòng nhập mã giảm giá');
+            return;
         }
-    
-        try {
-          const response = await axios.post('http://localhost:8088/check-discount', {
-            discountCode,
-            totalPrice,
-          });
-    
-          // If discount is valid, update the price
-          setNewPrice(response.data.newPrice);
-          setErrorDiscountMessage('');  // Reset error message on success
-        } catch (error) {
-          if (error.response) {
-            // Handle the error messages returned by backend
-            setErrorDiscountMessage(error.response.data.message);  // Use updated variable name
-          } else {
-            // Handle general errors
-            setErrorDiscountMessage('An error occurred, please try again later.');  // Use updated variable name
-          }
-        }
-      };
 
-    const fetchUserData = async (token) => {
-    try {
-        
-        const res = await axios.get('http://localhost:8088/api/user/details', {
-        headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setUser(res.data);
-        
-    } catch (err) {
-        console.error('Error fetching user data:', err);
-    
-        if (err.response?.status === 401 || err.response?.status === 403) {
-        localStorage.removeItem('token');
-        
+        try {
+            const response = await axios.post('http://localhost:8088/check-discount', {
+                discountCode,
+                totalPrice,
+            });
+
+            // If discount is valid, update the price
+            setNewPrice(response.data.newPrice);
+            setErrorDiscountMessage('');  // Reset error message on success
+        } catch (error) {
+            if (error.response) {
+                // Handle the error messages returned by backend
+                setErrorDiscountMessage(error.response.data.message);  // Use updated variable name
+            } else {
+                // Handle general errors
+                setErrorDiscountMessage('An error occurred, please try again later.');  // Use updated variable name
+            }
         }
-    }
     };
 
+    // const fetchUserData = async (token) => {
+    //     try {
+
+    //         const res = await axios.get('http://localhost:8088/api/user/details', {
+    //             headers: { 'Authorization': `Bearer ${token}` }
+    //         });
+    //         setUser(res.data);
+
+    //     } catch (err) {
+    //         console.error('Error fetching user data:', err);
+
+    //         if (err.response?.status === 401 || err.response?.status === 403) {
+    //             localStorage.removeItem('token');
+
+    //         }
+    //     }
+    // };
+
     const handleChangeTypeAddress = (e) => {
-        if(e === true) {
+        if (e === true) {
             setUseDeffaultAdd(true);
             setIsSubmitDisabled(false);
         } else {
@@ -97,7 +154,7 @@ const Cart = () => {
     const handleClose = () => {
         setNewPrice(null);
         setIsPopupOpen(false);
-      }; 
+    };
     const openAlert = () => {
         setIsModalOpen(true);
     };
@@ -108,10 +165,10 @@ const Cart = () => {
 
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        
         const fetchCart = async () => {
             try {
-                const response = await axios.post(`http://localhost:8088/cart`,{userId : consumerId});
+                const response = await axios.post(`http://localhost:8088/cart`, { userId: consumerId });
                 console.log(response.data);
                 if (response.data === "No item in cart") {
                     setCartItems([]);
@@ -130,7 +187,7 @@ const Cart = () => {
         };
 
         fetchCart();
-        fetchUserData(token);
+        
     }, [consumerId]);
 
     const handleCheckboxChange = (item) => {
@@ -169,19 +226,19 @@ const Cart = () => {
     }, [consumerId]);
 
     const handleDeleteItem = (id) => {
-        
+
         const confirmDelete = window.confirm("Bạn có muốn xóa món đồ này không?");
         if (confirmDelete) {
             axios.delete(`http://localhost:8088/removefromcart/${id}`).then((res) => {
                 console.log("Deleted successfully");
                 let updatedCartList = cartItems.filter((item) => {
-                return item.cartid !== id;
+                    return item.cartid !== id;
                 });
                 setCartItems(updatedCartList);
             })
-            .catch((err) => {
-                console.log("Error occurred");
-            });
+                .catch((err) => {
+                    console.log("Error occurred");
+                });
         }
         // setCartItems((prevItems) => prevItems.filter((item) => item.cartid !== id));
         // setSelectedItems((prev) => {
@@ -200,7 +257,7 @@ const Cart = () => {
 
         const confirmDelete = window.confirm('Bạn có muốn xóa các món đã chọn không?');
         if (confirmDelete) {
-            Promise.all(selectedItems.map(cartid => 
+            Promise.all(selectedItems.map(cartid =>
                 axios.delete(`http://localhost:8088/removefromcart/${cartid}`)
             )).then(() => {
                 setCartItems(cartItems.filter(item => !selectedItems.includes(item.cartid)));
@@ -211,12 +268,12 @@ const Cart = () => {
         }
     };
 
-    const handleSelectItem = (id) => {
-        setSelectedItems((prev) => ({
-            ...prev,
-            [id]: !prev[id],
-        }));
-    };
+    // const handleSelectItem = (id) => {
+    //     setSelectedItems((prev) => ({
+    //         ...prev,
+    //         [id]: !prev[id],
+    //     }));
+    // };
 
     const calculateTotalPrice = () => {
         let total = 0;
@@ -230,13 +287,18 @@ const Cart = () => {
     };
 
     const handlePayment = async (paymentType) => {
-        handleCheckout(paymentType);
-        setIsPopupOpen(false);
-        // if (paymentType === 'cod') {
-        //     setIsModalOpen(false)
-        // } else {
-        //     setIsModalOpen(true);
-        // }
+        if (paymentType === 'cod') {
+            handleCheckout(paymentType);
+            setIsPopupOpen(false);
+        } else {
+            setIsPaymentModalOpen(true);
+            setIsPopupOpen(false);
+        }
+    };
+
+    const handlePaymentConfirmation = () => {
+        handleCheckout('online');
+        alert('Cảm ơn bạn đã mua hàng. Thông tin thanh toán và đơn hàng đang chờ được xác nhận. Vui lòng theo dõi trạng thái đơn hàng để cập nhật được tình trạng của đơn hàng.');
     };
     const beforeHandlePay = () => {
         console.log(selectedItems);
@@ -247,13 +309,13 @@ const Cart = () => {
         setIsPopupOpen(true);
     };
 
-    const handleCheckout =  (paymentType) => {
+    const handleCheckout = (paymentType) => {
         const selectedItemsData = cartItems.filter(item => selectedItems.includes(item.cartid));
         const orderData = {
             userId: consumerId,
-            total: !newPrice?totalPrice: newPrice,
+            total: !newPrice ? totalPrice : newPrice,
             phone: phone,
-            address:  address,
+            address: address,
             email: email,
             paymentStatus: paymentType === 'cod' ? 1 : 2,
             items: selectedItemsData.map(item => ({
@@ -263,7 +325,7 @@ const Cart = () => {
                 name: item.name
             }))
         };
-         axios.post('http://localhost:8088/order', orderData)
+        axios.post('http://localhost:8088/order', orderData)
             .then(async response => {
                 if (paymentType === 'cod') {
                     alert('Cảm ơn bạn đã đặt hàng');
@@ -273,7 +335,7 @@ const Cart = () => {
                     // alert(`Payment URL: ${response.data.imageUrl}`);
                 }
                 try {
-                    const response = await axios.post(`http://localhost:8088/cart`,{userId : consumerId});
+                    const response = await axios.post(`http://localhost:8088/cart`, { userId: consumerId });
                     console.log(response.data);
                     if (response.data === "No item in cart") {
                         setCartItems([]);
@@ -282,7 +344,7 @@ const Cart = () => {
                         setCartItems(response.data);
                         setErrorMessage('');
                     }
-                        setSelectedItems([]);
+                    setSelectedItems([]);
                 } catch (error) {
                     console.error('Error fetching cart items', error);
                     setErrorMessage('Error fetching cart items');
@@ -307,7 +369,7 @@ const Cart = () => {
         if (e.target.value && (!/^\d{10}$/.test(e.target.value) || e.target.value.length !== 10)) {
             setPhoneErrors('Số điện thoại phải có 10 số');
             setIsSubmitDisabled(true);
-          } else {
+        } else {
             setPhoneErrors('');
             setPhone(e.target.value);
             if (phoneErrors || mailErrors || addressErrors) {
@@ -315,15 +377,15 @@ const Cart = () => {
             } else {
                 setIsSubmitDisabled(false);
             }
-          }
-        
-      };
-    
-      const handleAddressChange = (e) => {
+        }
+
+    };
+
+    const handleAddressChange = (e) => {
         if (!e.target.value) {
             setAddressErrors('Chưa nhập địa chỉ');
             setIsSubmitDisabled(true);
-          } else {
+        } else {
             setAddressErrors('');
             const province = addressComponents.provinces.find(p => p.code === parseInt(values.province))?.name || '';
             const district = addressComponents.districts.find(d => d.code === parseInt(values.district))?.name || '';
@@ -335,15 +397,15 @@ const Cart = () => {
             } else {
                 setIsSubmitDisabled(false);
             }
-          }
-        
-      };
-    
-      const handleEmailChange = (e) => {
+        }
+
+    };
+
+    const handleEmailChange = (e) => {
         if (e.target.value && !emailRegex.test(e.target.value)) {
             setMailErrors('Email chưa đúng');
             setIsSubmitDisabled(true);
-          } else {
+        } else {
             setMailErrors('');
             setEmail(e.target.value);
             if (phoneErrors || mailErrors || addressErrors) {
@@ -352,11 +414,11 @@ const Cart = () => {
                 setIsSubmitDisabled(false);
             }
         }
-        
-      };
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    };
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     //   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
-  
+
 
 
     useEffect(() => {
@@ -432,7 +494,7 @@ const Cart = () => {
             const district = addressComponents.districts.find(d => d.code === parseInt(values.district))?.name || '';
             const ward = addressComponents.wards.find(w => w.code === parseInt(values.ward))?.name || '';
             const streetAddress = values.streetAddress.trim();
-            
+
             // Tạo địa chỉ đầy đủ chỉ khi có đủ thông tin
             if (streetAddress && province && district && ward) {
                 const fullAddress = `${ward}, ${district}, ${province}, ${streetAddress}`;
@@ -440,7 +502,7 @@ const Cart = () => {
                 setValues(prev => ({ ...prev, address: fullAddress }));
             }
         };
-        
+
         updateFullAddress();
     }, [values.province, values.district, values.ward, values.streetAddress, addressComponents]);
 
@@ -448,17 +510,17 @@ const Cart = () => {
     //     return total + (selectedItems[item.cartid] ? item.price * item.quantity : 0);
     // }, 0);
 
-    const SearchableSelect = ({ 
-        options, 
-        value, 
-        onChange, 
-        placeholder, 
-        name 
+    const SearchableSelect = ({
+        options,
+        value,
+        onChange,
+        placeholder,
+        name
     }) => {
         const [searchTerm, setSearchTerm] = useState('');
         const [isOpen, setIsOpen] = useState(false);
         const [filteredOptions, setFilteredOptions] = useState([]);
-        
+
         useEffect(() => {
             // Tìm tên của option được chọn
             if (value) {
@@ -470,27 +532,27 @@ const Cart = () => {
                 setSearchTerm('');
             }
         }, [value, options]);
-    
+
         useEffect(() => {
             // Lọc các options dựa trên searchTerm
-            const filtered = options.filter(option => 
+            const filtered = options.filter(option =>
                 option.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
             setFilteredOptions(filtered);
         }, [searchTerm, options]);
-    
+
         const handleInputChange = (e) => {
             setSearchTerm(e.target.value);
             setIsOpen(true);
             // Nếu xóa hết text, clear selection
             if (e.target.value === '') {
-                onChange({ target: { name, value: '' }});
+                onChange({ target: { name, value: '' } });
             }
         };
-    
+
         const handleOptionClick = (option) => {
             setSearchTerm(option.name);
-            onChange({ target: { name, value: option.code.toString() }});
+            onChange({ target: { name, value: option.code.toString() } });
             setIsOpen(false);
         };
         return (
@@ -529,274 +591,280 @@ const Cart = () => {
 
     return (
         <>
-        <AppHeader username={user?.username} consumerid={user?.consumerid} password={user?.password} />
-        <div style={{position:'relative',top:'150px'}}>
-            <h1>Giỏ hàng của bạn</h1>
-            <div className="container-xl">
-            <div className="table-responsive">
-            <div className="table-wrapper">
-            <div className="table-title">
-            {errorMessage && <div>{errorMessage}</div>}
-            {cartItems.length === 0 && !errorMessage && <div>Hiện tại không có sản phẩm nào trong giỏ hàng</div>}
-            <table className="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>
-                            <input type="checkbox" 
-                                checked={selectedItems.length === cartItems.length} 
-                                onChange={() => {
-                                    if (selectedItems.length === cartItems.length) {
-                                        console.log("aaaaaaaaaaaa");
-                                        setSelectedItems([]);
-                                    } else {
-                                        console.log("bbbbbbbbbbbbbbbbbbb");
-                                        setSelectedItems(cartItems.map(item => item.cartid));
-                                    }
-                                }} 
-                                className="custom-checkbox"
-                            />
-                        </th>
-                        <th>Sản phẩm</th>
-                        <th>Hình minh họa</th>
-                        <th>Đơn giá</th>
-                        <th>Số lượng</th>
-                        <th>Thành tiền</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {cartItems.map((item) => (
-                        <tr key={item.cartid}>
-                            <td>
-                                {/* <input
+            <AppHeader />
+            <div style={{ position: 'relative', top: '150px' }}>
+                <h1>Giỏ hàng của bạn</h1>
+                <div className="container-xl">
+                    <div className="table-responsive">
+                        <div className="table-wrapper">
+                            <div className="table-title">
+                                {errorMessage && <div>{errorMessage}</div>}
+                                {cartItems.length === 0 && !errorMessage && <div>Hiện tại không có sản phẩm nào trong giỏ hàng</div>}
+                                <table className="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox"
+                                                    checked={selectedItems.length === cartItems.length}
+                                                    onChange={() => {
+                                                        if (selectedItems.length === cartItems.length) {
+
+                                                            setSelectedItems([]);
+                                                        } else {
+
+                                                            setSelectedItems(cartItems.map(item => item.cartid));
+                                                        }
+                                                    }}
+                                                    className="custom-checkbox"
+                                                />
+                                            </th>
+                                            <th>Sản phẩm</th>
+                                            <th>Hình minh họa</th>
+                                            <th>Đơn giá</th>
+                                            <th>Số lượng</th>
+                                            <th>Thành tiền</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {cartItems.map((item) => (
+                                            <tr key={item.cartid}>
+                                                <td>
+                                                    {/* <input
                                     type="checkbox"
                                     checked={!!selectedItems[item.cartid]}
                                     onChange={() => handleSelectItem(item.cartid)}
                                 /> */}
-                                <input
-                                        type="checkbox"
-                                        checked={selectedItems.includes(item.cartid)}
-                                        onChange={() => handleCheckboxChange(item)}
-                                        className="custom-checkbox"
-                                    />
-                            </td>
-                            <td onClick={() => handleClickItem(item.productid)} className="product-name">
-                                {item.name} <br></br>
-                                Size: {item.size}
-                            </td>
-                            <td>
-                                {/* <img src={item.image} alt={item.name} style={{ width: '50px' }} /> */}
-                                <Card.Img
-                                    variant="top"
-                                    src={`/images/${item.image}`}
-                                    alt={item.name}
-                                    style={{ width: '70px' }}
-                                    className="img-fluid"
-                                    onLoad={() => console.log("Image loaded successfully")}
-                                    onError={() => console.log("Image URL:", item.image)}
-                                />
-                            </td>
-                            <td className="price">
-                                {(item.price * 1).toLocaleString()}
-                            </td>
-                            <td>
-                            <input
-                                    type="number"
-                                    min="1"
-                                    max={item.amount}
-                                    value={item.quantity}
-                                    onChange={e => {
-                                        const newQuantity = Math.min(Math.max(parseInt(e.target.value), 1), item.amount);
-                                        // Create a new cartItems array with the updated quantity
-                                        const newCartItems = cartItems.map(i => 
-                                            i.cartid === item.cartid ? { ...i, quantity: newQuantity } : i
-                                        );
-                                        setCartItems(newCartItems); // Update state with new cartItems array
-                                    }}
-                                    className="quantity-input"
-                                />
-                            </td>
-                            <td className="total">{(item.price * item.quantity).toLocaleString()} VND</td>
-                            <td>
-                                <button onClick={() => handleDeleteItem(item.cartid)} className="delete-btn">Bỏ khỏi giỏ hàng</button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {cartItems.length > 0 && (
-                <div>
-                    <h2>Số tiền cần phải thanh toán: {totalPrice.toLocaleString()} VND</h2>
-                    {/* <button onClick={handlePayment}>Thanh toán</button> */}
-                    <button onClick={deleteSelectedItems}>Xóa nhiều</button>
-                    <button onClick={() => beforeHandlePay()}>Thanh toán</button>
-                    {isPopupOpen && (
-                        <div className="popup">
-                        <div className="container-xl">
-                        <div className="table-responsive">
-                        <div className="table-wrapper">
-                        <div className="table-title">
-                        <div className="row">
-                            <h2>Chọn địa chỉ</h2>
-                            <label>
-                                <input
-                                    type="radio"
-                                    value="default"
-                                    checked={useDeffaultAdd === true}
-                                    onChange={() => handleChangeTypeAddress(true)}
-                                />
-                                Địa chỉ mặc định
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    value="other"
-                                    checked={useDeffaultAdd === false}
-                                    onChange={() => handleChangeTypeAddress(false)}
-                                />
-                                Địa chỉ khác
-                            </label>
-                            {useDeffaultAdd === true ? (
-                                <div>
-                                    <p>Điện thoại: {userInfo.phone === '' ? '0775667899':userInfo.phone} </p>
-                                    <p>Địa chỉ: {userInfo.address === '' ? 'Hà Lội':userInfo.address}</p>
-                                    <p>Email: {userInfo.email === '' ? 'chidechoinum1@gmail.com':userInfo.email}</p>
-                                </div>
-                            ) : (
-                                <div className="form-columns">
-                                    {/* Left Column - Login Information */}
-                                    <div className="form-column">
-                                        <div className="login__field">
-                                            <input 
-                                                type="text" 
-                                                className="login__input" 
-                                                placeholder="Số điện thoại" 
-                                                onChange={handlePhoneChange} 
-                                                name="phone" 
-                                            />
-                                            {phoneErrors && <p style={{ color: 'red' }}>{phoneErrors}</p>}
-                                        </div>
-                                        <div className="login__field">
-                                            <input 
-                                                type="email" 
-                                                className="login__input" 
-                                                placeholder="Email" 
-                                                onChange={handleEmailChange} 
-                                                name="email" 
-                                            />
-                                            {mailErrors && <p style={{ color: 'red' }}>{mailErrors}</p>}
-                                        </div>
-                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedItems.includes(item.cartid)}
+                                                        onChange={() => handleCheckboxChange(item)}
+                                                        className="custom-checkbox"
+                                                    />
+                                                </td>
+                                                <td onClick={() => handleClickItem(item.productid)} className="product-name">
+                                                    {item.name} <br></br>
+                                                    Size: {item.size}
+                                                </td>
+                                                <td>
+                                                    {/* <img src={item.image} alt={item.name} style={{ width: '50px' }} /> */}
+                                                    <Card.Img
+                                                        variant="top"
+                                                        src={`/images/${item.image}`}
+                                                        alt={item.name}
+                                                        style={{ width: '70px' }}
+                                                        className="img-fluid"
+                                                        onLoad={() => console.log("Image loaded successfully")}
+                                                        onError={() => console.log("Image URL:", item.image)}
+                                                    />
+                                                </td>
+                                                <td className="price">
+                                                    {(item.price * 1).toLocaleString()}
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max={item.amount}
+                                                        value={item.quantity}
+                                                        onChange={e => {
+                                                            const newQuantity = Math.min(Math.max(parseInt(e.target.value), 1), item.amount);
+                                                            // Create a new cartItems array with the updated quantity
+                                                            const newCartItems = cartItems.map(i =>
+                                                                i.cartid === item.cartid ? { ...i, quantity: newQuantity } : i
+                                                            );
+                                                            setCartItems(newCartItems); // Update state with new cartItems array
+                                                        }}
+                                                        className="quantity-input"
+                                                    />
+                                                </td>
+                                                <td className="total">{(item.price * item.quantity).toLocaleString()} VND</td>
+                                                <td>
+                                                    <button onClick={() => handleDeleteItem(item.cartid)} className="delete-btn">Bỏ khỏi giỏ hàng</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {cartItems.length > 0 && (
+                                    <div>
+                                        <h2>Số tiền cần phải thanh toán: {totalPrice.toLocaleString()} VND</h2>
+                                        {/* <button onClick={handlePayment}>Thanh toán</button> */}
+                                        <button onClick={deleteSelectedItems}>Xóa nhiều</button>
+                                        <button onClick={() => beforeHandlePay()}>Thanh toán</button>
+                                        {isPopupOpen && (
+                                            <div className="popup">
+                                                <div className="container-xl">
+                                                    <div className="table-responsive">
+                                                        <div className="table-wrapper">
+                                                            <div className="table-title">
+                                                                <div className="row">
+                                                                    <h2>Chọn địa chỉ</h2>
+                                                                    <label>
+                                                                        <input
+                                                                            type="radio"
+                                                                            value="default"
+                                                                            checked={useDeffaultAdd === true}
+                                                                            onChange={() => handleChangeTypeAddress(true)}
+                                                                        />
+                                                                        Địa chỉ mặc định
+                                                                    </label>
+                                                                    <label>
+                                                                        <input
+                                                                            type="radio"
+                                                                            value="other"
+                                                                            checked={useDeffaultAdd === false}
+                                                                            onChange={() => handleChangeTypeAddress(false)}
+                                                                        />
+                                                                        Địa chỉ khác
+                                                                    </label>
+                                                                    {useDeffaultAdd === true ? (
+                                                                        <div>
+                                                                            <p>Điện thoại: {userInfo.phone === '' ? '0775667899' : userInfo.phone} </p>
+                                                                            <p>Địa chỉ: {userInfo.address === '' ? 'Hà Lội' : userInfo.address}</p>
+                                                                            <p>Email: {userInfo.email === '' ? 'chidechoinum1@gmail.com' : userInfo.email}</p>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="form-columns">
+                                                                            {/* Left Column - Login Information */}
+                                                                            <div className="form-column">
+                                                                                <div className="login__field">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="login__input"
+                                                                                        placeholder="Số điện thoại"
+                                                                                        onChange={handlePhoneChange}
+                                                                                        name="phone"
+                                                                                    />
+                                                                                    {phoneErrors && <p style={{ color: 'red' }}>{phoneErrors}</p>}
+                                                                                </div>
+                                                                                <div className="login__field">
+                                                                                    <input
+                                                                                        type="email"
+                                                                                        className="login__input"
+                                                                                        placeholder="Email"
+                                                                                        onChange={handleEmailChange}
+                                                                                        name="email"
+                                                                                    />
+                                                                                    {mailErrors && <p style={{ color: 'red' }}>{mailErrors}</p>}
+                                                                                </div>
+                                                                            </div>
 
-                                    {/* Right Column - Address Information */}
-                                    <div className="form-column">
-                                        <div className="login__field">
-                                            <SearchableSelect
-                                                options={addressComponents.provinces}
-                                                value={values.province}
-                                                onChange={handleInput}
-                                                placeholder="Chọn Tỉnh/Thành phố"
-                                                name="province"
-                                            />
-                                        </div>
-                                        {values.province && (
-                                            <div className="login__field">
-                                                <SearchableSelect
-                                                    options={addressComponents.districts}
-                                                    value={values.district}
-                                                    onChange={handleInput}
-                                                    placeholder="Chọn Quận/Huyện"
-                                                    name="district"
-                                                />
-                                            </div>
-                                        )}
-                                        {values.district && (
-                                            <div className="login__field">
-                                                <SearchableSelect
-                                                    options={addressComponents.wards}
-                                                    value={values.ward}
-                                                    onChange={handleInput}
-                                                    placeholder="Chọn Phường/Xã"
-                                                    name="ward"
-                                                />
-                                            </div>
-                                        )}
-                                        {values.ward && (
-                                            <div className="login__field">
-                                                <input 
-                                                    type="text"
-                                                    className="login__input"
-                                                    placeholder="Số nhà, tên đường"
-                                                    onChange={handleAddressChange}
-                                                    name="streetAddress"
-                                                />
-                                            </div>
-                                        )}
-                                        {addressErrors && <p style={{ color: 'red' }}>{addressErrors}</p>}
-                                    </div>
-                                </div>
-                            )}
-                            
-                        </div>
-                        </div>
-                        </div>
-                        </div>
-                        <div style={{ flex: 1, marginLeft: '20px' }}>
-                            <h4>Nhập mã giảm giá</h4>
-                            
-                            {/* Textbox for discount code */}
-                            <input
-                                type="text"
-                                value={discountCode}
-                                placeholder="Nhập mã giảm giá"
-                                onInput={(e) => setDiscountCode(e.target.value)}  // Updates discount code when typing
-                            />
-                            
-                            {/* Button to apply discount */}
-                            <button onClick={handleApplyDiscount}>Áp dụng</button>
+                                                                            {/* Right Column - Address Information */}
+                                                                            <div className="form-column">
+                                                                                <div className="login__field">
+                                                                                    <SearchableSelect
+                                                                                        options={addressComponents.provinces}
+                                                                                        value={values.province}
+                                                                                        onChange={handleInput}
+                                                                                        placeholder="Chọn Tỉnh/Thành phố"
+                                                                                        name="province"
+                                                                                    />
+                                                                                </div>
+                                                                                {values.province && (
+                                                                                    <div className="login__field">
+                                                                                        <SearchableSelect
+                                                                                            options={addressComponents.districts}
+                                                                                            value={values.district}
+                                                                                            onChange={handleInput}
+                                                                                            placeholder="Chọn Quận/Huyện"
+                                                                                            name="district"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                                {values.district && (
+                                                                                    <div className="login__field">
+                                                                                        <SearchableSelect
+                                                                                            options={addressComponents.wards}
+                                                                                            value={values.ward}
+                                                                                            onChange={handleInput}
+                                                                                            placeholder="Chọn Phường/Xã"
+                                                                                            name="ward"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                                {values.ward && (
+                                                                                    <div className="login__field">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className="login__input"
+                                                                                            placeholder="Số nhà, tên đường"
+                                                                                            onChange={handleAddressChange}
+                                                                                            name="streetAddress"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                                {addressErrors && <p style={{ color: 'red' }}>{addressErrors}</p>}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
-                            {/* Display error messages */}
-                            {errorDiscountMessage && <p style={{ color: 'red' }}>{errorDiscountMessage}</p>}  {/* Display error message */}
-                            
-                            {/* Display the new price after discount */}
-                            {newPrice !== null && (
-                                <p style={{ color: 'green' }}>
-                                    Giá sau giảm: <strong>{newPrice.toLocaleString()} VND</strong>
-                                </p>
-                            )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ flex: 1, marginLeft: '20px' }}>
+                                                        <h4>Nhập mã giảm giá</h4>
+
+                                                        {/* Textbox for discount code */}
+                                                        <input
+                                                            type="text"
+                                                            value={discountCode}
+                                                            placeholder="Nhập mã giảm giá"
+                                                            onInput={(e) => setDiscountCode(e.target.value)}  // Updates discount code when typing
+                                                        />
+
+                                                        {/* Button to apply discount */}
+                                                        <button onClick={handleApplyDiscount}>Áp dụng</button>
+
+                                                        {/* Display error messages */}
+                                                        {errorDiscountMessage && <p style={{ color: 'red' }}>{errorDiscountMessage}</p>}  {/* Display error message */}
+
+                                                        {/* Display the new price after discount */}
+                                                        {newPrice !== null && (
+                                                            <p style={{ color: 'green' }}>
+                                                                Giá sau giảm: <strong>{newPrice.toLocaleString()} VND</strong>
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <button disabled={isSubmitDisabled} onClick={() => {
+                                                    handlePayment('cod');
+                                                    // setPaymentMethod('cod');
+                                                    // handleCheckout();
+                                                    // setIsPopupOpen(false);
+                                                }}>Thanh toán COD</button>
+                                                <button disabled={isSubmitDisabled} onClick={() => {
+                                                    handlePayment('online');
+                                                    // setPaymentMethod('online');
+                                                    // handleCheckout();
+                                                    // setIsPopupOpen(false);
+                                                    // setIsModalOpen(true);
+
+                                                }}>Thanh toán online</button>
+                                                <button onClick={handleClose}>Đóng</button>
+                                            </div>
+                                        )}
+                                        <PaymentModal
+                                            show={isPaymentModalOpen}
+                                            onHide={() => setIsPaymentModalOpen(false)}
+                                            amount={!newPrice ? totalPrice : newPrice}
+                                            onConfirm={handlePaymentConfirmation}
+                                            userid={consumerId}
+                                        />
+                                        <ImageAlertModal
+                                            isOpen={isModalOpen}
+                                            onClose={closeAlert}
+                                            message=""
+                                            imageUrl={imgUrl} // Replace with your image URL
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <button disabled={isSubmitDisabled} onClick={() => {
-                                handlePayment('cod');
-                                // setPaymentMethod('cod');
-                                // handleCheckout();
-                                // setIsPopupOpen(false);
-                            }}>Thanh toán COD</button>
-                            <button disabled={isSubmitDisabled} onClick={() => {
-                                handlePayment('online');
-                                // setPaymentMethod('online');
-                                // handleCheckout();
-                                // setIsPopupOpen(false);
-                                // setIsModalOpen(true);
-                                
-                            }}>Thanh toán online</button>
-                            <button onClick={handleClose}>Đóng</button>
-                        </div>
-                    )}
-
-                    <ImageAlertModal
-                        isOpen={isModalOpen}
-                        onClose={closeAlert}
-                        message=""
-                        imageUrl={imgUrl} // Replace with your image URL
-                    />
+                    </div>
                 </div>
-            )}
             </div>
-            </div>
-            </div>
-            </div>
-        </div>
         </>
     );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Form, Button, Container, Card, Row, Col, Alert } from 'react-bootstrap';
+import AppHeader from './Header';
 
 const OTP = () => {
   const [email, setEmail] = useState('');
@@ -38,7 +39,9 @@ const OTP = () => {
   };
 
   return (
-    <Container fluid className="vh-100 d-flex justify-content-center align-items-center">
+    <>
+    <AppHeader/>
+      <Container fluid className="vh-100 d-flex justify-content-center align-items-center">
       <Row className="w-100">
         <Col xs={12} md={6} lg={4} className="mx-auto">
           <Card>
@@ -60,7 +63,7 @@ const OTP = () => {
                     />
                   </Form.Group>
                   <div className="d-grid">
-                    <Button variant="primary" size="lg" type="submit">
+                    <Button variant="outline-primary" size="lg" type="submit">
                       Yêu cầu OTP
                     </Button>
                   </div>
@@ -103,6 +106,8 @@ const OTP = () => {
         </Col>
       </Row>
     </Container>
+    </>
+    
   );
 };
 

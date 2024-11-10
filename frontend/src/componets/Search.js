@@ -85,7 +85,8 @@ const CentralSearchModal = ({ visible, onClose }) => {
                 title={<Text strong>{item.name}</Text>}
                 description={
                  <> 
-                <Text type="secondary" style={{textDecoration:"line-through"}}>{parseFloat(item.old_price).toLocaleString('vi-VN')} VND</Text> 
+                 {item.discount_id && <Text type="secondary" style={{textDecoration:"line-through"}}>{parseFloat(item.old_price).toLocaleString('vi-VN')} VND</Text>}
+                 
                 <Text type="success">{parseFloat(item.price).toLocaleString('vi-VN')} VND</Text>
                 </>
                 }

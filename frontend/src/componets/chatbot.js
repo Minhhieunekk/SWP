@@ -126,7 +126,7 @@ function Chatbot() {
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder="Type your message..."
+                        placeholder="Nhập câu hỏi..."
                         disabled={isLoading}
                       />
                     </Col>
@@ -136,7 +136,7 @@ function Chatbot() {
                         variant="primary"
                         disabled={isLoading}
                       >
-                        Send
+                        Gửi
                       </Button>
                     </Col>
                   </Row>

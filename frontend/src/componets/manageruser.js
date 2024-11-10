@@ -4,6 +4,7 @@ import { Image } from 'antd';
 import axios from 'axios';
 import AppHeader from './Header';
 import { useLocation } from 'react-router';
+import {toast,Bounce} from 'react-toastify';
 
 const UserManagementComponent = () => {
     const [users, setUsers] = useState([]);
@@ -11,8 +12,10 @@ const UserManagementComponent = () => {
     const usersPerPage = 10;
     const [user, setUser] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showChangeModal, setShowChangeModal] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [selectedUsername, setSelectedUsername] = useState(null);
+    const [newRole, setNewRole] = useState(null); // Store new role
 
     useEffect(() => {
         fetchUsers();
@@ -48,39 +51,66 @@ const UserManagementComponent = () => {
             await axios.delete(`http://localhost:8088/manageruser/${selectedUserId}`);
             setUsers(users.filter((user) => user.consumerid !== selectedUserId));
             setShowDeleteModal(false);
+            toast.error('Đã xoá người dùng', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+                });
         } catch (error) {
             console.error('Error deleting user:', error);
         }
     };
 
-    const handleChangeRole = async (userId) => {
+    const handleChangeRole = (userId, username) => {
+        const user = users.find((u) => u.consumerid === userId);
+        const newRoleValue = user.admin === 0 ? 1 : 0;
+        setSelectedUserId(userId);
+        setSelectedUsername(username);
+        setNewRole(newRoleValue);
+        setShowChangeModal(true);
+    };
+
+    const confirmChangeRole = async () => {
         try {
-            const user = users.find((u) => u.consumerid === userId);
-            const newRole = user.admin === 0 ? 1 : 0;
-            await axios.put(`http://localhost:8088/manageruser/${userId}`, { admin: newRole });
-            setUsers(users.map((u) => u.consumerid === userId ? { ...u, admin: newRole } : u));
-            alert("đổi quyền thành công")
+            await axios.put(`http://localhost:8088/manageruser/${selectedUserId}`, { admin: newRole });
+            setUsers(users.map((u) => u.consumerid === selectedUserId ? { ...u, admin: newRole } : u));
+            setShowChangeModal(false);
+            toast.success('Đổi quyền thành công', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+                });
         } catch (error) {
             console.error('Error changing user role:', error);
         }
     };
+
     const fetchUserData = async (token) => {
         try {
-
             const res = await axios.get('http://localhost:8088/api/user/details', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setUser(res.data);
-
         } catch (err) {
             console.error('Error fetching user data:', err);
-
             if (err.response?.status === 401 || err.response?.status === 403) {
                 localStorage.removeItem('token');
-
             }
         }
     };
+
     const location = useLocation();
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -96,7 +126,7 @@ const UserManagementComponent = () => {
 
     return (
         <>
-            {user?.admin===1 && 
+            {user?.admin === 1 && 
                 <>
                     <AppHeader />
                     <Container style={{position:"relative",top:"80px"}}>
@@ -115,7 +145,7 @@ const UserManagementComponent = () => {
                                             <th>Ảnh đại diện</th>
                                             <th>Tổng tiền đã mua</th>
                                             <th>Tổng sản phẩm đã mua</th>
-                                            <th >Hành động</th>
+                                            <th>Hành động</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -130,18 +160,13 @@ const UserManagementComponent = () => {
                                                 </td>
                                                 <td>{parseInt(user.total_spent).toLocaleString() || 0} VND</td>
                                                 <td>{user.total_products} sản phẩm</td>
-                                                <td >
-                                                    
-                                                            <Button variant="outline-success" onClick={() => handleChangeRole(user.consumerid)} className="w-100">
-                                                                Đổi quyền
-                                                            </Button>
-                                                       
-                                                       
-                                                            <Button variant="outline-danger" onClick={() => handleDelete(user.consumerid, user.username)} className="w-100">
-                                                                Xoá
-                                                            </Button>
-                                                        
-                                                    
+                                                <td>
+                                                    <Button variant="outline-success" onClick={() => handleChangeRole(user.consumerid, user.username)} className="w-100">
+                                                        Đổi quyền
+                                                    </Button>
+                                                    <Button variant="outline-danger" onClick={() => handleDelete(user.consumerid, user.username)} className="w-100">
+                                                        Xoá
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -184,6 +209,22 @@ const UserManagementComponent = () => {
                             </Button>
                             <Button variant="danger" onClick={confirmDelete}>
                                 Xoá
+                            </Button>
+                        </Modal.Footer>
+                    </Modal>
+                    <Modal show={showChangeModal} onHide={() => setShowChangeModal(false)}>
+                        <Modal.Header closeButton>
+                            <Modal.Title>Xác nhận đổi quyền</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            Bạn có chắc chắn muốn đổi quyền của người dùng <strong>{selectedUsername}</strong>?
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowChangeModal(false)}>
+                                Hủy
+                            </Button>
+                            <Button variant="success" onClick={confirmChangeRole}>
+                                Chấp nhận
                             </Button>
                         </Modal.Footer>
                     </Modal>

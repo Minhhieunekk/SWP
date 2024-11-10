@@ -173,7 +173,7 @@ const CreateDiscount = () => {
 
         <Box sx={{ marginTop: 2 }}>
           <TextField
-            label="Giá trị khuyến mãi"
+            label="Giá trị khuyến mãi (%)"
             type="number"
             min = "1"
             max = "100"

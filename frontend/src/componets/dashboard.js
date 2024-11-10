@@ -335,6 +335,9 @@ const ProductModal = ({ show, onHide, onSubmit, title, product = null }) => {
     if (numberValue < 0) {
       return `${fieldName} không được âm `;
     }
+    if (numberValue >2000000000) {
+      return `${fieldName} quá lớn `;
+    }
     if (numberValue !== parseFloat(value)) {
       return `${fieldName} phải là số nguyên`;
     }

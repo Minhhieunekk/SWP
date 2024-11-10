@@ -118,7 +118,7 @@ const Statistic = () => {
                             <i class="fa fa-chart-line fa-3x text-primary"></i>
                             <div class="ms-3">
                                 <p class="mb-2">Doanh thu ngày</p>
-                                <h6 class="mb-0">{!earnings.today_earn?'0':earnings.today_earn}</h6>
+                                <h6 class="mb-0">{!earnings.today_earn?'0':(earnings.today_earn*1).toLocaleString()} VND</h6>
                             </div>
                         </div>
                     </div>
@@ -127,7 +127,7 @@ const Statistic = () => {
                             <i class="fa fa-chart-bar fa-3x text-primary"></i>
                             <div class="ms-3">
                                 <p class="mb-2">Doanh thu tháng</p>
-                                <h6 class="mb-0">{earnings.this_month_earn}</h6>
+                                <h6 class="mb-0">{!earnings.this_month_earn?'0':(earnings.this_month_earn*1).toLocaleString()} VND</h6>
                             </div>
                         </div>
                     </div>
@@ -136,7 +136,7 @@ const Statistic = () => {
                             <i class="fa fa-chart-area fa-3x text-primary"></i>
                             <div class="ms-3">
                                 <p class="mb-2">Tổng doanh thu</p>
-                                <h6 class="mb-0">{earnings.this_month_earn}</h6>
+                                <h6 class="mb-0">{!earnings.all_time_earn?'0':(earnings.all_time_earn*1).toLocaleString()} VND</h6>
                             </div>
                         </div>
                     </div>

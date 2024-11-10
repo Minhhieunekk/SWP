@@ -195,7 +195,7 @@ const OrderInfo = () => {
                         <Form.Item name="rate" label="Đánh giá" rules={[{ required: true, message: "Vui lòng chọn đánh giá sao!" }]}>
                             <Rate allowClear />
                         </Form.Item>
-                        <Form.Item name="feedback" label="Feedback" rules={[{ required: true, message: "Vui lòng nhập feedback!" }]}>
+                        <Form.Item name="feedback" label="Phản hồi" rules={[{ required: true, message: "Vui lòng nhập feedback!" }]}>
                             <Input.TextArea rows={4} />
                         </Form.Item>
                         <Form.Item>

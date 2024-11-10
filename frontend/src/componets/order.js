@@ -267,10 +267,12 @@ const fetchUserData = async (token) => {
         >
           <option value="-1">Tất cả</option>
           <option value="0">Hủy</option>
-          <option value="1">Đã nhận đợn</option>
-          <option value="2">Đang đóng hàng</option>
-          <option value="3">Đang vận chuyển</option>
-          <option value="4">Hoàn Thành</option>
+          <option value="1">Chờ xác nhận</option>
+          <option value="2">Đã xác nhận</option>
+          <option value="3">Đang chuẩn bị hàng</option>
+          <option value="4">Đang giao hàng</option>
+          <option value="5">Hoàn Thành</option>
+          <option value="6">Giao hàng thất bại</option>
         </select>
         <label>Paging:</label>
         <select
@@ -393,7 +395,7 @@ const fetchUserData = async (token) => {
         <div className="row">
           
         <h2>Chi tiết đơn hàng</h2>
-        <p>Giá trị đơn hàng: {oldTotal}</p>
+        <p>Giá trị đơn hàng: {(oldTotal * 1).toLocaleString()}</p>
         <p>Người nhận: {name} - Địa chỉ: {address}</p>
         {/* { modifiedItems.length !==0 ? <p>Giá trị đơn hàng nếu cập nhật: {newTotal}</p> : null} */}
         <table className="table table-striped table-hover">
