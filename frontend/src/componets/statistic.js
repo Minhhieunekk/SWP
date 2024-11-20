@@ -108,7 +108,7 @@ const Statistic = () => {
     <br></br>
     <br></br>
     <div className="dashboard">
-      <h1>Dashboard</h1>
+      <h1>Thống kê</h1>
 
       {/* Earnings Table */}
       <div class="container-fluid pt-4 px-4">

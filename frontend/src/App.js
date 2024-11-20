@@ -24,6 +24,7 @@ import OrderInfo from './componets/Orderinfo';
 import Statistic from './componets/statistic';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import VNPayPayment from './componets/VNPayPayment';
 
 function App() {
   return (
@@ -44,7 +45,6 @@ function App() {
           <Route path="/chat-lieu/:id" element={<MaterialCategory />} />
           <Route path="/qua-tang/:id" element={<GiftCategory />} />
           <Route path="/manageuser" element={<UserManagementComponent />} />
-
           <Route path="/chat" element={<Chatbot />} />
           <Route path="/orderinfo" element={<OrderInfo />} />
           <Route path="/contact" element={<Contact />} />
@@ -53,6 +53,7 @@ function App() {
           <Route path="/create-discount" element={<CreateDiscount />} /> 
           <Route path="/manage-discount" element={<ManageDiscounts />} /> 
           <Route path="/statistic" element={<Statistic />} /> 
+          <Route path="/vnpay" element={<VNPayPayment />} /> 
         </Routes>
       </BrowserRouter>
       <ToastContainer />

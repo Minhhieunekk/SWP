@@ -21,6 +21,13 @@ const { DataSource } = require('typeorm')
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
+const crypto = require('crypto');
+const querystring = require('qs');
+const config = require('config');
+const axios = require('axios');
+
+// const qs = require('qs');
+// const dateFormat = require('dateformat')
 const fs = require('fs');
 const moment = require('moment');
 
@@ -69,7 +76,7 @@ const db = mysql.createConnection({
 
 function generateToken(user) {
   return jwt.sign(
-    { username: user.username, consumerid: user.consumerid, password: user.password,admin: user.admin },
+    { username: user.username, consumerid: user.consumerid, password: user.password, admin: user.admin },
     "22112004",
     { expiresIn: '1d' }
   );
@@ -328,11 +335,11 @@ app.delete('/manageruser/:userId', (req, res) => {
   const sql = 'DELETE FROM user WHERE consumerid = ?';
 
   db.query(sql, [userId], (err, result) => {
-      if (err) {
-          console.error('Error deleting user:', err);
-          return res.status(500).json({ error: 'Error deleting user' });
-      }
-      res.status(200).json({ message: 'User deleted successfully' });
+    if (err) {
+      console.error('Error deleting user:', err);
+      return res.status(500).json({ error: 'Error deleting user' });
+    }
+    res.status(200).json({ message: 'User deleted successfully' });
   });
 });
 app.put('/manageruser/:userId', (req, res) => {
@@ -341,11 +348,11 @@ app.put('/manageruser/:userId', (req, res) => {
   const sql = 'UPDATE user SET admin = ? WHERE consumerid = ?';
 
   db.query(sql, [admin, userId], (err, result) => {
-      if (err) {
-          console.error('Error updating role:', err);
-          return res.status(500).json({ error: 'Error updating role' });
-      }
-      res.status(200).json({ message: 'Role updated successfully' });
+    if (err) {
+      console.error('Error updating role:', err);
+      return res.status(500).json({ error: 'Error updating role' });
+    }
+    res.status(200).json({ message: 'Role updated successfully' });
   });
 });
 
@@ -401,7 +408,7 @@ app.get('/api/user/details', (req, res) => {
           username: data[0].username,
           consumerid: data[0].consumerid,
           password: data[0].password,
-          admin:data[0].admin
+          admin: data[0].admin
         });
       }
       return res.status(404).json({ message: "User not found" });
@@ -846,7 +853,7 @@ app.get("/home/nhan", (req, res) => {
 //tìm kiếm sản phẩm
 app.get('/search', (req, res) => {
   const searchTerm = req.query.term;
-          const sql = `SELECT 
+  const sql = `SELECT 
           product.productid, 
           product.name, 
           product.image, 
@@ -884,7 +891,7 @@ app.get('/search', (req, res) => {
 });
 app.get('/product/:id', (req, res) => {
   const productId = req.params.id;
-  const sql =  `SELECT 
+  const sql = `SELECT 
           product.productid, 
           product.name, 
           product.image, 
@@ -980,16 +987,17 @@ app.put('/updateproduct/:id', (req, res) => {
 
       // Update product
       const updateProductQuery = `
-              UPDATE product 
-              SET name = ?,
-                  price = ?,
-                  category = ?,
-                  brand = ?,
-                  goldage = ?,
-                  description = ?,
-                  image = ?
-              WHERE productid = ?
-          `;
+      UPDATE product 
+      SET name = ?,
+          price = ?,
+          category = ?,
+          brand = ?,
+          goldage = ?,
+          description = ?
+          ${updatedProduct.image ? ', image = ?' : ''}
+      WHERE productid = ?
+  `;
+
       const updateProductParams = [
         updatedProduct.name,
         updatedProduct.price,
@@ -997,7 +1005,7 @@ app.put('/updateproduct/:id', (req, res) => {
         updatedProduct.brand,
         goldageValue,
         updatedProduct.description,
-        updatedProduct.image,
+        ...(updatedProduct.image ? [updatedProduct.image] : []),
         productId
       ];
       console.log('Updating product:', { query: updateProductQuery, params: updateProductParams });
@@ -1016,11 +1024,10 @@ app.put('/updateproduct/:id', (req, res) => {
         // Update inventory
         const updateInventoryQuery = `
                   UPDATE inventory 
-                  SET size = ?,
-                      amount = ?
-                  WHERE prd_id = ?
+                     set amount = ?
+                  WHERE prd_id = ? and size = ?
               `;
-        const updateInventoryParams = [updatedProduct.size, updatedProduct.amount, productId];
+        const updateInventoryParams = [updatedProduct.amount, productId, updatedProduct.size];
         console.log('Updating inventory:', { query: updateInventoryQuery, params: updateInventoryParams });
 
         db.query(updateInventoryQuery, updateInventoryParams, (err) => {
@@ -2019,7 +2026,7 @@ app.put('/order/payment-status', (req, res) => {
 app.put('/order/order-status', (req, res) => {
   const { orderId, status } = req.body;
   if (status === 5) {
-        db.execute("UPDATE order_detail SET payment_status = 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?", [orderId]);
+    db.execute("UPDATE order_detail SET payment_status = 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?", [orderId]);
   }
   db.query(
     'UPDATE order_detail SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
@@ -2176,7 +2183,7 @@ app.post('/api/discounts', (req, res) => {
     if (err) {
       return res.status(500).json({ error: 'Error creating discount' });
     }
-    res.status(201).json({ message: 'Discount created successfully', discount_id: results.insertId });
+    res.status(201).json({ message: 'Đã tạo mã thành công', discount_id: results.insertId });
   });
 });
 
@@ -2194,7 +2201,7 @@ app.put('/api/discounts/:id', (req, res) => {
     if (results.affectedRows === 0) {
       return res.status(404).json({ error: 'Discount not found' });
     }
-    res.json({ message: 'Discount updated successfully' });
+    res.json({ message: 'Cập nhật mã thành công' });
   });
 });
 
@@ -2964,7 +2971,7 @@ async function initializeQASystem() {
     appDataSource: typeormDataSource
   });
 
-  const executeQuery = new QuerySqlTool(knowledge_base,{
+  const executeQuery = new QuerySqlTool(knowledge_base, {
     maxRows: 100
   });
   const writeQuery = await createSqlQueryChain({
@@ -2976,7 +2983,7 @@ async function initializeQASystem() {
     sampleQueries: [
       "SELECT p.*, c.* FROM product p JOIN category c ON p.category = c.categoryid WHERE c.material = 'bạc'",
       "SELECT p.name, p.price, c.material FROM product p JOIN category c ON p.category = c.categoryid"
-  ]
+    ]
   });
 
   const chain = RunnableSequence.from([
@@ -2987,15 +2994,15 @@ async function initializeQASystem() {
         try {
           const queryResult = await executeQuery.invoke(i.query);
           console.log(i.query)
-          
+
           const resultArray = Array.isArray(queryResult) ? queryResult : [queryResult];
-          
-        
+
+
           const formattedResult = resultArray
             .filter(item => item && item.name)
             .map(item => item.name)
             .join(', ');
-            
+
           return `Chúng tôi có những sản phẩm tuyệt vời sau: ${formattedResult}`;
         } catch (error) {
           console.error('Error executing query:', error);
@@ -3093,5 +3100,145 @@ app.post('/api/chat', async (req, res) => {
 app.listen(8088, () => {
   console.log("Server running on port 8088");
 });
+
+
+
+
+function sortObject(obj) {
+  let sorted = {};
+  let str = [];
+  for (let key in obj) {
+      if (obj.hasOwnProperty(key)) {
+          str.push(encodeURIComponent(key));
+      }
+  }
+  str.sort();
+  for (let key = 0; key < str.length; key++) {
+      sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+  }
+  return sorted;
+}
+
+
+
+// Route to render new order creation
+app.get('/create_payment_url', (req, res) => {
+  res.render('order', { title: 'Tạo mới đơn hàng', amount: 10000 });
+});
+
+// // Route for payment result query
+// app.get('/querydr', (req, res) => {
+//   res.render('querydr', { title: 'Truy vấn kết quả thanh toán' });
+// });
+
+// // Route for refunding payment
+// app.get('/refund', (req, res) => {
+//   res.render('refund', { title: 'Hoàn tiền giao dịch thanh toán' });
+// });
+
+// Route to handle payment URL creation
+app.post('/create_payment_url', (req, res) => {
+  let date = new Date();
+  let createDate = moment(date).format('YYYYMMDDHHmmss');
+  let ipAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+  let tmnCode = config.get('vnp_TmnCode');
+  let secretKey = config.get('vnp_HashSecret');
+  let vnpUrl = config.get('vnp_Url');
+  let returnUrl = config.get('vnp_ReturnUrl');
+  let orderId = moment(date).format('DDHHmmss');
+  let amount = req.body.amount;
+  let bankCode = req.body.bankCode || '';
+  let locale = req.body.language || 'vn';
+  let currCode = 'VND';
+
+  // Construct VNPay parameters
+  let vnp_Params = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: tmnCode,
+      vnp_Locale: locale,
+      vnp_CurrCode: currCode,
+      vnp_TxnRef: orderId,
+      vnp_OrderInfo: `Thanh toan cho ma GD: ${orderId}`,
+      vnp_OrderType: 'other',
+      vnp_Amount: amount * 100,
+      vnp_ReturnUrl: returnUrl,
+      vnp_IpAddr: ipAddr,
+      vnp_CreateDate: createDate
+  };
+
+  if (bankCode) vnp_Params['vnp_BankCode'] = bankCode;
+
+  // Sort and sign parameters
+  vnp_Params = sortObject(vnp_Params);
+  let signData = querystring.stringify(vnp_Params, { encode: false });
+  let hmac = crypto.createHmac("sha512", secretKey);
+  let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+  vnp_Params['vnp_SecureHash'] = signed;
+
+  // Redirect to VNPay URL
+  vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false });
+ 
+  res.json({ redirectUrl: `${vnpUrl}` });
+  
+});
+
+// Route to handle VNPay return URL
+app.get('/vnpay_return', (req, res) => {
+  let vnp_Params = req.query;
+  let secureHash = vnp_Params['vnp_SecureHash'];
+  delete vnp_Params['vnp_SecureHash'];
+  delete vnp_Params['vnp_SecureHashType'];
+
+  vnp_Params = sortObject(vnp_Params);
+  let signData = querystring.stringify(vnp_Params, { encode: false });
+  let secretKey = config.get('vnp_HashSecret');
+  let hmac = crypto.createHmac("sha512", secretKey);
+  let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+
+  if (secureHash === signed) {
+      res.render('success', { code: vnp_Params['vnp_ResponseCode'] });
+  } else {
+      res.render('success', { code: '97' }); // Checksum failed
+  }
+});
+
+// Route to handle VNPay IPN (Instant Payment Notification)
+app.get('/vnpay_ipn', async (req, res) => {
+  let vnp_Params = req.query;
+  let secureHash = vnp_Params['vnp_SecureHash'];
+  delete vnp_Params['vnp_SecureHash'];
+  delete vnp_Params['vnp_SecureHashType'];
+
+  vnp_Params = sortObject(vnp_Params);
+  let secretKey = config.get('vnp_HashSecret');
+  let signData = querystring.stringify(vnp_Params, { encode: false });
+  let hmac = crypto.createHmac("sha512", secretKey);
+  let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+
+  if (secureHash === signed) {
+      let paymentStatus = '0'; // Assume order is pending
+      let rspCode = vnp_Params['vnp_ResponseCode'];
+      
+      // Check order validity and payment status
+      if (paymentStatus === '0') {
+          if (rspCode === '00') {
+              res.status(200).json({ RspCode: '00', Message: 'Success' });
+          } else {
+              res.status(200).json({ RspCode: '00', Message: 'Success' });
+          }
+      } else {
+          res.status(200).json({ RspCode: '02', Message: 'This order has been updated to the payment status' });
+      }
+  } else {
+      res.status(200).json({ RspCode: '97', Message: 'Checksum failed' });
+  }
+});
+
+
+
+
+
+
 
 

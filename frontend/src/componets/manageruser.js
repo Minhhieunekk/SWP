@@ -40,32 +40,7 @@ const UserManagementComponent = () => {
         setCurrentPage(page);
     };
 
-    const handleDelete = (userId, username) => {
-        setSelectedUserId(userId);
-        setSelectedUsername(username);
-        setShowDeleteModal(true);
-    };
-
-    const confirmDelete = async () => {
-        try {
-            await axios.delete(`http://localhost:8088/manageruser/${selectedUserId}`);
-            setUsers(users.filter((user) => user.consumerid !== selectedUserId));
-            setShowDeleteModal(false);
-            toast.error('Đã xoá người dùng', {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                theme: "light",
-                transition: Bounce,
-                });
-        } catch (error) {
-            console.error('Error deleting user:', error);
-        }
-    };
+ 
 
     const handleChangeRole = (userId, username) => {
         const user = users.find((u) => u.consumerid === userId);
@@ -164,9 +139,6 @@ const UserManagementComponent = () => {
                                                     <Button variant="outline-success" onClick={() => handleChangeRole(user.consumerid, user.username)} className="w-100">
                                                         Đổi quyền
                                                     </Button>
-                                                    <Button variant="outline-danger" onClick={() => handleDelete(user.consumerid, user.username)} className="w-100">
-                                                        Xoá
-                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -196,22 +168,7 @@ const UserManagementComponent = () => {
                             </Row>
                         </Col>
                     </Container>
-                    <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-                        <Modal.Header closeButton>
-                            <Modal.Title>Xác nhận xoá người dùng</Modal.Title>
-                        </Modal.Header>
-                        <Modal.Body>
-                            Bạn có chắc chắn muốn xoá người dùng <strong>{selectedUsername}</strong>?
-                        </Modal.Body>
-                        <Modal.Footer>
-                            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-                                Hủy
-                            </Button>
-                            <Button variant="danger" onClick={confirmDelete}>
-                                Xoá
-                            </Button>
-                        </Modal.Footer>
-                    </Modal>
+                   
                     <Modal show={showChangeModal} onHide={() => setShowChangeModal(false)}>
                         <Modal.Header closeButton>
                             <Modal.Title>Xác nhận đổi quyền</Modal.Title>

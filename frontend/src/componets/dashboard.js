@@ -26,6 +26,7 @@ const Dashboard = () => {
   }, [currentPage, searchTerm]);
 
   const fetchProducts = async (page, limit, search) => {
+    setProducts([]);
     try {
       const url = new URL('http://localhost:8088/dashboard');
       url.searchParams.append('page', page);

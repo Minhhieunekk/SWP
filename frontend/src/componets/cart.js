@@ -317,7 +317,7 @@ const Cart = () => {
             phone: phone,
             address: address,
             email: email,
-            paymentStatus: paymentType === 'cod' ? 1 : 2,
+            paymentStatus: paymentType === 'cod' ? 0 : 1,
             items: selectedItemsData.map(item => ({
                 productId: item.productid,
                 quantity: item.quantity,
@@ -804,7 +804,7 @@ const Cart = () => {
                                                         </div>
                                                     </div>
                                                     <div style={{ flex: 1, marginLeft: '20px' }}>
-                                                        <h4>Nhập mã giảm giá</h4>
+                                                        <h4 style={{color:'black'}}>Nhập mã giảm giá</h4>
 
                                                         {/* Textbox for discount code */}
                                                         <input
